@@ -9,6 +9,7 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
+  base: "/maharat-time-bank-hub/",
   plugins: [
     react(),
     mode === 'development' &&
@@ -19,5 +20,5 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  base: /"maharat-time-bank-hub"/,
+  
 }));
