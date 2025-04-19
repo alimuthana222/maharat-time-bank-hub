@@ -20,6 +20,10 @@ const Messages = lazy(() => import("./pages/Messages"));
 const Community = lazy(() => import("./pages/Community"));
 const HelpCenter = lazy(() => import("./pages/HelpCenter"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const OwnerDashboard = lazy(() => import("./pages/OwnerDashboard"));
+const AdvertisementMarket = lazy(() => import("./pages/AdvertisementMarket"));
+const CreateAd = lazy(() => import("./pages/CreateAd"));
+const AdDetails = lazy(() => import("./pages/AdDetails"));
 
 const queryClient = new QueryClient();
 
@@ -37,7 +41,7 @@ const App = () => (
             <Route 
               path="/profile" 
               element={
-                <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
                   <ProtectedRoute>
                     <StudentProfile />
                   </ProtectedRoute>
@@ -47,7 +51,7 @@ const App = () => (
             <Route 
               path="/timebank" 
               element={
-                <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
                   <TimeBank />
                 </Suspense>
               } 
@@ -55,7 +59,7 @@ const App = () => (
             <Route 
               path="/marketplace" 
               element={
-                <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
                   <Marketplace />
                 </Suspense>
               } 
@@ -63,7 +67,7 @@ const App = () => (
             <Route 
               path="/dashboard" 
               element={
-                <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
                   <ProtectedRoute>
                     <Dashboard />
                   </ProtectedRoute>
@@ -73,7 +77,7 @@ const App = () => (
             <Route 
               path="/messages" 
               element={
-                <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
                   <ProtectedRoute>
                     <Messages />
                   </ProtectedRoute>
@@ -83,7 +87,7 @@ const App = () => (
             <Route 
               path="/community" 
               element={
-                <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
                   <Community />
                 </Suspense>
               } 
@@ -91,7 +95,7 @@ const App = () => (
             <Route 
               path="/help" 
               element={
-                <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
                   <HelpCenter />
                 </Suspense>
               } 
@@ -99,10 +103,46 @@ const App = () => (
             <Route 
               path="/admin" 
               element={
-                <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
                   <ProtectedRoute admin>
                     <AdminDashboard />
                   </ProtectedRoute>
+                </Suspense>
+              } 
+            />
+            <Route 
+              path="/owner" 
+              element={
+                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
+                  <ProtectedRoute owner>
+                    <OwnerDashboard />
+                  </ProtectedRoute>
+                </Suspense>
+              } 
+            />
+            <Route 
+              path="/ads" 
+              element={
+                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
+                  <AdvertisementMarket />
+                </Suspense>
+              } 
+            />
+            <Route 
+              path="/ads/create" 
+              element={
+                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
+                  <ProtectedRoute>
+                    <CreateAd />
+                  </ProtectedRoute>
+                </Suspense>
+              } 
+            />
+            <Route 
+              path="/ads/:id" 
+              element={
+                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
+                  <AdDetails />
                 </Suspense>
               } 
             />

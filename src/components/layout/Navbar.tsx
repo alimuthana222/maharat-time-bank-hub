@@ -1,7 +1,7 @@
 
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, UsersRound, Clock, Brain, MessageSquare, User, LogOut } from "lucide-react";
+import { Menu, UsersRound, Clock, MessageSquare, User, LogOut, Shield, Star } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -24,7 +24,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin, isOwner } = useAuth();
   
   const closeMenu = () => {
     setIsMenuOpen(false);
@@ -57,6 +57,13 @@ export function Navbar() {
               <UsersRound size={18} />
               <span>السوق</span>
             </Link>
+            <Link
+              className="transition-colors hover:text-foreground/80 text-foreground/60 flex items-center gap-1"
+              to="/ads"
+            >
+              <Star size={18} />
+              <span>الإعلانات</span>
+            </Link>
             {user && (
               <Link
                 className="transition-colors hover:text-foreground/80 text-foreground/60 flex items-center gap-1"
@@ -85,6 +92,22 @@ export function Navbar() {
                   <Link to="/dashboard">
                     <Button variant="outline" size="sm">
                       لوحة التحكم
+                    </Button>
+                  </Link>
+                )}
+                {isAdmin() && (
+                  <Link to="/admin">
+                    <Button variant="outline" size="sm">
+                      <Shield className="ml-1 h-4 w-4" />
+                      لوحة الإدارة
+                    </Button>
+                  </Link>
+                )}
+                {isOwner() && (
+                  <Link to="/owner">
+                    <Button variant="outline" size="sm">
+                      <Shield className="ml-1 h-4 w-4" />
+                      لوحة المالك
                     </Button>
                   </Link>
                 )}
@@ -174,6 +197,14 @@ export function Navbar() {
                   <UsersRound size={18} />
                   <span>السوق</span>
                 </Link>
+                <Link
+                  className="text-foreground/80 hover:text-foreground flex items-center gap-2 py-2"
+                  to="/ads"
+                  onClick={closeMenu}
+                >
+                  <Star size={18} />
+                  <span>الإعلانات</span>
+                </Link>
                 {user && (
                   <Link
                     className="text-foreground/80 hover:text-foreground flex items-center gap-2 py-2"
@@ -203,6 +234,22 @@ export function Navbar() {
                       <Button asChild className="w-full" variant="outline">
                         <Link to="/dashboard" onClick={closeMenu}>لوحة التحكم</Link>
                       </Button>
+                      {isAdmin() && (
+                        <Button asChild className="w-full" variant="outline">
+                          <Link to="/admin" onClick={closeMenu}>
+                            <Shield className="ml-1 h-4 w-4" />
+                            لوحة الإدارة
+                          </Link>
+                        </Button>
+                      )}
+                      {isOwner() && (
+                        <Button asChild className="w-full" variant="outline">
+                          <Link to="/owner" onClick={closeMenu}>
+                            <Shield className="ml-1 h-4 w-4" />
+                            لوحة المالك
+                          </Link>
+                        </Button>
+                      )}
                       <Button className="w-full" onClick={() => { signOut(); closeMenu(); }}>
                         تسجيل خروج
                       </Button>

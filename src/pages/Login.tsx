@@ -43,6 +43,26 @@ export default function Login() {
     }
   }
 
+  // طريقة سريعة لتسجيل الدخول للتجربة (للتطوير فقط)
+  const handleQuickLogin = async (role: string) => {
+    try {
+      setError(null);
+      let email = "";
+      
+      if (role === "admin") {
+        email = "admin@maharat.com";
+      } else if (role === "owner") {
+        email = "owner@maharat.com";
+      } else {
+        email = "user@maharat.com";
+      }
+      
+      await signIn(email, "password123");
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   return (
     <div className="container flex h-screen w-full flex-col items-center justify-center">
       <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
@@ -100,6 +120,22 @@ export default function Login() {
           <Link to="/register" className="underline text-primary">
             إنشاء حساب
           </Link>
+        </div>
+
+        {/* أزرار تسجيل الدخول السريع (للتطوير فقط) */}
+        <div className="space-y-2 pt-2 border-t">
+          <p className="text-xs text-center text-muted-foreground">خيارات تسجيل الدخول السريع (للتطوير فقط)</p>
+          <div className="grid grid-cols-3 gap-2">
+            <Button variant="outline" size="sm" onClick={() => handleQuickLogin("user")}>
+              كمستخدم
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => handleQuickLogin("admin")}>
+              كمشرف
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => handleQuickLogin("owner")}>
+              كمالك
+            </Button>
+          </div>
         </div>
       </div>
     </div>
