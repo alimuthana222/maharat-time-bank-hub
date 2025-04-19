@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,7 +10,7 @@ import NotFound from "./pages/NotFound";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 
-const Skills = lazy(() => import("./pages/Skills"));
+const StudentProfile = lazy(() => import("./pages/StudentProfile"));
 const TimeBank = lazy(() => import("./pages/TimeBank"));
 const Marketplace = lazy(() => import("./pages/Marketplace"));
 
@@ -29,7 +30,7 @@ const App = () => (
             path="/skills" 
             element={
               <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
-                <Skills />
+                <StudentProfile />
               </Suspense>
             } 
           />
