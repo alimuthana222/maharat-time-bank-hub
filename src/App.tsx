@@ -13,6 +13,7 @@ import Login from "./pages/Login";
 const StudentProfile = lazy(() => import("./pages/StudentProfile"));
 const TimeBank = lazy(() => import("./pages/TimeBank"));
 const Marketplace = lazy(() => import("./pages/Marketplace"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
 
 const queryClient = new QueryClient();
 
@@ -27,7 +28,7 @@ const App = () => (
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
           <Route 
-            path="/skills" 
+            path="/profile" 
             element={
               <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
                 <StudentProfile />
@@ -47,6 +48,14 @@ const App = () => (
             element={
               <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
                 <Marketplace />
+              </Suspense>
+            } 
+          />
+          <Route 
+            path="/dashboard" 
+            element={
+              <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+                <Dashboard />
               </Suspense>
             } 
           />
