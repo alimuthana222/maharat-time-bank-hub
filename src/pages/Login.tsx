@@ -1,11 +1,10 @@
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -23,8 +22,8 @@ const formSchema = z.object({
 });
 
 export default function Login() {
-  const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
+  const { signIn, isLoading } = useAuth();
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -36,21 +35,11 @@ export default function Login() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      setIsLoading(true);
-      
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: values.email,
-        password: values.password,
-      });
-
-      if (signInError) throw signInError;
-
-      toast.success("تم تسجيل الدخول بنجاح!");
-      navigate("/");
-    } catch (error: any) {
-      toast.error(error.message || "حدث خطأ أثناء تسجيل الدخول");
-    } finally {
-      setIsLoading(false);
+      setError(null);
+      await signIn(values.email, values.password);
+    } catch (error) {
+      console.error(error);
+      // Error is already handled in auth context
     }
   }
 
@@ -94,6 +83,12 @@ export default function Login() {
               )}
             />
 
+            {error && (
+              <div className="text-sm text-red-500">
+                {error}
+              </div>
+            )}
+
             <Button className="w-full" type="submit" disabled={isLoading}>
               {isLoading ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
             </Button>
@@ -102,9 +97,9 @@ export default function Login() {
 
         <div className="text-center text-sm text-muted-foreground">
           ليس لديك حساب؟{" "}
-          <Button variant="link" className="underline" onClick={() => navigate("/register")}>
+          <Link to="/register" className="underline text-primary">
             إنشاء حساب
-          </Button>
+          </Link>
         </div>
       </div>
     </div>
