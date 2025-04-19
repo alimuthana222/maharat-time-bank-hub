@@ -1,7 +1,7 @@
 
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Lightbulb, Menu, UsersRound, Clock, Brain } from "lucide-react";
+import { Menu, UsersRound, Clock, Brain } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -24,17 +24,9 @@ export function Navbar() {
       <div className="container flex h-16 max-w-screen-2xl items-center">
         <div className="mr-4 flex">
           <Link className="mr-6 flex items-center space-x-2" to="/">
-            <Lightbulb size={24} className="text-maharat-blue" />
             <span className="hidden font-bold sm:inline-block text-xl">مهارات</span>
           </Link>
           <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
-            <Link
-              className="transition-colors hover:text-foreground/80 text-foreground/60 flex items-center gap-1"
-              to="/skills"
-            >
-              <Brain size={18} />
-              <span>المهارات</span>
-            </Link>
             <Link
               className="transition-colors hover:text-foreground/80 text-foreground/60 flex items-center gap-1"
               to="/timebank"
@@ -70,7 +62,6 @@ export function Navbar() {
             <SheetContent side="left">
               <SheetHeader>
                 <SheetTitle className="flex items-center">
-                  <Lightbulb size={24} className="text-maharat-blue mr-2" />
                   مهارات
                 </SheetTitle>
                 <SheetDescription>
@@ -78,14 +69,6 @@ export function Navbar() {
                 </SheetDescription>
               </SheetHeader>
               <nav className="flex flex-col space-y-4 mt-6">
-                <Link
-                  className="text-foreground/80 hover:text-foreground flex items-center gap-2 py-2"
-                  to="/skills"
-                  onClick={closeMenu}
-                >
-                  <Brain size={18} />
-                  <span>المهارات</span>
-                </Link>
                 <Link
                   className="text-foreground/80 hover:text-foreground flex items-center gap-2 py-2"
                   to="/timebank"
