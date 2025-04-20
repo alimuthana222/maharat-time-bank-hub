@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -650,26 +651,27 @@ export default function CreateAd() {
                             <TooltipContent>
                               <p>رصيدك الحالي: 0 ريال</p>
                             </TooltipContent>
-                          </TooltipProvider>
-                        </div>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                     </div>
-                  </CardContent>
-                  <CardFooter className="flex justify-between">
-                    <Button
-                      variant="outline"
-                      type="button"
-                      onClick={() => setCurrentStep(2)}
-                    >
-                      السابق
-                    </Button>
-                    <Button type="submit">
-                      إنشاء ودفع
-                      <ArrowRight className="mr-2 h-4 w-4" />
-                    </Button>
-                  </CardFooter>
-                </Card>
-              )}
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <Button
+                    variant="outline"
+                    type="button"
+                    onClick={() => setCurrentStep(2)}
+                  >
+                    السابق
+                  </Button>
+                  <Button type="submit">
+                    إنشاء ودفع
+                    <ArrowRight className="mr-2 h-4 w-4" />
+                  </Button>
+                </CardFooter>
+              </Card>
+            )}
             </form>
           </Form>
         </div>
