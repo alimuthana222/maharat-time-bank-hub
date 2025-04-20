@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import {
@@ -118,6 +117,7 @@ const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#0088FE", "#00C49F"
 
 export default function OwnerDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -293,7 +293,7 @@ export default function OwnerDashboard() {
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
                   </div>
-                  <Select defaultValue="all">
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                     <SelectTrigger className="w-[150px]">
                       <SelectValue placeholder="جميع الفئات" />
                     </SelectTrigger>

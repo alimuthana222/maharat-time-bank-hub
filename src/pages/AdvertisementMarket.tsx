@@ -289,7 +289,7 @@ export default function AdvertisementMarket() {
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">جميع التصنيفات</SelectItem>
+                  <SelectItem value="all">جميع التصنيفات</SelectItem>
                   <SelectItem value="خدمات تقنية">خدمات تقنية</SelectItem>
                   <SelectItem value="دروس خصوصية">دروس خصوصية</SelectItem>
                   <SelectItem value="سكن طلابي">سكن طلابي</SelectItem>
@@ -309,7 +309,7 @@ export default function AdvertisementMarket() {
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">جميع الكليات</SelectItem>
+                  <SelectItem value="all">جميع الكليات</SelectItem>
                   <SelectItem value="كلية الحاسب">كلية الحاسب</SelectItem>
                   <SelectItem value="كلية الهندسة">كلية الهندسة</SelectItem>
                   <SelectItem value="كلية الطب">كلية الطب</SelectItem>
@@ -327,7 +327,7 @@ export default function AdvertisementMarket() {
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">الأبرز</SelectItem>
+                  <SelectItem value="default">الأبرز</SelectItem>
                   <SelectItem value="price_asc">السعر: الأقل أولاً</SelectItem>
                   <SelectItem value="price_desc">السعر: الأعلى أولاً</SelectItem>
                   <SelectItem value="date_desc">التاريخ: الأحدث أولاً</SelectItem>
