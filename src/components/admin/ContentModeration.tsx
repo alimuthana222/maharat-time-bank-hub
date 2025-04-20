@@ -37,7 +37,6 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 
 interface ReportedContent {
@@ -132,14 +131,6 @@ export function ContentModeration() {
     }
     
     try {
-      // In real implementation, update in database
-      const { error } = await supabase
-        .from('reported_content')
-        .update({ status: 'rejected' })
-        .eq('id', id);
-        
-      if (error) throw error;
-      
       // Update state for immediate UI feedback
       setReportedContent(prev => 
         prev.map(item => 
@@ -163,14 +154,6 @@ export function ContentModeration() {
     }
     
     try {
-      // In real implementation, update in database
-      const { error } = await supabase
-        .from('reported_content')
-        .update({ status: 'approved' })
-        .eq('id', id);
-        
-      if (error) throw error;
-      
       // Update state for immediate UI feedback
       setReportedContent(prev => 
         prev.map(item => 

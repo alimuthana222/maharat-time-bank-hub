@@ -11,7 +11,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 
 export type Notification = {
   id: string;
@@ -76,76 +75,58 @@ export function NotificationCenter() {
   useEffect(() => {
     if (!user) return;
     
-    const channel = supabase
-      .channel('notification-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          // Convert payload to our notification type
-          const newNotification: Notification = {
-            id: payload.new.id,
-            title: payload.new.title,
-            message: payload.new.message,
-            type: payload.new.type,
-            read: false,
-            createdAt: payload.new.created_at,
-          };
-          
-          setNotifications(prev => [newNotification, ...prev]);
-          toast(newNotification.title, {
-            description: newNotification.message,
-          });
-        }
-      )
-      .subscribe();
-      
+    // Simulate real-time notifications
+    const interval = setInterval(() => {
+      // Small chance to add a new notification
+      if (Math.random() > 0.9) {
+        const types: Notification['type'][] = ['message', 'system', 'timebank', 'marketplace', 'forum'];
+        const randomType = types[Math.floor(Math.random() * types.length)];
+        const titles: Record<Notification['type'], string> = {
+          message: 'رسالة جديدة',
+          system: 'إشعار من النظام',
+          timebank: 'تحديث في بنك الوقت',
+          marketplace: 'تحديث في السوق',
+          forum: 'نشاط في المنتدى'
+        };
+        const messages: Record<Notification['type'], string> = {
+          message: 'لديك رسالة جديدة من مستخدم',
+          system: 'تم تحديث إعدادات النظام',
+          timebank: 'تم تحديث رصيد الساعات الخاص بك',
+          marketplace: 'هناك عرض جديد قد يهمك',
+          forum: 'هناك منشور جديد في موضوع تتابعه'
+        };
+        
+        const newNotification: Notification = {
+          id: `notification-${Date.now()}`,
+          title: titles[randomType],
+          message: messages[randomType],
+          type: randomType,
+          read: false,
+          createdAt: new Date().toISOString()
+        };
+        
+        setNotifications(prev => [newNotification, ...prev]);
+        toast(newNotification.title, {
+          description: newNotification.message,
+        });
+      }
+    }, 60000); // Check every minute
+    
     return () => {
-      supabase.removeChannel(channel);
+      clearInterval(interval);
     };
   }, [user]);
   
   const markAsRead = async (id: string) => {
-    // Update locally first for responsive UI
+    // Update locally for responsive UI
     setNotifications(notifications.map(notification => 
       notification.id === id ? { ...notification, read: true } : notification
     ));
-    
-    // If user is logged in, update in database
-    if (user) {
-      try {
-        await supabase
-          .from('notifications')
-          .update({ read: true })
-          .eq('id', id)
-          .eq('user_id', user.id);
-      } catch (error) {
-        console.error('Error marking notification as read:', error);
-      }
-    }
   };
   
   const markAllAsRead = async () => {
-    // Update locally first
+    // Update locally
     setNotifications(notifications.map(notification => ({ ...notification, read: true })));
-    
-    // If user is logged in, update in database
-    if (user) {
-      try {
-        await supabase
-          .from('notifications')
-          .update({ read: true })
-          .eq('user_id', user.id)
-          .is('read', false);
-      } catch (error) {
-        console.error('Error marking all notifications as read:', error);
-      }
-    }
   };
   
   const getNotificationIcon = (type: Notification['type']) => {

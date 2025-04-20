@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Send, PaperclipIcon, Smile, MoreVertical, Phone, Video } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface Message {
   id: string;
@@ -48,26 +48,17 @@ export function MessageChat({ chatPartnerId }: MessageChatProps) {
       if (!chatPartnerId) return;
       
       try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, full_name, username, avatar_url')
-          .eq('id', chatPartnerId)
-          .single();
-          
-        if (error) throw error;
-        
-        if (data) {
+        // Simulating API call
+        setTimeout(() => {
           setChatPartner({
-            id: data.id,
-            name: data.full_name || data.username,
-            avatar_url: data.avatar_url || undefined,
-            avatarFallback: (data.full_name || data.username || '').substring(0, 2),
-            status: 'offline'
+            id: chatPartnerId,
+            name: 'أحمد محمد',
+            avatarFallback: 'أم',
+            status: 'online'
           });
-        }
+        }, 500);
       } catch (error) {
         console.error('Error fetching chat partner:', error);
-        // Fallback for demo
         setChatPartner({
           id: chatPartnerId,
           name: 'أحمد محمد',
@@ -87,7 +78,6 @@ export function MessageChat({ chatPartnerId }: MessageChatProps) {
       
       setIsLoading(true);
       try {
-        // In a real implementation, fetch messages from the database
         // For demo purposes, we're adding mock messages
         const mockMessages: Message[] = [
           {
@@ -135,29 +125,28 @@ export function MessageChat({ chatPartnerId }: MessageChatProps) {
     fetchMessages();
   }, [user, chatPartnerId]);
   
-  // Set up real-time messaging
+  // Set up real-time messaging simulation
   useEffect(() => {
     if (!user || !chatPartnerId) return;
     
-    const channel = supabase
-      .channel('messages-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `(sender_id=eq.${user.id} AND recipient_id=eq.${chatPartnerId}) OR (sender_id=eq.${chatPartnerId} AND recipient_id=eq.${user.id})`
-        },
-        (payload) => {
-          const newMessage = payload.new as Message;
-          setMessages(prev => [...prev, newMessage]);
-        }
-      )
-      .subscribe();
-      
+    // Simulate a real-time connection
+    const interval = setInterval(() => {
+      // Simulate occasional new message (every 30 seconds)
+      if (Math.random() > 0.7) {
+        const newMessage: Message = {
+          id: `auto-${Date.now()}`,
+          content: 'هل أنت متواجد؟ أود مناقشة التفاصيل.',
+          sender_id: chatPartnerId,
+          recipient_id: user.id,
+          created_at: new Date().toISOString(),
+          read: false
+        };
+        setMessages(prev => [...prev, newMessage]);
+      }
+    }, 30000);
+    
     return () => {
-      supabase.removeChannel(channel);
+      clearInterval(interval);
     };
   }, [user, chatPartnerId]);
   
@@ -169,41 +158,37 @@ export function MessageChat({ chatPartnerId }: MessageChatProps) {
   const sendMessage = async () => {
     if (!inputMessage.trim() || !user || !chatPartnerId) return;
     
-    const newMessage = {
+    const newMessage: Message = {
+      id: `temp-${Date.now()}`,
       content: inputMessage,
       sender_id: user.id,
       recipient_id: chatPartnerId,
-      read: false
-    };
-    
-    // Optimistically add message to UI
-    const tempMessage: Message = {
-      ...newMessage,
-      id: `temp-${Date.now()}`,
       created_at: new Date().toISOString(),
       read: false
     };
     
-    setMessages(prev => [...prev, tempMessage]);
+    setMessages(prev => [...prev, newMessage]);
     setInputMessage('');
     
-    // In a real implementation, send to database
-    try {
-      const { data, error } = await supabase
-        .from('messages')
-        .insert(newMessage)
-        .select()
-        .single();
-        
-      if (error) throw error;
+    // Simulate message confirmation
+    setTimeout(() => {
+      toast.success("تم إرسال الرسالة");
       
-      // Replace temp message with real one from database if needed
-      // For demo, we'll just leave the temp message
-    } catch (error) {
-      console.error('Error sending message:', error);
-      // Remove temp message on error
-      setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
-    }
+      // Simulate reply after some time
+      if (Math.random() > 0.5) {
+        setTimeout(() => {
+          const replyMessage: Message = {
+            id: `reply-${Date.now()}`,
+            content: 'شكراً لرسالتك، سأرد عليك قريباً.',
+            sender_id: chatPartnerId,
+            recipient_id: user.id,
+            created_at: new Date().toISOString(),
+            read: false
+          };
+          setMessages(prev => [...prev, replyMessage]);
+        }, 5000 + Math.random() * 10000); // Reply between 5-15 seconds
+      }
+    }, 1000);
   };
   
   const formatMessageTime = (dateString: string) => {

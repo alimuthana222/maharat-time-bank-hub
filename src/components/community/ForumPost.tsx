@@ -21,6 +21,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { CommentsSection } from "./CommentsSection";
+import { ReportDialog } from "./ReportDialog";
+import { CommentProps } from "./Comment";
 
 export interface ForumPostProps {
   id: string;
@@ -44,12 +47,16 @@ export function ForumPost({
   author,
   createdAt,
   likesCount: initialLikesCount,
-  commentsCount,
+  commentsCount: initialCommentsCount,
   tags = [],
 }: ForumPostProps) {
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(initialLikesCount);
   const [saved, setSaved] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [comments, setComments] = useState<CommentProps[]>([]);
+  const [commentsCount, setCommentsCount] = useState(initialCommentsCount);
+  const [showReportDialog, setShowReportDialog] = useState(false);
   const { user } = useAuth();
   
   const formatDate = (dateString: string) => {
@@ -109,7 +116,17 @@ export function ForumPost({
       return;
     }
     
+    setShowReportDialog(true);
+  };
+  
+  const handleSubmitReport = (reason: string) => {
     toast.success("تم إرسال البلاغ وسيتم مراجعته من قبل المشرفين");
+    setShowReportDialog(false);
+  };
+
+  const handleAddComment = (newComment: CommentProps) => {
+    setComments([...comments, newComment]);
+    setCommentsCount(prev => prev + 1);
   };
 
   return (
@@ -168,7 +185,7 @@ export function ForumPost({
           </div>
         )}
       </CardContent>
-      <CardFooter className="border-t pt-3">
+      <CardFooter className="border-t pt-3 flex flex-col">
         <div className="flex justify-between w-full">
           <div className="flex gap-4">
             <Button 
@@ -180,12 +197,26 @@ export function ForumPost({
               <ThumbsUp className="h-4 w-4" />
               <span>{likesCount}</span>
             </Button>
-            <Button variant="ghost" size="sm" className="flex gap-2 items-center">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="flex gap-2 items-center"
+              onClick={() => setShowComments(!showComments)}  
+            >
               <MessageSquare className="h-4 w-4" />
               <span>{commentsCount}</span>
             </Button>
           </div>
           <div className="flex gap-2">
+            <Button 
+              variant={saved ? "default" : "ghost"} 
+              size="sm" 
+              onClick={handleSave}
+              className="flex gap-1 items-center"
+            >
+              <Bookmark className="h-4 w-4" />
+              <span className="hidden sm:inline">{saved ? "محفوظ" : "حفظ"}</span>
+            </Button>
             <Button variant="ghost" size="icon" onClick={handleShare}>
               <Share2 className="h-4 w-4" />
             </Button>
@@ -194,7 +225,24 @@ export function ForumPost({
             </Button>
           </div>
         </div>
+        
+        {/* Comments Section */}
+        {showComments && (
+          <CommentsSection 
+            postId={id}
+            comments={comments}
+            commentsCount={commentsCount}
+            onAddComment={handleAddComment}
+          />
+        )}
       </CardFooter>
+      
+      {/* Report Dialog */}
+      <ReportDialog
+        open={showReportDialog}
+        onOpenChange={setShowReportDialog}
+        onSubmitReport={handleSubmitReport}
+      />
     </Card>
   );
 }
