@@ -14,6 +14,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   isAdmin: () => boolean;
   isOwner: () => boolean;
+  setUserRole: (role: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -107,6 +108,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Function to update user role
+  const setUserRole = async (role: string) => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: { role },
+      });
+      
+      if (error) throw error;
+      
+      // Force refresh the session to get the updated user metadata
+      const { data, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError) throw refreshError;
+      
+      if (data.session) {
+        setSession(data.session);
+        setUser(data.session.user);
+        toast.success(`تم تعيين دورك كـ ${role} بنجاح`);
+      }
+    } catch (error: any) {
+      toast.error(`فشل تحديث الدور: ${error.message}`);
+    }
+  };
+
   const isAdmin = () => {
     return user?.user_metadata?.role === "admin";
   };
@@ -124,7 +151,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signUp, 
       signOut, 
       isAdmin, 
-      isOwner 
+      isOwner,
+      setUserRole
     }}>
       {children}
     </AuthContext.Provider>

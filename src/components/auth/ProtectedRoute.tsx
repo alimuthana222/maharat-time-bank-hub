@@ -23,7 +23,7 @@ const ProtectedRoute = ({ children, admin = false, owner = false }: ProtectedRou
   }
 
   // التحقق من صلاحيات المشرف
-  if (admin && user.user_metadata?.role !== "admin") {
+  if (admin && user.user_metadata?.role !== "admin" && user.user_metadata?.role !== "owner") {
     toast.error("ليس لديك صلاحية الوصول إلى لوحة الإدارة");
     return <Navigate to="/dashboard" replace />;
   }

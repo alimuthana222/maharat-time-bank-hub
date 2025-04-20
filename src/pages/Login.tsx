@@ -22,7 +22,7 @@ const formSchema = z.object({
 });
 
 export default function Login() {
-  const { signIn, isLoading } = useAuth();
+  const { signIn, isLoading, setUserRole } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -58,6 +58,11 @@ export default function Login() {
       }
       
       await signIn(email, "password123");
+      
+      // Update user role after successful login
+      setTimeout(async () => {
+        await setUserRole(role);
+      }, 1000);
     } catch (error) {
       console.error(error);
     }
