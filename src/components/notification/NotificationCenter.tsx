@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Bell } from "lucide-react";
 import { 
   Popover, 
@@ -9,12 +9,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 export type Notification = {
   id: string;
   title: string;
   message: string;
-  type: 'message' | 'system' | 'timebank' | 'marketplace';
+  type: 'message' | 'system' | 'timebank' | 'marketplace' | 'forum';
   read: boolean;
   createdAt: string;
 }
@@ -52,22 +55,97 @@ const MOCK_NOTIFICATIONS: Notification[] = [
     read: true,
     createdAt: '2025-04-18T09:00:00Z'
   },
+  {
+    id: '5',
+    title: 'منشور جديد في المجتمع',
+    message: 'تمت الإجابة على استفسارك في منتدى المجتمع',
+    type: 'forum',
+    read: false,
+    createdAt: '2025-04-19T14:20:00Z'
+  },
 ];
 
 export function NotificationCenter() {
   const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
   const [open, setOpen] = useState(false);
+  const { user } = useAuth();
   
   const unreadCount = notifications.filter(notification => !notification.read).length;
   
-  const markAsRead = (id: string) => {
+  // Listen for real-time notifications when user is logged in
+  useEffect(() => {
+    if (!user) return;
+    
+    const channel = supabase
+      .channel('notification-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          // Convert payload to our notification type
+          const newNotification: Notification = {
+            id: payload.new.id,
+            title: payload.new.title,
+            message: payload.new.message,
+            type: payload.new.type,
+            read: false,
+            createdAt: payload.new.created_at,
+          };
+          
+          setNotifications(prev => [newNotification, ...prev]);
+          toast(newNotification.title, {
+            description: newNotification.message,
+          });
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+  
+  const markAsRead = async (id: string) => {
+    // Update locally first for responsive UI
     setNotifications(notifications.map(notification => 
       notification.id === id ? { ...notification, read: true } : notification
     ));
+    
+    // If user is logged in, update in database
+    if (user) {
+      try {
+        await supabase
+          .from('notifications')
+          .update({ read: true })
+          .eq('id', id)
+          .eq('user_id', user.id);
+      } catch (error) {
+        console.error('Error marking notification as read:', error);
+      }
+    }
   };
   
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
+    // Update locally first
     setNotifications(notifications.map(notification => ({ ...notification, read: true })));
+    
+    // If user is logged in, update in database
+    if (user) {
+      try {
+        await supabase
+          .from('notifications')
+          .update({ read: true })
+          .eq('user_id', user.id)
+          .is('read', false);
+      } catch (error) {
+        console.error('Error marking all notifications as read:', error);
+      }
+    }
   };
   
   const getNotificationIcon = (type: Notification['type']) => {
@@ -80,6 +158,8 @@ export function NotificationCenter() {
         return <div className="h-2 w-2 rounded-full bg-orange-500"></div>;
       case 'system':
         return <div className="h-2 w-2 rounded-full bg-red-500"></div>;
+      case 'forum':
+        return <div className="h-2 w-2 rounded-full bg-purple-500"></div>;
       default:
         return <div className="h-2 w-2 rounded-full bg-gray-500"></div>;
     }
@@ -128,7 +208,7 @@ export function NotificationCenter() {
                 <div 
                   key={notification.id}
                   className={cn(
-                    "p-3 hover:bg-muted/50 cursor-pointer", 
+                    "p-3 hover:bg-muted/50 cursor-pointer transition-colors", 
                     !notification.read && "bg-muted/20"
                   )}
                   onClick={() => markAsRead(notification.id)}
