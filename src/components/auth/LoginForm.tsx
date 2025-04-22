@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Role } from "@/types/auth";
 
 export function LoginForm() {
   const [activeTab, setActiveTab] = useState<string>("login");
@@ -30,7 +31,7 @@ export function LoginForm() {
     return password.length >= 6;
   };
 
-  const handleQuickLogin = async (role: string) => {
+  const handleQuickLogin = async (role: Role) => {
     try {
       let loginEmail = "";
       

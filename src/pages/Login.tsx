@@ -15,6 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Role } from "@/types/auth";
 
 const formSchema = z.object({
   email: z.string().email("البريد الإلكتروني غير صالح"),
@@ -44,7 +45,7 @@ export default function Login() {
   }
 
   // طريقة سريعة لتسجيل الدخول للتجربة (للتطوير فقط)
-  const handleQuickLogin = async (role: string) => {
+  const handleQuickLogin = async (role: Role) => {
     try {
       setError(null);
       let email = "";

@@ -1,11 +1,9 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-
-type Role = 'admin' | 'moderator' | 'owner' | 'user';
+import { Role } from "@/types/auth";
 
 interface AuthContextType {
   user: User | null;
