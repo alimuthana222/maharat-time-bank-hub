@@ -1,4 +1,4 @@
-import{ad as F,aL as R,r as i,j as e,N as v,aA as o,p as a,B as x,l as z,ax as y,am as E,D as H,ao as B,x as L,y as M,z as I,E as O,V as b,X as $,C as m,m as h,n as j,a as u,A as q,ae as J,av as P,o as U,a5 as V,a6 as X,ah as t}from"./index-Dc068xpD.js";import{H as G}from"./heart-D4eoxrZo.js";import{F as K}from"./flag-M118n6SC.js";const w={1:{id:"1",title:"خدمات برمجة وتصميم مواقع إلكترونية",description:`تصميم وتطوير مواقع احترافية للطلاب والمشاريع الصغيرة بأسعار مناسبة.
+import{ad as F,aL as R,r as i,j as e,N as v,aA as o,p as a,B as x,l as z,ax as y,am as E,D as H,ao as B,x as L,y as M,z as I,E as O,V as b,X as $,C as m,m as h,n as j,a as u,A as q,ae as J,av as P,o as U,a5 as V,a6 as X,ah as t}from"./index-CSi8ln8F.js";import{H as G}from"./heart-2n3jBDJF.js";import{F as K}from"./flag-BRuJ0X6g.js";const w={1:{id:"1",title:"خدمات برمجة وتصميم مواقع إلكترونية",description:`تصميم وتطوير مواقع احترافية للطلاب والمشاريع الصغيرة بأسعار مناسبة.
     
     الخدمات المقدمة:
     - تصميم وتطوير مواقع ويب متجاوبة مع جميع الأجهزة
