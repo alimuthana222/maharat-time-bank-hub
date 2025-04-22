@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import { AuthProvider } from "./context/AuthContext";
+import { ReportProvider } from "./context/ReportContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -36,138 +37,140 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/login" element={<Login />} />
-            <Route 
-              path="/profile" 
-              element={
-                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                  <ProtectedRoute>
-                    <StudentProfile />
-                  </ProtectedRoute>
-                </Suspense>
-              } 
-            />
-            <Route 
-              path="/timebank" 
-              element={
-                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                  <TimeBank />
-                </Suspense>
-              } 
-            />
-            <Route 
-              path="/marketplace" 
-              element={
-                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                  <Marketplace />
-                </Suspense>
-              } 
-            />
-            <Route 
-              path="/dashboard" 
-              element={
-                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                </Suspense>
-              } 
-            />
-            <Route 
-              path="/messages" 
-              element={
-                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                  <ProtectedRoute>
-                    <Messages />
-                  </ProtectedRoute>
-                </Suspense>
-              } 
-            />
-            <Route 
-              path="/community" 
-              element={
-                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                  <Community />
-                </Suspense>
-              } 
-            />
-            <Route 
-              path="/events" 
-              element={
-                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                  <Events />
-                </Suspense>
-              } 
-            />
-            <Route 
-              path="/help" 
-              element={
-                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                  <HelpCenter />
-                </Suspense>
-              } 
-            />
-            <Route 
-              path="/admin" 
-              element={
-                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                  <ProtectedRoute admin>
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                </Suspense>
-              } 
-            />
-            <Route 
-              path="/moderator" 
-              element={
-                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                  <ProtectedRoute moderator>
-                    <ModeratorDashboard />
-                  </ProtectedRoute>
-                </Suspense>
-              } 
-            />
-            <Route 
-              path="/owner" 
-              element={
-                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                  <ProtectedRoute owner>
-                    <OwnerDashboard />
-                  </ProtectedRoute>
-                </Suspense>
-              } 
-            />
-            <Route 
-              path="/ads" 
-              element={
-                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                  <AdvertisementMarket />
-                </Suspense>
-              } 
-            />
-            <Route 
-              path="/ads/create" 
-              element={
-                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                  <ProtectedRoute>
-                    <CreateAd />
-                  </ProtectedRoute>
-                </Suspense>
-              } 
-            />
-            <Route 
-              path="/ads/:id" 
-              element={
-                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                  <AdDetails />
-                </Suspense>
-              } 
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <ReportProvider>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/login" element={<Login />} />
+              <Route 
+                path="/profile" 
+                element={
+                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
+                    <ProtectedRoute>
+                      <StudentProfile />
+                    </ProtectedRoute>
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/timebank" 
+                element={
+                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
+                    <TimeBank />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/marketplace" 
+                element={
+                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
+                    <Marketplace />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/dashboard" 
+                element={
+                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/messages" 
+                element={
+                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
+                    <ProtectedRoute>
+                      <Messages />
+                    </ProtectedRoute>
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/community" 
+                element={
+                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
+                    <Community />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/events" 
+                element={
+                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
+                    <Events />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/help" 
+                element={
+                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
+                    <HelpCenter />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/admin" 
+                element={
+                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
+                    <ProtectedRoute admin>
+                      <AdminDashboard />
+                    </ProtectedRoute>
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/moderator" 
+                element={
+                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
+                    <ProtectedRoute moderator>
+                      <ModeratorDashboard />
+                    </ProtectedRoute>
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/owner" 
+                element={
+                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
+                    <ProtectedRoute owner>
+                      <OwnerDashboard />
+                    </ProtectedRoute>
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/ads" 
+                element={
+                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
+                    <AdvertisementMarket />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/ads/create" 
+                element={
+                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
+                    <ProtectedRoute>
+                      <CreateAd />
+                    </ProtectedRoute>
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="/ads/:id" 
+                element={
+                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
+                    <AdDetails />
+                  </Suspense>
+                } 
+              />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </ReportProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

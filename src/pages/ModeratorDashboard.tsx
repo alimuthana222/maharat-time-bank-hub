@@ -1,10 +1,11 @@
 
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, Flag, MessageSquareWarning, ShieldAlert } from "lucide-react";
+import { Flag, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
+import { ReportManagement } from "@/components/moderation/ReportManagement";
+import { Navbar } from "@/components/layout/Navbar";
 
 export default function ModeratorDashboard() {
   useEffect(() => {
@@ -18,30 +19,6 @@ export default function ModeratorDashboard() {
   const handleRejectContent = (id: string) => {
     toast.success(`تم رفض المحتوى #${id}`);
   };
-
-  const reportedContent = [
-    {
-      id: "123",
-      title: "منشور غير لائق",
-      reportedBy: "أحمد محمد",
-      reportReason: "محتوى غير مناسب",
-      date: "2025-04-21"
-    },
-    {
-      id: "124",
-      title: "تعليق مسيء",
-      reportedBy: "خالد العمري",
-      reportReason: "إساءة لمستخدم آخر",
-      date: "2025-04-20"
-    },
-    {
-      id: "125",
-      title: "إعلان مخالف",
-      reportedBy: "سارة عبدالله",
-      reportReason: "محتوى مضلل",
-      date: "2025-04-18"
-    }
-  ];
 
   const pendingContent = [
     {
@@ -61,75 +38,39 @@ export default function ModeratorDashboard() {
   ];
 
   return (
-    <div className="container py-10">
-      <div className="flex flex-col space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">لوحة مشرف المحتوى</h1>
-          <p className="text-muted-foreground mt-2">إدارة ومراجعة محتوى المنصة</p>
-        </div>
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <div className="container py-10">
+        <div className="flex flex-col space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold">لوحة مشرف المحتوى</h1>
+            <p className="text-muted-foreground mt-2">إدارة ومراجعة محتوى المنصة</p>
+          </div>
 
-        <Tabs defaultValue="reports" className="w-full">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="reports" className="flex items-center gap-2">
-              <Flag className="h-4 w-4" />
-              <span>المحتوى المبلغ عنه</span>
-            </TabsTrigger>
-            <TabsTrigger value="pending" className="flex items-center gap-2">
-              <ShieldAlert className="h-4 w-4" />
-              <span>مراجعة المحتوى</span>
-            </TabsTrigger>
-          </TabsList>
+          <Tabs defaultValue="reports" className="w-full">
+            <TabsList className="grid w-full max-w-md grid-cols-2">
+              <TabsTrigger value="reports" className="flex items-center gap-2">
+                <Flag className="h-4 w-4" />
+                <span>البلاغات</span>
+              </TabsTrigger>
+              <TabsTrigger value="pending" className="flex items-center gap-2">
+                <ShieldAlert className="h-4 w-4" />
+                <span>مراجعة المحتوى</span>
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="reports" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Flag className="h-5 w-5 text-destructive" />
-                  <span>المحتوى المبلغ عنه</span>
-                </CardTitle>
-                <CardDescription>مراجعة وتقييم المحتوى المبلغ عنه من قبل المستخدمين</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {reportedContent.map((item) => (
-                    <div key={item.id} className="border rounded-lg p-4">
-                      <div className="flex justify-between mb-2">
-                        <h3 className="font-semibold">{item.title}</h3>
-                        <span className="text-sm text-muted-foreground">{item.date}</span>
-                      </div>
-                      <div className="text-sm mb-3">
-                        <span className="text-muted-foreground">أبلغ عنه:</span> {item.reportedBy}
-                      </div>
-                      <div className="text-sm mb-4">
-                        <span className="text-muted-foreground">سبب البلاغ:</span> {item.reportReason}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleApproveContent(item.id)} className="flex items-center gap-2">
-                          <Check className="h-4 w-4" />
-                          <span>محتوى مقبول</span>
-                        </Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleRejectContent(item.id)} className="flex items-center gap-2">
-                          <MessageSquareWarning className="h-4 w-4" />
-                          <span>إزالة المحتوى</span>
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+            <TabsContent value="reports" className="mt-6">
+              <ReportManagement />
+            </TabsContent>
 
-          <TabsContent value="pending" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+            <TabsContent value="pending" className="mt-6">
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center gap-2 mb-4">
                   <ShieldAlert className="h-5 w-5 text-amber-500" />
-                  <span>مراجعة المحتوى</span>
-                </CardTitle>
-                <CardDescription>مراجعة المهارات والإعلانات قبل نشرها</CardDescription>
-              </CardHeader>
-              <CardContent>
+                  <h2 className="text-xl font-semibold">مراجعة المحتوى</h2>
+                </div>
+                <p className="text-muted-foreground mb-6">مراجعة المهارات والإعلانات قبل نشرها</p>
+                
                 <div className="space-y-4">
                   {pendingContent.map((item) => (
                     <div key={item.id} className="border rounded-lg p-4">
@@ -145,21 +86,19 @@ export default function ModeratorDashboard() {
                       </div>
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm" onClick={() => handleApproveContent(item.id)} className="flex items-center gap-2">
-                          <Check className="h-4 w-4" />
                           <span>موافقة</span>
                         </Button>
                         <Button variant="destructive" size="sm" onClick={() => handleRejectContent(item.id)} className="flex items-center gap-2">
-                          <MessageSquareWarning className="h-4 w-4" />
                           <span>رفض</span>
                         </Button>
                       </div>
                     </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </div>
   );

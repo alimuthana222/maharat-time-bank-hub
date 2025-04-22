@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -15,7 +15,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Role } from "@/types/auth";
+import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
   email: z.string().email("البريد الإلكتروني غير صالح"),
@@ -23,8 +25,19 @@ const formSchema = z.object({
 });
 
 export default function Login() {
-  const { signIn, isLoading, setUserRole } = useAuth();
+  const { signIn, isLoading, setUserRole, user } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  const from = (location.state as { from?: string })?.from || "/dashboard";
+
+  useEffect(() => {
+    // If user is already logged in, redirect them
+    if (user) {
+      navigate(from, { replace: true });
+    }
+  }, [user, navigate, from]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -38,6 +51,7 @@ export default function Login() {
     try {
       setError(null);
       await signIn(values.email, values.password);
+      // Redirection will be handled by the useEffect above
     } catch (error) {
       console.error(error);
       // Error is already handled in auth context
@@ -72,83 +86,90 @@ export default function Login() {
   };
 
   return (
-    <div className="container flex h-screen w-full flex-col items-center justify-center">
-      <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
-        <div className="flex flex-col space-y-2 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">تسجيل الدخول</h1>
-          <p className="text-sm text-muted-foreground">
-            أدخل بياناتك لتسجيل الدخول
-          </p>
-        </div>
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-lg">
+        <CardHeader className="space-y-1 text-center">
+          <CardTitle className="text-2xl">تسجيل الدخول</CardTitle>
+          <CardDescription>أدخل بياناتك لتسجيل الدخول إلى منصة مهارات</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>البريد الإلكتروني</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="example@domain.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>البريد الإلكتروني</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="example@domain.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>كلمة المرور</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="******" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {error && (
+                <div className="p-3 text-sm font-medium text-destructive bg-destructive/10 rounded-md">
+                  {error}
+                </div>
               )}
-            />
 
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>كلمة المرور</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="******" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {error && (
-              <div className="text-sm text-red-500">
-                {error}
-              </div>
-            )}
-
-            <Button className="w-full" type="submit" disabled={isLoading}>
-              {isLoading ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
-            </Button>
-          </form>
-        </Form>
-
-        <div className="text-center text-sm text-muted-foreground">
-          ليس لديك حساب؟{" "}
-          <Link to="/register" className="underline text-primary">
-            إنشاء حساب
-          </Link>
-        </div>
-
-        {/* أزرار تسجيل الدخول السريع (للتطوير فقط) */}
-        <div className="space-y-2 pt-2 border-t">
-          <p className="text-xs text-center text-muted-foreground">خيارات تسجيل الدخول السريع (للتطوير فقط)</p>
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" size="sm" onClick={() => handleQuickLogin("user")}>
-              كمستخدم
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => handleQuickLogin("moderator")}>
-              كمشرف محتوى
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => handleQuickLogin("admin")}>
-              كمشرف
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => handleQuickLogin("owner")}>
-              كمالك
-            </Button>
+              <Button className="w-full" type="submit" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    جاري تسجيل الدخول...
+                  </>
+                ) : (
+                  "تسجيل الدخول"
+                )}
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+        <CardFooter className="flex flex-col gap-4">
+          <div className="text-center text-sm text-muted-foreground">
+            ليس لديك حساب؟{" "}
+            <Link to="/register" className="underline text-primary">
+              إنشاء حساب
+            </Link>
           </div>
-        </div>
-      </div>
+
+          {/* أزرار تسجيل الدخول السريع (للتطوير فقط) */}
+          <div className="space-y-2 pt-2 border-t w-full">
+            <p className="text-xs text-center text-muted-foreground">خيارات تسجيل الدخول السريع (للتطوير فقط)</p>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" size="sm" onClick={() => handleQuickLogin("user")}>
+                كمستخدم
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => handleQuickLogin("moderator")}>
+                كمشرف محتوى
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => handleQuickLogin("admin")}>
+                كمشرف
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => handleQuickLogin("owner")}>
+                كمالك
+              </Button>
+            </div>
+          </div>
+        </CardFooter>
+      </Card>
     </div>
   );
 }
