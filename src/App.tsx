@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
+import Events from "./pages/Events";
 
 const StudentProfile = lazy(() => import("./pages/StudentProfile"));
 const TimeBank = lazy(() => import("./pages/TimeBank"));
@@ -89,6 +90,14 @@ const App = () => (
               element={
                 <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
                   <Community />
+                </Suspense>
+              } 
+            />
+            <Route 
+              path="/events" 
+              element={
+                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
+                  <Events />
                 </Suspense>
               } 
             />

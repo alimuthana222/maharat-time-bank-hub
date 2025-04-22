@@ -5,6 +5,8 @@ import type { User, Session } from "@supabase/supabase-js";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
+type Role = 'admin' | 'moderator' | 'owner' | 'user';
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -12,8 +14,10 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, userData: object) => Promise<void>;
   signOut: () => Promise<void>;
-  setUserRole: (role: string) => Promise<void>;
-  checkUserRole: (role: string) => Promise<boolean>;
+  setUserRole: (role: Role) => Promise<void>;
+  checkUserRole: (role: Role) => Promise<boolean>;
+  isAdmin: () => boolean;
+  isOwner: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,6 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [userRoles, setUserRoles] = useState<Role[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,6 +34,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+        
+        // Fetch user roles when session changes
+        if (session?.user) {
+          fetchUserRoles(session.user.id);
+        } else {
+          setUserRoles([]);
+        }
+        
         setIsLoading(false);
       }
     );
@@ -36,23 +49,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      
+      // Fetch user roles on initial load
+      if (session?.user) {
+        fetchUserRoles(session.user.id);
+      }
+      
       setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const checkUserRole = async (role: string): Promise<boolean> => {
+  const fetchUserRoles = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+        
+      if (error) {
+        console.error('Error fetching user roles:', error);
+        return;
+      }
+      
+      if (data) {
+        setUserRoles(data.map(item => item.role as Role));
+      }
+    } catch (error) {
+      console.error('Error in fetchUserRoles:', error);
+    }
+  };
+
+  const checkUserRole = async (role: Role): Promise<boolean> => {
     if (!user) return false;
 
-    const { data, error } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('role', role)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', role)
+        .single();
 
-    return !error && !!data;
+      return !error && !!data;
+    } catch (error) {
+      console.error('Error checking user role:', error);
+      return false;
+    }
+  };
+
+  const isAdmin = () => {
+    return userRoles.includes('admin') || userRoles.includes('owner');
+  };
+
+  const isOwner = () => {
+    return userRoles.includes('owner');
   };
 
   const signIn = async (email: string, password: string) => {
@@ -103,6 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
+      setUserRoles([]);
       navigate("/");
       toast.success("تم تسجيل الخروج بنجاح");
     } catch (error: any) {
@@ -112,16 +165,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const setUserRole = async (role: string) => {
+  const setUserRole = async (role: Role) => {
     if (!user) return;
     
     try {
       const { error } = await supabase
         .from('user_roles')
-        .insert({ user_id: user.id, role });
+        .insert({ user_id: user.id, role: role });
       
       if (error) throw error;
       
+      // Update local state
+      setUserRoles(prev => [...prev, role]);
       toast.success(`تم تعيين دورك كـ ${role} بنجاح`);
     } catch (error: any) {
       toast.error(`فشل تحديث الدور: ${error.message}`);
@@ -137,7 +192,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signUp, 
       signOut, 
       setUserRole,
-      checkUserRole
+      checkUserRole,
+      isAdmin,
+      isOwner
     }}>
       {children}
     </AuthContext.Provider>

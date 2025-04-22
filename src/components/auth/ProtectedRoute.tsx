@@ -11,42 +11,44 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children, admin = false, owner = false }: ProtectedRouteProps) => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, isAdmin, isOwner } = useAuth();
   const location = useLocation();
-  const [isRoleLoading, setIsRoleLoading] = useState(true);
-  const { checkUserRole } = useAuth();
+  const [isRoleChecking, setIsRoleChecking] = useState(admin || owner);
 
   useEffect(() => {
-    const checkRoles = async () => {
+    const checkAccess = async () => {
       if (user) {
-        if (admin) {
-          const isAdmin = await checkUserRole('admin');
-          const isOwner = await checkUserRole('owner');
-          if (!isAdmin && !isOwner) {
-            toast.error("ليس لديك صلاحية الوصول إلى لوحة الإدارة");
-          }
+        if (admin && !isAdmin()) {
+          toast.error("ليس لديك صلاحية الوصول إلى لوحة الإدارة");
         }
         
-        if (owner) {
-          const isOwner = await checkUserRole('owner');
-          if (!isOwner) {
-            toast.error("هذه الصفحة مخصصة لمالك المنصة فقط");
-          }
+        if (owner && !isOwner()) {
+          toast.error("هذه الصفحة مخصصة لمالك المنصة فقط");
         }
-        setIsRoleLoading(false);
+        
+        setIsRoleChecking(false);
       }
     };
 
-    checkRoles();
-  }, [user, admin, owner, checkUserRole]);
+    if (user && (admin || owner)) {
+      checkAccess();
+    } else {
+      setIsRoleChecking(false);
+    }
+  }, [user, admin, owner, isAdmin, isOwner]);
 
-  if (isLoading || isRoleLoading) {
+  if (isLoading || isRoleChecking) {
     return <div className="flex items-center justify-center h-screen">جاري التحميل...</div>;
   }
 
   if (!user) {
     toast.error("يجب تسجيل الدخول للوصول إلى هذه الصفحة");
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Check if user has required roles
+  if ((admin && !isAdmin()) || (owner && !isOwner())) {
+    return <Navigate to="/dashboard" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;
