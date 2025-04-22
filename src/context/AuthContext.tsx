@@ -12,9 +12,8 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, userData: object) => Promise<void>;
   signOut: () => Promise<void>;
-  isAdmin: () => boolean;
-  isOwner: () => boolean;
   setUserRole: (role: string) => Promise<void>;
+  checkUserRole: (role: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,17 +30,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
-        
-        // Defer data fetching to avoid Supabase auth deadlock
-        if (session?.user) {
-          setTimeout(() => {
-            console.log("Auth state changed, user is logged in", session.user);
-          }, 0);
-        }
       }
     );
 
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -50,6 +41,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const checkUserRole = async (role: string): Promise<boolean> => {
+    if (!user) return false;
+
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', role)
+      .single();
+
+    return !error && !!data;
+  };
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -108,38 +112,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Function to update user role
   const setUserRole = async (role: string) => {
     if (!user) return;
     
     try {
-      const { error } = await supabase.auth.updateUser({
-        data: { role },
-      });
+      const { error } = await supabase
+        .from('user_roles')
+        .insert({ user_id: user.id, role });
       
       if (error) throw error;
       
-      // Force refresh the session to get the updated user metadata
-      const { data, error: refreshError } = await supabase.auth.refreshSession();
-      
-      if (refreshError) throw refreshError;
-      
-      if (data.session) {
-        setSession(data.session);
-        setUser(data.session.user);
-        toast.success(`تم تعيين دورك كـ ${role} بنجاح`);
-      }
+      toast.success(`تم تعيين دورك كـ ${role} بنجاح`);
     } catch (error: any) {
       toast.error(`فشل تحديث الدور: ${error.message}`);
     }
-  };
-
-  const isAdmin = () => {
-    return user?.user_metadata?.role === "admin";
-  };
-
-  const isOwner = () => {
-    return user?.user_metadata?.role === "owner";
   };
 
   return (
@@ -150,9 +136,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signIn, 
       signUp, 
       signOut, 
-      isAdmin, 
-      isOwner,
-      setUserRole
+      setUserRole,
+      checkUserRole
     }}>
       {children}
     </AuthContext.Provider>

@@ -20,7 +20,7 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { signIn, signUp, setUserRole } = useAuth();
 
   const validateEmail = (email: string) => {
     return email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
@@ -28,6 +28,33 @@ export function LoginForm() {
 
   const validatePassword = (password: string) => {
     return password.length >= 6;
+  };
+
+  const handleQuickLogin = async (role: string) => {
+    try {
+      let loginEmail = "";
+      
+      switch (role) {
+        case "admin":
+          loginEmail = "admin@maharat.com";
+          break;
+        case "owner":
+          loginEmail = "alimuthana140@gmail.com";
+          break;
+        default:
+          loginEmail = "user@maharat.com";
+      }
+      
+      await signIn(loginEmail, "password123");
+      
+      // Update user role after successful login
+      setTimeout(async () => {
+        await setUserRole(role);
+        toast.success(`تم تسجيل الدخول كـ ${role}`);
+      }, 1000);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -46,21 +73,9 @@ export function LoginForm() {
     setIsLoading(true);
     
     try {
-      // This would connect to a real authentication system
-      setTimeout(() => {
-        login({
-          id: "user-123",
-          email: email,
-          user_metadata: {
-            full_name: "مستخدم افتراضي",
-            university: "جامعة الملك سعود"
-          }
-        });
-        toast.success("تم تسجيل الدخول بنجاح");
-        navigate("/dashboard");
-      }, 1500);
+      await signIn(email, password);
     } catch (error) {
-      toast.error("حدث خطأ أثناء تسجيل الدخول");
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -92,21 +107,15 @@ export function LoginForm() {
     setIsLoading(true);
     
     try {
-      // This would connect to a real registration system
-      setTimeout(() => {
-        login({
-          id: "user-" + Date.now(),
-          email: email,
-          user_metadata: {
-            full_name: name,
-            university: university
-          }
-        });
-        toast.success("تم إنشاء الحساب بنجاح");
-        navigate("/dashboard");
-      }, 1500);
+      await signUp(email, password, {
+        full_name: name,
+        university: university
+      });
+      
+      toast.success("تم إنشاء الحساب بنجاح");
+      navigate("/dashboard");
     } catch (error) {
-      toast.error("حدث خطأ أثناء إنشاء الحساب");
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -124,6 +133,7 @@ export function LoginForm() {
           <TabsTrigger value="signup">إنشاء حساب</TabsTrigger>
         </TabsList>
         
+        {/* Login Tab Content */}
         <TabsContent value="login">
           <form onSubmit={handleLogin}>
             <CardHeader>
@@ -134,6 +144,7 @@ export function LoginForm() {
             </CardHeader>
             
             <CardContent className="space-y-4">
+              {/* Email Input */}
               <div className="space-y-2">
                 <Label htmlFor="email">البريد الإلكتروني</Label>
                 <Input
@@ -146,6 +157,7 @@ export function LoginForm() {
                 />
               </div>
               
+              {/* Password Input */}
               <div className="space-y-2">
                 <Label htmlFor="password">كلمة المرور</Label>
                 <div className="relative">
@@ -188,6 +200,7 @@ export function LoginForm() {
           </form>
         </TabsContent>
         
+        {/* Signup Tab Content */}
         <TabsContent value="signup">
           <form onSubmit={handleSignup}>
             <CardHeader>
@@ -198,6 +211,7 @@ export function LoginForm() {
             </CardHeader>
             
             <CardContent className="space-y-4">
+              {/* Name Input */}
               <div className="space-y-2">
                 <Label htmlFor="signup-name">الاسم الكامل</Label>
                 <Input
@@ -210,6 +224,7 @@ export function LoginForm() {
                 />
               </div>
               
+              {/* Email Input */}
               <div className="space-y-2">
                 <Label htmlFor="signup-email">البريد الإلكتروني</Label>
                 <Input
@@ -222,6 +237,7 @@ export function LoginForm() {
                 />
               </div>
               
+              {/* University Input */}
               <div className="space-y-2">
                 <Label htmlFor="signup-university">الجامعة</Label>
                 <Input
@@ -233,6 +249,7 @@ export function LoginForm() {
                 />
               </div>
               
+              {/* Password Input */}
               <div className="space-y-2">
                 <Label htmlFor="signup-password">كلمة المرور</Label>
                 <div className="relative">
@@ -258,6 +275,7 @@ export function LoginForm() {
                 </p>
               </div>
               
+              {/* Confirm Password Input */}
               <div className="space-y-2">
                 <Label htmlFor="signup-confirm-password">تأكيد كلمة المرور</Label>
                 <Input
@@ -279,6 +297,22 @@ export function LoginForm() {
           </form>
         </TabsContent>
       </Tabs>
+
+      {/* Quick Login Options for Development */}
+      <div className="space-y-2 pt-2 border-t">
+        <p className="text-xs text-center text-muted-foreground">خيارات تسجيل الدخول السريع (للتطوير فقط)</p>
+        <div className="grid grid-cols-3 gap-2">
+          <Button variant="outline" size="sm" onClick={() => handleQuickLogin("user")}>
+            كمستخدم
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => handleQuickLogin("admin")}>
+            كمشرف
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => handleQuickLogin("owner")}>
+            كمالك
+          </Button>
+        </div>
+      </div>
     </Card>
   );
 }
