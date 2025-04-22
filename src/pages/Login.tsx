@@ -54,6 +54,8 @@ export default function Login() {
         email = "admin@maharat.com";
       } else if (role === "owner") {
         email = "owner@maharat.com";
+      } else if (role === "moderator") {
+        email = "moderator@maharat.com";
       } else {
         email = "user@maharat.com";
       }
@@ -131,9 +133,12 @@ export default function Login() {
         {/* أزرار تسجيل الدخول السريع (للتطوير فقط) */}
         <div className="space-y-2 pt-2 border-t">
           <p className="text-xs text-center text-muted-foreground">خيارات تسجيل الدخول السريع (للتطوير فقط)</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <Button variant="outline" size="sm" onClick={() => handleQuickLogin("user")}>
               كمستخدم
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => handleQuickLogin("moderator")}>
+              كمشرف محتوى
             </Button>
             <Button variant="outline" size="sm" onClick={() => handleQuickLogin("admin")}>
               كمشرف

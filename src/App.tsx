@@ -21,6 +21,7 @@ const Messages = lazy(() => import("./pages/Messages"));
 const Community = lazy(() => import("./pages/Community"));
 const HelpCenter = lazy(() => import("./pages/HelpCenter"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const ModeratorDashboard = lazy(() => import("./pages/ModeratorDashboard"));
 const OwnerDashboard = lazy(() => import("./pages/OwnerDashboard"));
 const AdvertisementMarket = lazy(() => import("./pages/AdvertisementMarket"));
 const CreateAd = lazy(() => import("./pages/CreateAd"));
@@ -115,6 +116,16 @@ const App = () => (
                 <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
                   <ProtectedRoute admin>
                     <AdminDashboard />
+                  </ProtectedRoute>
+                </Suspense>
+              } 
+            />
+            <Route 
+              path="/moderator" 
+              element={
+                <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
+                  <ProtectedRoute moderator>
+                    <ModeratorDashboard />
                   </ProtectedRoute>
                 </Suspense>
               } 

@@ -24,7 +24,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, signOut, isAdmin, isOwner } = useAuth();
+  const { user, signOut, isAdmin, isOwner, isModerator } = useAuth();
   
   const closeMenu = () => {
     setIsMenuOpen(false);
@@ -92,6 +92,14 @@ export function Navbar() {
                   <Link to="/dashboard">
                     <Button variant="outline" size="sm">
                       لوحة التحكم
+                    </Button>
+                  </Link>
+                )}
+                {isModerator() && !isAdmin() && (
+                  <Link to="/moderator">
+                    <Button variant="outline" size="sm">
+                      <Shield className="ml-1 h-4 w-4" />
+                      لوحة المشرف
                     </Button>
                   </Link>
                 )}
@@ -234,6 +242,14 @@ export function Navbar() {
                       <Button asChild className="w-full" variant="outline">
                         <Link to="/dashboard" onClick={closeMenu}>لوحة التحكم</Link>
                       </Button>
+                      {isModerator() && !isAdmin() && (
+                        <Button asChild className="w-full" variant="outline">
+                          <Link to="/moderator" onClick={closeMenu}>
+                            <Shield className="ml-1 h-4 w-4" />
+                            لوحة المشرف
+                          </Link>
+                        </Button>
+                      )}
                       {isAdmin() && (
                         <Button asChild className="w-full" variant="outline">
                           <Link to="/admin" onClick={closeMenu}>

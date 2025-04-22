@@ -8,12 +8,13 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
   admin?: boolean;
   owner?: boolean;
+  moderator?: boolean;
 }
 
-const ProtectedRoute = ({ children, admin = false, owner = false }: ProtectedRouteProps) => {
-  const { user, isLoading, isAdmin, isOwner } = useAuth();
+const ProtectedRoute = ({ children, admin = false, owner = false, moderator = false }: ProtectedRouteProps) => {
+  const { user, isLoading, isAdmin, isOwner, isModerator } = useAuth();
   const location = useLocation();
-  const [isRoleChecking, setIsRoleChecking] = useState(admin || owner);
+  const [isRoleChecking, setIsRoleChecking] = useState(admin || owner || moderator);
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -26,16 +27,20 @@ const ProtectedRoute = ({ children, admin = false, owner = false }: ProtectedRou
           toast.error("هذه الصفحة مخصصة لمالك المنصة فقط");
         }
         
+        if (moderator && !isModerator()) {
+          toast.error("هذه الصفحة مخصصة للمشرفين فقط");
+        }
+        
         setIsRoleChecking(false);
       }
     };
 
-    if (user && (admin || owner)) {
+    if (user && (admin || owner || moderator)) {
       checkAccess();
     } else {
       setIsRoleChecking(false);
     }
-  }, [user, admin, owner, isAdmin, isOwner]);
+  }, [user, admin, owner, moderator, isAdmin, isOwner, isModerator]);
 
   if (isLoading || isRoleChecking) {
     return <div className="flex items-center justify-center h-screen">جاري التحميل...</div>;
@@ -47,7 +52,7 @@ const ProtectedRoute = ({ children, admin = false, owner = false }: ProtectedRou
   }
 
   // Check if user has required roles
-  if ((admin && !isAdmin()) || (owner && !isOwner())) {
+  if ((admin && !isAdmin()) || (owner && !isOwner()) || (moderator && !isModerator())) {
     return <Navigate to="/dashboard" state={{ from: location }} replace />;
   }
 

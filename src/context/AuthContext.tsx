@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
@@ -16,6 +17,7 @@ interface AuthContextType {
   checkUserRole: (role: Role) => Promise<boolean>;
   isAdmin: () => boolean;
   isOwner: () => boolean;
+  isModerator: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -105,6 +107,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return userRoles.includes('owner');
   };
 
+  const isModerator = () => {
+    return userRoles.includes('moderator') || userRoles.includes('admin') || userRoles.includes('owner');
+  };
+
   const signIn = async (email: string, password: string) => {
     try {
       setIsLoading(true);
@@ -192,7 +198,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserRole,
       checkUserRole,
       isAdmin,
-      isOwner
+      isOwner,
+      isModerator
     }}>
       {children}
     </AuthContext.Provider>
