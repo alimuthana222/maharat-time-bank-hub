@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -38,7 +37,7 @@ interface Report {
   reported_user_id: string;
   reported_user_name?: string;
   content_id: string;
-  content_type: string;
+  content_type: "post" | "comment" | "profile" | "service";
   reason: string;
   details?: string;
   content_preview?: string;
@@ -64,7 +63,6 @@ export function ReportManagement() {
 
       const statusFilter = activeTab === "all" ? {} : { status: activeTab };
 
-      // Fetch reports
       const { data: reportsData, error: reportsError } = await supabase
         .from("content_reports")
         .select("*")
@@ -73,7 +71,6 @@ export function ReportManagement() {
 
       if (reportsError) throw reportsError;
 
-      // Fetch reporter and reported user names
       const enhancedReports = await Promise.all(
         (reportsData || []).map(async (report) => {
           // Get reporter name
@@ -115,7 +112,7 @@ export function ReportManagement() {
             reporter_name: reporterData?.full_name || reporterData?.username || "مستخدم غير معروف",
             reported_user_name: reportedUserData?.full_name || reportedUserData?.username || "مستخدم غير معروف",
             content_preview: contentPreview || report.details || "بدون محتوى",
-          };
+          } as Report;
         })
       );
 
