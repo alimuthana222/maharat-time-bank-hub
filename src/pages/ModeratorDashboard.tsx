@@ -3,6 +3,8 @@ import React, { useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReportsManagement } from "@/components/admin/ReportsManagement";
+import { UsersManagement } from "@/components/admin/UsersManagement";
+import { ContentManagement } from "@/components/admin/ContentManagement";
 import { useAuth } from "@/context/AuthContext";
 import { Navigate } from "react-router-dom";
 
@@ -33,21 +35,11 @@ export default function ModeratorDashboard() {
           </TabsContent>
           
           <TabsContent value="users">
-            <div className="bg-muted/30 rounded-lg p-8 text-center">
-              <h2 className="text-xl font-semibold mb-4">إدارة المستخدمين</h2>
-              <p className="text-muted-foreground">
-                هذه الميزة ستكون متاحة قريبًا
-              </p>
-            </div>
+            <UsersManagement />
           </TabsContent>
           
           <TabsContent value="content">
-            <div className="bg-muted/30 rounded-lg p-8 text-center">
-              <h2 className="text-xl font-semibold mb-4">إدارة المحتوى</h2>
-              <p className="text-muted-foreground">
-                هذه الميزة ستكون متاحة قريبًا
-              </p>
-            </div>
+            <ContentManagement />
           </TabsContent>
         </Tabs>
       </div>
