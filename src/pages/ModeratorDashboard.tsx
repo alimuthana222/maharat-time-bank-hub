@@ -1,104 +1,55 @@
 
-import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Flag, ShieldAlert } from "lucide-react";
-import { toast } from "sonner";
-import { ReportManagement } from "@/components/moderation/ReportManagement";
+import React, { useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ReportsManagement } from "@/components/admin/ReportsManagement";
+import { useAuth } from "@/context/AuthContext";
+import { Navigate } from "react-router-dom";
 
 export default function ModeratorDashboard() {
-  useEffect(() => {
-    document.title = "لوحة المشرف | مهارات";
-  }, []);
+  const [activeTab, setActiveTab] = useState("reports");
+  const { isModerator } = useAuth();
 
-  const handleApproveContent = (id: string) => {
-    toast.success(`تم الموافقة على المحتوى #${id}`);
-  };
-
-  const handleRejectContent = (id: string) => {
-    toast.success(`تم رفض المحتوى #${id}`);
-  };
-
-  const pendingContent = [
-    {
-      id: "223",
-      title: "طلب مراجعة مهارة",
-      submittedBy: "محمد أحمد",
-      type: "مهارة",
-      date: "2025-04-22"
-    },
-    {
-      id: "224",
-      title: "طلب مراجعة إعلان",
-      submittedBy: "نورة سعد",
-      type: "إعلان",
-      date: "2025-04-21"
-    }
-  ];
+  if (!isModerator()) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
-      <div className="container py-10">
-        <div className="flex flex-col space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold">لوحة مشرف المحتوى</h1>
-            <p className="text-muted-foreground mt-2">إدارة ومراجعة محتوى المنصة</p>
-          </div>
-
-          <Tabs defaultValue="reports" className="w-full">
-            <TabsList className="grid w-full max-w-md grid-cols-2">
-              <TabsTrigger value="reports" className="flex items-center gap-2">
-                <Flag className="h-4 w-4" />
-                <span>البلاغات</span>
-              </TabsTrigger>
-              <TabsTrigger value="pending" className="flex items-center gap-2">
-                <ShieldAlert className="h-4 w-4" />
-                <span>مراجعة المحتوى</span>
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="reports" className="mt-6">
-              <ReportManagement />
-            </TabsContent>
-
-            <TabsContent value="pending" className="mt-6">
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <ShieldAlert className="h-5 w-5 text-amber-500" />
-                  <h2 className="text-xl font-semibold">مراجعة المحتوى</h2>
-                </div>
-                <p className="text-muted-foreground mb-6">مراجعة المهارات والإعلانات قبل نشرها</p>
-                
-                <div className="space-y-4">
-                  {pendingContent.map((item) => (
-                    <div key={item.id} className="border rounded-lg p-4">
-                      <div className="flex justify-between mb-2">
-                        <h3 className="font-semibold">{item.title}</h3>
-                        <span className="text-sm text-muted-foreground">{item.date}</span>
-                      </div>
-                      <div className="text-sm mb-3">
-                        <span className="text-muted-foreground">قدمه:</span> {item.submittedBy}
-                      </div>
-                      <div className="text-sm mb-4">
-                        <span className="text-muted-foreground">النوع:</span> {item.type}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleApproveContent(item.id)} className="flex items-center gap-2">
-                          <span>موافقة</span>
-                        </Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleRejectContent(item.id)} className="flex items-center gap-2">
-                          <span>رفض</span>
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
+      
+      <div className="container mx-auto py-8">
+        <h1 className="text-3xl font-bold mb-8">لوحة تحكم المشرف</h1>
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="mb-8">
+            <TabsTrigger value="reports">إدارة البلاغات</TabsTrigger>
+            <TabsTrigger value="users">إدارة المستخدمين</TabsTrigger>
+            <TabsTrigger value="content">إدارة المحتوى</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="reports">
+            <ReportsManagement />
+          </TabsContent>
+          
+          <TabsContent value="users">
+            <div className="bg-muted/30 rounded-lg p-8 text-center">
+              <h2 className="text-xl font-semibold mb-4">إدارة المستخدمين</h2>
+              <p className="text-muted-foreground">
+                هذه الميزة ستكون متاحة قريبًا
+              </p>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="content">
+            <div className="bg-muted/30 rounded-lg p-8 text-center">
+              <h2 className="text-xl font-semibold mb-4">إدارة المحتوى</h2>
+              <p className="text-muted-foreground">
+                هذه الميزة ستكون متاحة قريبًا
+              </p>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
