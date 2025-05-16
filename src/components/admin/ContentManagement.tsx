@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -394,7 +393,8 @@ export function ContentManagement() {
                 <TableCell className="whitespace-nowrap">{formatDate(content.created_at)}</TableCell>
                 <TableCell>
                   <Badge
-                    variant={content.is_hidden ? "destructive" : "success"}
+                    variant={content.is_hidden ? "destructive" : "default"}
+                    className={content.is_hidden ? "" : "bg-green-500"}
                   >
                     {content.is_hidden ? "مخفي" : "ظاهر"}
                   </Badge>
@@ -491,7 +491,8 @@ export function ContentManagement() {
                   <div className="font-medium">الحالة:</div>
                   <div>
                     <Badge
-                      variant={selectedContent.is_hidden ? "destructive" : "success"}
+                      variant={selectedContent.is_hidden ? "destructive" : "default"}
+                      className={selectedContent.is_hidden ? "" : "bg-green-500"}
                     >
                       {selectedContent.is_hidden ? "مخفي" : "ظاهر"}
                     </Badge>

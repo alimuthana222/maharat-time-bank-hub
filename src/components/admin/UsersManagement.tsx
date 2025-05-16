@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { Role } from "@/types/auth";
 
 interface UserProfile {
   id: string;
@@ -46,7 +47,7 @@ interface UserProfile {
   full_name: string;
   university: string;
   created_at: string;
-  roles: string[];
+  roles: Role[];
   status: "active" | "suspended";
 }
 
@@ -57,7 +58,7 @@ export function UsersManagement() {
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [showUserDetails, setShowUserDetails] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
-  const [selectedRole, setSelectedRole] = useState<string>("");
+  const [selectedRole, setSelectedRole] = useState<Role | "">("");
   const [isProcessing, setIsProcessing] = useState(false);
   const { isAdmin, isOwner } = useAuth();
   
@@ -136,7 +137,7 @@ export function UsersManagement() {
         .from("user_roles")
         .insert({
           user_id: selectedUser.id,
-          role: selectedRole
+          role: selectedRole as Role
         });
       
       if (error) throw error;
@@ -144,13 +145,13 @@ export function UsersManagement() {
       // Update local state
       setSelectedUser({
         ...selectedUser,
-        roles: [...selectedUser.roles, selectedRole]
+        roles: [...selectedUser.roles, selectedRole as Role]
       });
       
       // Update users list
       setUsers(users.map(user => 
         user.id === selectedUser.id 
-          ? { ...user, roles: [...user.roles, selectedRole] } 
+          ? { ...user, roles: [...user.roles, selectedRole as Role] } 
           : user
       ));
       
@@ -163,7 +164,7 @@ export function UsersManagement() {
     }
   };
   
-  const handleRemoveRole = async (roleToRemove: string) => {
+  const handleRemoveRole = async (roleToRemove: Role) => {
     if (!selectedUser) return;
     
     if (!isAdmin() && !isOwner()) {
@@ -225,7 +226,7 @@ export function UsersManagement() {
     );
   });
   
-  const getRoleBadgeVariant = (role: string) => {
+  const getRoleBadgeVariant = (role: Role) => {
     switch (role) {
       case "owner":
         return "destructive";
@@ -325,7 +326,7 @@ export function UsersManagement() {
                 </TableCell>
                 <TableCell>{formatDate(user.created_at)}</TableCell>
                 <TableCell>
-                  <Badge variant={user.status === "active" ? "success" : "destructive"}>
+                  <Badge variant={user.status === "active" ? "default" : "destructive"} className={user.status === "active" ? "bg-green-500" : ""}>
                     {user.status === "active" ? "نشط" : "معلق"}
                   </Badge>
                 </TableCell>
@@ -374,7 +375,7 @@ export function UsersManagement() {
                 
                 <div className="font-medium">الحالة:</div>
                 <div>
-                  <Badge variant={selectedUser.status === "active" ? "success" : "destructive"}>
+                  <Badge variant={selectedUser.status === "active" ? "default" : "destructive"} className={selectedUser.status === "active" ? "bg-green-500" : ""}>
                     {selectedUser.status === "active" ? "نشط" : "معلق"}
                   </Badge>
                 </div>
@@ -415,7 +416,7 @@ export function UsersManagement() {
                 <div className="border-t pt-4">
                   <div className="font-medium mb-2">تعيين دور جديد:</div>
                   <div className="flex gap-2">
-                    <Select value={selectedRole} onValueChange={setSelectedRole}>
+                    <Select value={selectedRole} onValueChange={(value) => setSelectedRole(value as Role | "")}>
                       <SelectTrigger>
                         <SelectValue placeholder="اختر دور" />
                       </SelectTrigger>

@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ReportsManagement } from "@/components/admin/ReportsManagement";
+import { ReportsManagement } from "@/components/moderation/ReportManagement";
 import { UsersManagement } from "@/components/admin/UsersManagement";
 import { ContentManagement } from "@/components/admin/ContentManagement";
 import { useAuth } from "@/context/AuthContext";
