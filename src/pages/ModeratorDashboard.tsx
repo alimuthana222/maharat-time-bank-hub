@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ReportsManagement } from "@/components/moderation/ReportManagement";
+import { ReportManagement } from "@/components/moderation/ReportManagement";
 import { UsersManagement } from "@/components/admin/UsersManagement";
 import { ContentManagement } from "@/components/admin/ContentManagement";
 import { useAuth } from "@/context/AuthContext";
@@ -31,7 +31,7 @@ export default function ModeratorDashboard() {
           </TabsList>
           
           <TabsContent value="reports">
-            <ReportsManagement />
+            <ReportManagement />
           </TabsContent>
           
           <TabsContent value="users">

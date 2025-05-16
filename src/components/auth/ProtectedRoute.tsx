@@ -1,65 +1,49 @@
 
-import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
-import { toast } from "sonner";
-import { useEffect, useState } from "react";
+import React from "react";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthProvider";
 import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  admin?: boolean;
-  owner?: boolean;
-  moderator?: boolean;
+  adminOnly?: boolean;
+  moderatorOnly?: boolean;
+  ownerOnly?: boolean;
 }
 
-const ProtectedRoute = ({ children, admin = false, owner = false, moderator = false }: ProtectedRouteProps) => {
-  const { user, isLoading, isAdmin, isOwner, isModerator } = useAuth();
-  const location = useLocation();
-  const [isRoleChecking, setIsRoleChecking] = useState(admin || owner || moderator);
+const ProtectedRoute = ({ 
+  children, 
+  adminOnly = false,
+  moderatorOnly = false,
+  ownerOnly = false
+}: ProtectedRouteProps) => {
+  const { user, isLoading, isAdmin, isModerator, isOwner } = useAuth();
 
-  useEffect(() => {
-    const checkAccess = async () => {
-      if (user) {
-        if (admin && !isAdmin()) {
-          toast.error("ليس لديك صلاحية الوصول إلى لوحة الإدارة");
-        }
-        
-        if (owner && !isOwner()) {
-          toast.error("هذه الصفحة مخصصة لمالك المنصة فقط");
-        }
-        
-        if (moderator && !isModerator()) {
-          toast.error("هذه الصفحة مخصصة للمشرفين فقط");
-        }
-        
-        setIsRoleChecking(false);
-      }
-    };
-
-    if (user && (admin || owner || moderator)) {
-      checkAccess();
-    } else {
-      setIsRoleChecking(false);
-    }
-  }, [user, admin, owner, moderator, isAdmin, isOwner, isModerator]);
-
-  if (isLoading || isRoleChecking) {
+  // Show loading spinner while checking authentication
+  if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen">
-        <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
-        <p className="text-lg text-muted-foreground">جاري التحقق من الصلاحيات...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
+  // Check if user is authenticated
   if (!user) {
-    toast.error("يجب تسجيل الدخول للوصول إلى هذه الصفحة");
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+    return <Navigate to="/auth" replace />;
   }
 
-  // Check if user has required roles
-  if ((admin && !isAdmin()) || (owner && !isOwner()) || (moderator && !isModerator())) {
-    return <Navigate to="/dashboard" state={{ from: location.pathname }} replace />;
+  // Check for specific role requirements
+  if (ownerOnly && !isOwner()) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (adminOnly && !isAdmin()) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (moderatorOnly && !isModerator()) {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

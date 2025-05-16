@@ -1,180 +1,78 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { lazy, Suspense } from "react";
-import { AuthProvider } from "./context/AuthContext";
-import { ReportProvider } from "./context/ReportContext";
-import ProtectedRoute from "./components/auth/ProtectedRoute";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import Register from "./pages/Register";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Auth from "./pages/Auth";
+import Marketplace from "./pages/Marketplace";
+import TimeBank from "./pages/TimeBank";
+import Dashboard from "./pages/Dashboard";
+import StudentProfile from "./pages/StudentProfile";
 import Events from "./pages/Events";
+import Messages from "./pages/Messages";
+import Community from "./pages/Community";
+import AdminDashboard from "./pages/AdminDashboard";
+import OwnerDashboard from "./pages/OwnerDashboard";
+import ModeratorDashboard from "./pages/ModeratorDashboard";
+import NotFound from "./pages/NotFound";
+import HelpCenter from "./pages/HelpCenter";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+import { AuthProvider } from "./components/auth/AuthProvider";
+import { Toaster } from "./components/ui/toaster";
+import { Toaster as SonnerToaster } from "sonner";
+import "./App.css";
 
-const StudentProfile = lazy(() => import("./pages/StudentProfile"));
-const TimeBank = lazy(() => import("./pages/TimeBank"));
-const Marketplace = lazy(() => import("./pages/Marketplace"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const Messages = lazy(() => import("./pages/Messages"));
-const Community = lazy(() => import("./pages/Community"));
-const HelpCenter = lazy(() => import("./pages/HelpCenter"));
-const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
-const ModeratorDashboard = lazy(() => import("./pages/ModeratorDashboard"));
-const OwnerDashboard = lazy(() => import("./pages/OwnerDashboard"));
-const AdvertisementMarket = lazy(() => import("./pages/AdvertisementMarket"));
-const CreateAd = lazy(() => import("./pages/CreateAd"));
-const AdDetails = lazy(() => import("./pages/AdDetails"));
-
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
+function App() {
+  return (
+    <AuthProvider>
       <BrowserRouter>
-        <AuthProvider>
-          <ReportProvider>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/login" element={<Login />} />
-              <Route 
-                path="/profile" 
-                element={
-                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                    <ProtectedRoute>
-                      <StudentProfile />
-                    </ProtectedRoute>
-                  </Suspense>
-                } 
-              />
-              <Route 
-                path="/timebank" 
-                element={
-                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                    <TimeBank />
-                  </Suspense>
-                } 
-              />
-              <Route 
-                path="/marketplace" 
-                element={
-                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                    <Marketplace />
-                  </Suspense>
-                } 
-              />
-              <Route 
-                path="/dashboard" 
-                element={
-                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  </Suspense>
-                } 
-              />
-              <Route 
-                path="/messages" 
-                element={
-                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                    <ProtectedRoute>
-                      <Messages />
-                    </ProtectedRoute>
-                  </Suspense>
-                } 
-              />
-              <Route 
-                path="/community" 
-                element={
-                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                    <Community />
-                  </Suspense>
-                } 
-              />
-              <Route 
-                path="/events" 
-                element={
-                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                    <Events />
-                  </Suspense>
-                } 
-              />
-              <Route 
-                path="/help" 
-                element={
-                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                    <HelpCenter />
-                  </Suspense>
-                } 
-              />
-              <Route 
-                path="/admin" 
-                element={
-                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                    <ProtectedRoute admin>
-                      <AdminDashboard />
-                    </ProtectedRoute>
-                  </Suspense>
-                } 
-              />
-              <Route 
-                path="/moderator" 
-                element={
-                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                    <ProtectedRoute moderator>
-                      <ModeratorDashboard />
-                    </ProtectedRoute>
-                  </Suspense>
-                } 
-              />
-              <Route 
-                path="/owner" 
-                element={
-                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                    <ProtectedRoute owner>
-                      <OwnerDashboard />
-                    </ProtectedRoute>
-                  </Suspense>
-                } 
-              />
-              <Route 
-                path="/ads" 
-                element={
-                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                    <AdvertisementMarket />
-                  </Suspense>
-                } 
-              />
-              <Route 
-                path="/ads/create" 
-                element={
-                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                    <ProtectedRoute>
-                      <CreateAd />
-                    </ProtectedRoute>
-                  </Suspense>
-                } 
-              />
-              <Route 
-                path="/ads/:id" 
-                element={
-                  <Suspense fallback={<div className="flex items-center justify-center h-screen">جاري التحميل...</div>}>
-                    <AdDetails />
-                  </Suspense>
-                } 
-              />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </ReportProvider>
-        </AuthProvider>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/marketplace" element={<Marketplace />} />
+          <Route path="/time-bank" element={
+            <ProtectedRoute>
+              <TimeBank />
+            </ProtectedRoute>
+          } />
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/profile/:id" element={<StudentProfile />} />
+          <Route path="/events" element={<Events />} />
+          <Route path="/messages" element={
+            <ProtectedRoute>
+              <Messages />
+            </ProtectedRoute>
+          } />
+          <Route path="/community" element={<Community />} />
+          <Route path="/admin" element={
+            <ProtectedRoute adminOnly>
+              <AdminDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/owner" element={
+            <ProtectedRoute ownerOnly>
+              <OwnerDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/moderator" element={
+            <ProtectedRoute moderatorOnly>
+              <ModeratorDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/help" element={<HelpCenter />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+        <Toaster />
+        <SonnerToaster position="bottom-left" dir="rtl" />
       </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+    </AuthProvider>
+  );
+}
 
 export default App;

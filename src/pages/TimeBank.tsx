@@ -1,196 +1,331 @@
 
+import React, { useState, useEffect } from "react";
 import { Navbar } from "@/components/layout/Navbar";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { TimeBankTransactionForm } from "@/components/timebank/TimeBankTransactionForm";
+import { TimeBankTransaction } from "@/components/timebank/TimeBankTransaction";
 import { TimeBankCard } from "@/components/timebank/TimeBankCard";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowDown, ArrowUp, Clock } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Plus, Loader2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
+
+interface TimeBankBalance {
+  user_id: string;
+  hours_earned: number;
+  hours_spent: number;
+  hours_pending: number;
+  username: string;
+}
+
+interface Transaction {
+  id: string;
+  provider_id: string;
+  recipient_id: string;
+  hours: number;
+  description: string;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
+  provider_name?: string;
+  recipient_name?: string;
+}
 
 export default function TimeBank() {
-  // Sample data for transactions
-  const transactions = [
-    { id: 1, title: "تدريس خصوصي للرياضيات", with: "أحمد محمد", type: "earned", hours: 2, date: "2025-04-12" },
-    { id: 2, title: "مساعدة في تصميم العرض التقديمي", with: "سارة علي", type: "spent", hours: 1, date: "2025-04-10" },
-    { id: 3, title: "إصلاح مشكلة في مشروع برمجي", with: "خالد العمري", type: "earned", hours: 3, date: "2025-04-08" },
-    { id: 4, title: "ترجمة ملخص بحث", with: "نورة السالم", type: "spent", hours: 2, date: "2025-04-05" },
-    { id: 5, title: "مراجعة مقال علمي", with: "فهد العتيبي", type: "earned", hours: 1, date: "2025-04-01" },
-  ];
+  const [balance, setBalance] = useState<TimeBankBalance | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loadingBalance, setLoadingBalance] = useState(true);
+  const [loadingTransactions, setLoadingTransactions] = useState(true);
+  const [activeTab, setActiveTab] = useState("all");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { user } = useAuth();
 
-  // User stats
-  const userStats = {
-    hoursEarned: 6,
-    hoursSpent: 3,
-    pendingHours: 1,
+  useEffect(() => {
+    if (user) {
+      fetchTimeBankBalance();
+      fetchTransactions(activeTab);
+
+      // Subscribe to changes in transactions
+      const channel = supabase
+        .channel("timebank-changes")
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "time_bank_transactions",
+            filter: `provider_id=eq.${user.id}`,
+          },
+          (_) => {
+            fetchTransactions(activeTab);
+            fetchTimeBankBalance();
+          }
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "time_bank_transactions",
+            filter: `recipient_id=eq.${user.id}`,
+          },
+          (_) => {
+            fetchTransactions(activeTab);
+            fetchTimeBankBalance();
+            toast.info("لديك معاملة جديدة في بنك الوقت");
+          }
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "time_bank_transactions",
+            filter: `or(provider_id.eq.${user.id},recipient_id.eq.${user.id})`,
+          },
+          (_) => {
+            fetchTransactions(activeTab);
+            fetchTimeBankBalance();
+            toast.info("تم تحديث إحدى معاملاتك في بنك الوقت");
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [user, activeTab]);
+
+  const fetchTimeBankBalance = async () => {
+    if (!user) return;
+
+    setLoadingBalance(true);
+    try {
+      const { data, error } = await supabase
+        .from("time_bank_balances")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      if (error && error.code !== "PGRST116") {
+        throw error;
+      }
+
+      setBalance(data || {
+        user_id: user.id,
+        hours_earned: 0,
+        hours_spent: 0,
+        hours_pending: 0,
+        username: user.user_metadata.username,
+      });
+    } catch (error) {
+      console.error("Error fetching time bank balance:", error);
+      toast.error("حدث خطأ أثناء تحميل رصيد بنك الوقت");
+    } finally {
+      setLoadingBalance(false);
+    }
   };
 
-  // Top helpers and seekers
-  const topStudents = [
-    { name: "منى الحربي", university: "جامعة الملك سعود", hours: 12 },
-    { name: "خالد العمري", university: "جامعة الملك فهد", hours: 10 },
-    { name: "سارة علي", university: "جامعة الأميرة نورة", hours: 9 },
-    { name: "أحمد محمد", university: "جامعة الملك سعود", hours: 8 },
-  ];
+  const fetchTransactions = async (tab: string) => {
+    if (!user) return;
+
+    setLoadingTransactions(true);
+    try {
+      let query = supabase
+        .from("time_bank_transactions")
+        .select("*")
+        .or(`provider_id.eq.${user.id},recipient_id.eq.${user.id}`)
+        .order("created_at", { ascending: false });
+
+      // Apply filter based on tab
+      if (tab === "sent") {
+        query = query.eq("provider_id", user.id);
+      } else if (tab === "received") {
+        query = query.eq("recipient_id", user.id);
+      } else if (tab === "pending") {
+        query = query.eq("status", "pending");
+      } else if (tab === "approved") {
+        query = query.eq("status", "approved");
+      } else if (tab === "rejected") {
+        query = query.eq("status", "rejected");
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      // Fetch user names for all transactions
+      const enhancedTransactions = await Promise.all(
+        (data || []).map(async (transaction) => {
+          const [providerResult, recipientResult] = await Promise.all([
+            supabase
+              .from("profiles")
+              .select("username, full_name")
+              .eq("id", transaction.provider_id)
+              .single(),
+            supabase
+              .from("profiles")
+              .select("username, full_name")
+              .eq("id", transaction.recipient_id)
+              .single(),
+          ]);
+
+          return {
+            ...transaction,
+            provider_name:
+              providerResult.data?.full_name ||
+              providerResult.data?.username ||
+              "مستخدم غير معروف",
+            recipient_name:
+              recipientResult.data?.full_name ||
+              recipientResult.data?.username ||
+              "مستخدم غير معروف",
+          };
+        })
+      );
+
+      setTransactions(enhancedTransactions);
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+      toast.error("حدث خطأ أثناء تحميل المعاملات");
+    } finally {
+      setLoadingTransactions(false);
+    }
+  };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    fetchTransactions(value);
+  };
+
+  const handleTransactionSuccess = () => {
+    setIsDialogOpen(false);
+    fetchTransactions(activeTab);
+    fetchTimeBankBalance();
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
-      
-      <main className="flex-1">
-        <div className="container mx-auto py-8">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-2">
-              <Clock className="h-6 w-6 text-primary" />
-              <h1 className="text-3xl font-bold">بنك الوقت</h1>
-            </div>
+
+      <div className="container mx-auto pt-20 pb-8 px-4">
+        <div className="flex flex-col lg:flex-row justify-between items-start gap-6">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">بنك الوقت</h1>
+            <p className="text-muted-foreground mb-6">
+              تبادل المهارات والخدمات من خلال وحدة الوقت
+            </p>
           </div>
-          
-          <div className="grid gap-8 md:grid-cols-3">
-            <div className="md:col-span-2">
-              <TimeBankCard {...userStats} />
-              
-              <div className="mt-8">
-                <Tabs defaultValue="all">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold">سجل المعاملات</h2>
-                    <TabsList>
-                      <TabsTrigger value="all">الكل</TabsTrigger>
-                      <TabsTrigger value="earned">اكتسبت</TabsTrigger>
-                      <TabsTrigger value="spent">أنفقت</TabsTrigger>
-                    </TabsList>
-                  </div>
-                  
-                  <TabsContent value="all" className="mt-0">
-                    <Card>
-                      <CardContent className="p-0">
-                        <div className="divide-y">
-                          {transactions.map(transaction => (
-                            <div key={transaction.id} className="flex items-center justify-between p-4 hover:bg-muted/50">
-                              <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-full ${transaction.type === 'earned' ? 'bg-green-100' : 'bg-red-100'}`}>
-                                  {transaction.type === 'earned' ? (
-                                    <ArrowUp className="h-4 w-4 text-green-600" />
-                                  ) : (
-                                    <ArrowDown className="h-4 w-4 text-red-600" />
-                                  )}
-                                </div>
-                                <div>
-                                  <div className="font-medium">{transaction.title}</div>
-                                  <div className="text-sm text-muted-foreground">مع: {transaction.with}</div>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className={`font-medium ${transaction.type === 'earned' ? 'text-green-600' : 'text-red-600'}`}>
-                                  {transaction.type === 'earned' ? '+' : '-'}{transaction.hours} ساعة
-                                </div>
-                                <div className="text-sm text-muted-foreground">{transaction.date}</div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                  
-                  <TabsContent value="earned" className="mt-0">
-                    <Card>
-                      <CardContent className="p-0">
-                        <div className="divide-y">
-                          {transactions.filter(t => t.type === 'earned').map(transaction => (
-                            <div key={transaction.id} className="flex items-center justify-between p-4 hover:bg-muted/50">
-                              <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-full bg-green-100">
-                                  <ArrowUp className="h-4 w-4 text-green-600" />
-                                </div>
-                                <div>
-                                  <div className="font-medium">{transaction.title}</div>
-                                  <div className="text-sm text-muted-foreground">مع: {transaction.with}</div>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="font-medium text-green-600">
-                                  +{transaction.hours} ساعة
-                                </div>
-                                <div className="text-sm text-muted-foreground">{transaction.date}</div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                  
-                  <TabsContent value="spent" className="mt-0">
-                    <Card>
-                      <CardContent className="p-0">
-                        <div className="divide-y">
-                          {transactions.filter(t => t.type === 'spent').map(transaction => (
-                            <div key={transaction.id} className="flex items-center justify-between p-4 hover:bg-muted/50">
-                              <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-full bg-red-100">
-                                  <ArrowDown className="h-4 w-4 text-red-600" />
-                                </div>
-                                <div>
-                                  <div className="font-medium">{transaction.title}</div>
-                                  <div className="text-sm text-muted-foreground">مع: {transaction.with}</div>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="font-medium text-red-600">
-                                  -{transaction.hours} ساعة
-                                </div>
-                                <div className="text-sm text-muted-foreground">{transaction.date}</div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </TabsContent>
-                </Tabs>
-              </div>
-            </div>
-            
-            <div>
-              <Card>
-                <CardHeader>
-                  <CardTitle>الأكثر نشاطاً</CardTitle>
-                  <CardDescription>الطلاب الأكثر نشاطاً في بنك الوقت</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea>
-                    <div className="space-y-4">
-                      {topStudents.map((student, i) => (
-                        <div key={i} className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="flex justify-center items-center rounded-full h-8 w-8 bg-primary/10 text-primary font-medium">
-                              {i + 1}
-                            </div>
-                            <div>
-                              <div className="font-medium">{student.name}</div>
-                              <div className="text-xs text-muted-foreground">{student.university}</div>
-                            </div>
-                          </div>
-                          <div className="font-medium">{student.hours} ساعة</div>
-                        </div>
-                      ))}
-                    </div>
-                    <ScrollBar orientation="horizontal" />
-                  </ScrollArea>
-                  <div className="mt-4 text-center">
-                    <Button variant="outline" size="sm">عرض المزيد</Button>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <div className="mt-6 grid gap-4">
-                <Button className="w-full">تبادل مهاراتك</Button>
-                <Button variant="outline" className="w-full">استكشف المهارات</Button>
-              </div>
-            </div>
-          </div>
+
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                <span>معاملة جديدة</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>إنشاء معاملة جديدة</DialogTitle>
+                <DialogDescription>
+                  أضف معاملة جديدة إلى بنك الوقت الخاص بك
+                </DialogDescription>
+              </DialogHeader>
+              <TimeBankTransactionForm onSuccess={handleTransactionSuccess} />
+            </DialogContent>
+          </Dialog>
         </div>
-      </main>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {loadingBalance ? (
+            <Card className="col-span-3">
+              <CardContent className="p-6 flex justify-center">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              <TimeBankCard
+                title="الساعات المكتسبة"
+                value={balance?.hours_earned || 0}
+                description="إجمالي الساعات التي حصلت عليها"
+                className="bg-gradient-to-r from-green-500 to-emerald-700"
+              />
+              <TimeBankCard
+                title="الساعات المنفقة"
+                value={balance?.hours_spent || 0}
+                description="إجمالي الساعات التي أنفقتها"
+                className="bg-gradient-to-r from-blue-500 to-indigo-700"
+              />
+              <TimeBankCard
+                title="الساعات المعلقة"
+                value={balance?.hours_pending || 0}
+                description="الساعات التي في انتظار الموافقة"
+                className="bg-gradient-to-r from-amber-500 to-orange-700"
+              />
+            </>
+          )}
+        </div>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle>معاملات بنك الوقت</CardTitle>
+            <CardDescription>
+              جميع المعاملات التي قمت بإجرائها أو استلامها
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs value={activeTab} onValueChange={handleTabChange}>
+              <TabsList className="mb-4">
+                <TabsTrigger value="all">الكل</TabsTrigger>
+                <TabsTrigger value="sent">مرسلة</TabsTrigger>
+                <TabsTrigger value="received">مستلمة</TabsTrigger>
+                <TabsTrigger value="pending">معلقة</TabsTrigger>
+                <TabsTrigger value="approved">موافق عليها</TabsTrigger>
+                <TabsTrigger value="rejected">مرفوضة</TabsTrigger>
+              </TabsList>
+              <TabsContent value={activeTab}>
+                {loadingTransactions ? (
+                  <div className="py-10 flex justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : transactions.length === 0 ? (
+                  <div className="py-10 text-center text-muted-foreground">
+                    لا توجد معاملات لعرضها
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {transactions.map((transaction) => (
+                      <TimeBankTransaction
+                        key={transaction.id}
+                        transaction={transaction}
+                        currentUserId={user?.id || ""}
+                        onStatusChange={() => fetchTransactions(activeTab)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
