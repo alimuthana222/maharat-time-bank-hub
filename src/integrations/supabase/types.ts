@@ -143,6 +143,33 @@ export type Database = {
           },
         ]
       }
+      messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_read: boolean | null
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: []
+      }
       posts: {
         Row: {
           category: string | null
@@ -183,6 +210,7 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          last_seen: string | null
           university: string | null
           username: string
         }
@@ -192,6 +220,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id: string
+          last_seen?: string | null
           university?: string | null
           username: string
         }
@@ -201,6 +230,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          last_seen?: string | null
           university?: string | null
           username?: string
         }
