@@ -32,6 +32,11 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/marketplace" element={<Marketplace />} />
+          <Route path="/timebank" element={
+            <ProtectedRoute>
+              <TimeBank />
+            </ProtectedRoute>
+          } />
           <Route path="/time-bank" element={
             <ProtectedRoute>
               <TimeBank />

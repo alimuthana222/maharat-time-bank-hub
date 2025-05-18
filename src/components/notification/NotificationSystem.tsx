@@ -5,10 +5,8 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { 
   Bell,
   Check,
-  X,
   Clock,
   MessageSquare,
-  User,
   Calendar,
   File
 } from "lucide-react";
@@ -20,7 +18,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 
 interface Notification {
@@ -93,8 +90,14 @@ export function NotificationSystem() {
 
       if (error) throw error;
 
-      setNotifications(data || []);
-      setUnreadCount(data?.filter(n => !n.is_read).length || 0);
+      // Cast the data to ensure it matches our Notification type
+      const typedNotifications = (data || []).map(notification => ({
+        ...notification,
+        type: notification.type as 'message' | 'system' | 'event' | 'transaction' | 'report'
+      }));
+
+      setNotifications(typedNotifications);
+      setUnreadCount(typedNotifications.filter(n => !n.is_read).length || 0);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     }
