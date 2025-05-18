@@ -3,9 +3,9 @@ import { Card, CardContent, CardDescription } from "@/components/ui/card";
 import { Hourglass, Clock } from "lucide-react";
 
 interface TimeBankCardProps {
-  title: string;
-  value: number;
-  description: string;
+  title?: string;
+  value?: number;
+  description?: string;
   className?: string;
   // Adding compatibility with Index.tsx usage
   hoursEarned?: number;
