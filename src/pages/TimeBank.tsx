@@ -44,6 +44,7 @@ interface Transaction {
   created_at: string;
   provider_name?: string;
   recipient_name?: string;
+  updated_at: string;
 }
 
 export default function TimeBank() {
@@ -188,6 +189,7 @@ export default function TimeBank() {
 
           return {
             ...transaction,
+            status: transaction.status as "pending" | "approved" | "rejected",
             provider_name:
               providerResult.data?.full_name ||
               providerResult.data?.username ||
@@ -200,7 +202,7 @@ export default function TimeBank() {
         })
       );
 
-      setTransactions(enhancedTransactions);
+      setTransactions(enhancedTransactions as Transaction[]);
     } catch (error) {
       console.error("Error fetching transactions:", error);
       toast.error("حدث خطأ أثناء تحميل المعاملات");
