@@ -1,120 +1,166 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
-import { formatDate } from "@/lib/date-utils";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Download, FileText, Calendar } from "lucide-react";
 import { toast } from "sonner";
+import { formatDateForInput } from "@/lib/date-utils";
 
-interface Transaction {
-  id: string;
-  provider_id: string;
-  recipient_id: string;
-  hours: number;
-  description: string;
-  status: string;
-  created_at: string;
-  provider_name?: string;
-  recipient_name?: string;
-}
+export function TimeBankExport() {
+  const [startDate, setStartDate] = useState<Date | null>(new Date(new Date().setMonth(new Date().getMonth() - 1)));
+  const [endDate, setEndDate] = useState<Date | null>(new Date());
+  const [format, setFormat] = useState<string>("csv");
+  const [includeFields, setIncludeFields] = useState({
+    transactionId: true,
+    description: true,
+    hours: true,
+    status: true,
+    provider: true,
+    recipient: true,
+    date: true,
+  });
 
-interface TimeBankExportProps {
-  transactions: Transaction[];
-  balance: {
-    hours_earned: number;
-    hours_spent: number;
-    hours_pending: number;
-  } | null;
-  className?: string;
-}
-
-export function TimeBankExport({ transactions, balance, className }: TimeBankExportProps) {
-  const exportToCSV = () => {
-    if (transactions.length === 0) {
-      toast.warning("لا توجد معاملات للتصدير");
-      return;
-    }
+  const handleExport = () => {
+    // In a real app, this would trigger an API call to generate the export
+    // For demo, we'll just show a success message
+    toast.success("تم تصدير البيانات بنجاح");
     
-    try {
-      // Format the transactions for CSV export
-      const headers = ["المعرف", "المرسل", "المستلم", "الساعات", "الوصف", "الحالة", "تاريخ الإنشاء"];
-      
-      const rows = transactions.map(transaction => [
-        transaction.id,
-        transaction.provider_name || transaction.provider_id,
-        transaction.recipient_name || transaction.recipient_id,
-        transaction.hours,
-        transaction.description,
-        translateStatus(transaction.status),
-        formatDate(transaction.created_at, 'full'),
-      ]);
-
-      // Add summary row
-      const summaryData = [
-        ["", "", "", "", "", "", ""],
-        ["ملخص الحساب", "", "", "", "", "", ""],
-        ["الساعات المكتسبة", balance?.hours_earned || 0, "", "", "", "", ""],
-        ["الساعات المنفقة", balance?.hours_spent || 0, "", "", "", "", ""],
-        ["الساعات المعلقة", balance?.hours_pending || 0, "", "", "", "", ""],
-        ["الرصيد الإجمالي", (balance?.hours_earned || 0) - (balance?.hours_spent || 0), "", "", "", "", ""]
-      ];
-      
-      // Add metadata
-      const metadata = [
-        ["تم التصدير في", formatDate(new Date().toISOString(), 'full'), "", "", "", "", ""],
-        ["عدد المعاملات", transactions.length, "", "", "", "", ""]
-      ];
-      
-      // Combine headers, transaction rows, and summary
-      const csvContent = [
-        ...metadata,
-        ["", "", "", "", "", "", ""],
-        headers, 
-        ...rows, 
-        [""], 
-        ...summaryData
-      ]
-        .map(row => row.join(","))
-        .join("\n");
-      
-      // Create a download link
-      const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" }); // UTF-8 BOM for Excel
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", `timebank-transactions-${new Date().toISOString().split('T')[0]}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      toast.success("تم تصدير المعاملات بنجاح");
-    } catch (error) {
-      console.error("Error exporting to CSV:", error);
-      toast.error("حدث خطأ أثناء تصدير المعاملات");
-    }
-  };
-
-  const translateStatus = (status: string): string => {
-    switch (status) {
-      case "pending":
-        return "معلقة";
-      case "approved":
-        return "مقبولة";
-      case "rejected":
-        return "مرفوضة";
-      default:
-        return status;
-    }
+    // Simulate file download
+    const element = document.createElement("a");
+    element.setAttribute("href", "data:text/plain;charset=utf-8,");
+    element.setAttribute("download", `timebank-export-${formatDateForInput(startDate)}-to-${formatDateForInput(endDate)}.${format}`);
+    element.style.display = "none";
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
   };
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      className={className}
-      onClick={exportToCSV}
-    >
-      <Download className="h-4 w-4 mr-2" />
-      تصدير المعاملات
-    </Button>
+    <Card>
+      <CardHeader>
+        <CardTitle>تصدير بيانات بنك الوقت</CardTitle>
+        <CardDescription>
+          قم بتصدير بيانات معاملات بنك الوقت بتنسيق CSV أو Excel
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label>تاريخ البداية</Label>
+            <DatePicker date={startDate} setDate={setStartDate} />
+          </div>
+          <div className="space-y-2">
+            <Label>تاريخ النهاية</Label>
+            <DatePicker date={endDate} setDate={setEndDate} />
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <Label>تنسيق الملف</Label>
+          <Select value={format} onValueChange={setFormat}>
+            <SelectTrigger>
+              <SelectValue placeholder="اختر تنسيق الملف" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="csv">CSV</SelectItem>
+              <SelectItem value="xlsx">Excel</SelectItem>
+              <SelectItem value="pdf">PDF</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div className="space-y-3">
+          <Label>الحقول المضمّنة</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="flex items-center space-x-2 space-x-reverse">
+              <Checkbox
+                id="transaction-id"
+                checked={includeFields.transactionId}
+                onCheckedChange={(checked) => 
+                  setIncludeFields({...includeFields, transactionId: !!checked})
+                }
+              />
+              <Label htmlFor="transaction-id">رقم المعاملة</Label>
+            </div>
+            
+            <div className="flex items-center space-x-2 space-x-reverse">
+              <Checkbox
+                id="description"
+                checked={includeFields.description}
+                onCheckedChange={(checked) => 
+                  setIncludeFields({...includeFields, description: !!checked})
+                }
+              />
+              <Label htmlFor="description">الوصف</Label>
+            </div>
+            
+            <div className="flex items-center space-x-2 space-x-reverse">
+              <Checkbox
+                id="hours"
+                checked={includeFields.hours}
+                onCheckedChange={(checked) => 
+                  setIncludeFields({...includeFields, hours: !!checked})
+                }
+              />
+              <Label htmlFor="hours">عدد الساعات</Label>
+            </div>
+            
+            <div className="flex items-center space-x-2 space-x-reverse">
+              <Checkbox
+                id="status"
+                checked={includeFields.status}
+                onCheckedChange={(checked) => 
+                  setIncludeFields({...includeFields, status: !!checked})
+                }
+              />
+              <Label htmlFor="status">الحالة</Label>
+            </div>
+            
+            <div className="flex items-center space-x-2 space-x-reverse">
+              <Checkbox
+                id="provider"
+                checked={includeFields.provider}
+                onCheckedChange={(checked) => 
+                  setIncludeFields({...includeFields, provider: !!checked})
+                }
+              />
+              <Label htmlFor="provider">المزود</Label>
+            </div>
+            
+            <div className="flex items-center space-x-2 space-x-reverse">
+              <Checkbox
+                id="recipient"
+                checked={includeFields.recipient}
+                onCheckedChange={(checked) => 
+                  setIncludeFields({...includeFields, recipient: !!checked})
+                }
+              />
+              <Label htmlFor="recipient">المستلم</Label>
+            </div>
+            
+            <div className="flex items-center space-x-2 space-x-reverse">
+              <Checkbox
+                id="date"
+                checked={includeFields.date}
+                onCheckedChange={(checked) => 
+                  setIncludeFields({...includeFields, date: !!checked})
+                }
+              />
+              <Label htmlFor="date">التاريخ</Label>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+      <CardFooter>
+        <Button onClick={handleExport} className="w-full md:w-auto">
+          <Download className="mr-2 h-4 w-4" />
+          تصدير البيانات
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }

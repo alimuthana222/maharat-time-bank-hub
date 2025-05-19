@@ -1,145 +1,188 @@
 
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatDate, timeAgo } from "@/lib/date-utils";
-import { Check, X, Clock, AlertCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Clock, CheckCircle, AlertCircle, HourglassIcon, Clock3 } from "lucide-react";
+import { formatDate, getRelativeDateLabel } from "@/lib/date-utils";
 
-interface Transaction {
+interface TimelineEvent {
   id: string;
-  provider_id: string;
-  recipient_id: string;
+  user: {
+    name: string;
+    avatarUrl?: string;
+  };
+  action: "provided" | "received" | "created" | "approved" | "rejected" | "canceled";
   hours: number;
   description: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
-  provider_name?: string;
-  recipient_name?: string;
+  timestamp: string;
+  status: "pending" | "completed" | "rejected" | "canceled";
 }
+
+const statusIcons = {
+  pending: <HourglassIcon className="h-4 w-4 text-amber-500" />,
+  completed: <CheckCircle className="h-4 w-4 text-green-500" />,
+  rejected: <AlertCircle className="h-4 w-4 text-red-500" />,
+  canceled: <Clock3 className="h-4 w-4 text-gray-500" />,
+};
+
+const statusColors = {
+  pending: "bg-amber-500/10 text-amber-600 border-amber-200",
+  completed: "bg-green-500/10 text-green-600 border-green-200",
+  rejected: "bg-red-500/10 text-red-600 border-red-200",
+  canceled: "bg-gray-500/10 text-gray-600 border-gray-200",
+};
+
+const actionText = {
+  provided: "قدم",
+  received: "استلم",
+  created: "أنشأ",
+  approved: "وافق على",
+  rejected: "رفض",
+  canceled: "ألغى",
+};
 
 interface TimeBankTimelineProps {
-  transactions: Transaction[];
-  currentUserId: string;
-  className?: string;
-  limit?: number;
+  events?: TimelineEvent[];
 }
 
-export function TimeBankTimeline({ transactions, currentUserId, className, limit = 5 }: TimeBankTimelineProps) {
-  const sortedTransactions = [...transactions]
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, limit);
+// Sample data for demonstration
+const sampleEvents: TimelineEvent[] = [
+  {
+    id: "1",
+    user: {
+      name: "أحمد محمد",
+      avatarUrl: "https://i.pravatar.cc/150?img=1",
+    },
+    action: "provided",
+    hours: 3,
+    description: "تدريس مادة الرياضيات",
+    timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    status: "completed",
+  },
+  {
+    id: "2",
+    user: {
+      name: "سارة عبدالله",
+      avatarUrl: "https://i.pravatar.cc/150?img=5",
+    },
+    action: "created",
+    hours: 2,
+    description: "مساعدة في تصميم شعار",
+    timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+    status: "pending",
+  },
+  {
+    id: "3",
+    user: {
+      name: "خالد العمري",
+      avatarUrl: "https://i.pravatar.cc/150?img=3",
+    },
+    action: "received",
+    hours: 1.5,
+    description: "مساعدة في برمجة موقع",
+    timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    status: "completed",
+  },
+  {
+    id: "4",
+    user: {
+      name: "ليلى أحمد",
+      avatarUrl: "https://i.pravatar.cc/150?img=9",
+    },
+    action: "rejected",
+    hours: 4,
+    description: "ترجمة مستندات قانونية",
+    timestamp: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+    status: "rejected",
+  },
+  {
+    id: "5",
+    user: {
+      name: "محمد العلي",
+      avatarUrl: "https://i.pravatar.cc/150?img=14",
+    },
+    action: "approved",
+    hours: 2,
+    description: "تصميم عرض تقديمي",
+    timestamp: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000).toISOString(),
+    status: "completed",
+  },
+];
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "approved":
-        return <Check className="h-5 w-5 text-green-500" />;
-      case "rejected":
-        return <X className="h-5 w-5 text-red-500" />;
-      case "pending":
-        return <Clock className="h-5 w-5 text-amber-500" />;
-      default:
-        return <AlertCircle className="h-5 w-5 text-muted-foreground" />;
-    }
-  };
+export function TimeBankTimeline({ events = sampleEvents }: TimeBankTimelineProps) {
+  // Group events by date
+  const groupedEvents = events.reduce<Record<string, TimelineEvent[]>>(
+    (groups, event) => {
+      const dateKey = getRelativeDateLabel(event.timestamp);
+      if (!groups[dateKey]) {
+        groups[dateKey] = [];
+      }
+      groups[dateKey].push(event);
+      return groups;
+    },
+    {}
+  );
 
-  const getStatusClass = (status: string) => {
-    switch (status) {
-      case "approved":
-        return "bg-green-500/10 border-green-500/20";
-      case "rejected":
-        return "bg-red-500/10 border-red-500/20";
-      case "pending":
-        return "bg-amber-500/10 border-amber-500/20";
-      default:
-        return "bg-muted border-muted-foreground/20";
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "approved":
-        return "مقبولة";
-      case "rejected":
-        return "مرفوضة";
-      case "pending":
-        return "معلقة";
-      default:
-        return status;
-    }
-  };
-
-  const getTransactionText = (transaction: Transaction) => {
-    const isProvider = transaction.provider_id === currentUserId;
-    
-    if (isProvider) {
-      return {
-        title: `قمت بتقديم ${transaction.hours} ساعات إلى ${transaction.recipient_name || "مستخدم"}`,
-        description: transaction.description,
-        isPending: transaction.status === "pending",
-        isPositive: false,
-      };
-    } else {
-      return {
-        title: `استلمت ${transaction.hours} ساعات من ${transaction.provider_name || "مستخدم"}`,
-        description: transaction.description,
-        isPending: transaction.status === "pending",
-        isPositive: true,
-      };
-    }
-  };
+  // Sort dates by recency
+  const sortedDates = Object.keys(groupedEvents).sort((a, b) => {
+    if (a === "اليوم") return -1;
+    if (b === "اليوم") return 1;
+    if (a === "الأمس") return -1;
+    if (b === "الأمس") return 1;
+    return 0;
+  });
 
   return (
-    <Card className={className}>
+    <Card>
       <CardHeader>
         <CardTitle>سجل المعاملات</CardTitle>
+        <CardDescription>تاريخ معاملات بنك الوقت الخاص بك</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-8">
-          {sortedTransactions.length > 0 ? (
-            sortedTransactions.map((transaction, index) => {
-              const transactionText = getTransactionText(transaction);
+          {sortedDates.map((dateKey) => (
+            <div key={dateKey} className="space-y-4">
+              <h3 className="text-md font-medium text-muted-foreground border-b pb-1">{dateKey}</h3>
               
-              return (
-                <div key={transaction.id} className="flex">
-                  <div className="mr-4 flex flex-col items-center">
-                    <div className={cn(
-                      "rounded-full p-1",
-                      getStatusClass(transaction.status)
-                    )}>
-                      {getStatusIcon(transaction.status)}
+              <div className="space-y-4">
+                {groupedEvents[dateKey].map((event) => (
+                  <div key={event.id} className="flex items-start gap-4">
+                    <div className="flex-shrink-0 mt-1">
+                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                        <Clock className="h-4 w-4" />
+                      </div>
                     </div>
-                    {index < sortedTransactions.length - 1 && (
-                      <div className="h-full w-px bg-border mt-1" />
-                    )}
-                  </div>
-                  <div className="pb-8">
-                    <div className="flex items-center mb-1">
-                      <h3 className="text-sm font-medium">
-                        {transactionText.title}
-                      </h3>
-                      <span className={cn(
-                        "mx-2 px-2 py-0.5 rounded-full text-xs",
-                        getStatusClass(transaction.status)
-                      )}>
-                        {getStatusText(transaction.status)}
-                      </span>
+                    
+                    <div className="flex-grow space-y-1">
+                      <div className="flex items-center">
+                        <p className="font-medium text-sm">
+                          <span className="font-bold">{event.user.name}</span>{" "}
+                          {actionText[event.action]}{" "}
+                          <span className="font-bold text-primary">{event.hours} ساعة</span>
+                        </p>
+                        
+                        <Badge
+                          variant="outline"
+                          className={`mr-2 ${statusColors[event.status]}`}
+                        >
+                          <div className="flex items-center gap-1">
+                            {statusIcons[event.status]}
+                            <span>{event.status === "completed" ? "مكتمل" : event.status === "pending" ? "قيد الانتظار" : event.status === "rejected" ? "مرفوض" : "ملغي"}</span>
+                          </div>
+                        </Badge>
+                      </div>
+                      
+                      <p className="text-sm text-muted-foreground">{event.description}</p>
+                      
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(event.timestamp, 'time')}
+                      </p>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-1">
-                      {transactionText.description}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {timeAgo(transaction.created_at)} • {formatDate(transaction.created_at, 'short')}
-                    </p>
                   </div>
-                </div>
-              );
-            })
-          ) : (
-            <p className="text-center text-muted-foreground py-8">
-              لا توجد معاملات لعرضها
-            </p>
-          )}
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>

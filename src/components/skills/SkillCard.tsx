@@ -3,29 +3,28 @@ import React from "react";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Star, Clock, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Star } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-interface SkillCardProps {
+export interface SkillCardProps {
   id: string;
   title: string;
   category: string;
   description: string;
   hourlyRate: number;
-  provider: {
-    name: string;
-    university: string;
-    avatarUrl?: string;
-  };
   rating?: number;
   reviewCount?: number;
+  provider: {
+    name: string;
+    university?: string;
+    avatarUrl?: string;
+  };
   badges?: string[];
 }
 
@@ -35,11 +34,20 @@ export function SkillCard({
   category,
   description,
   hourlyRate,
+  rating,
+  reviewCount,
   provider,
-  rating = 0,
-  reviewCount = 0,
-  badges = [],
+  badges,
 }: SkillCardProps) {
+  // Function to get initials for avatar fallback
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase();
+  };
+
   // Function to get color for category
   const getCategoryColor = (category: string) => {
     switch (category.toLowerCase()) {
@@ -63,85 +71,62 @@ export function SkillCard({
         return "bg-gray-500/10 text-gray-600 border-gray-200";
     }
   };
-  
-  // Get provider initials for avatar fallback
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase();
-  };
 
   return (
-    <Card className="overflow-hidden transition-all hover:shadow-md">
-      <CardHeader className="p-0">
-        <div className="bg-muted/30 p-6">
-          <div className="flex justify-between items-start mb-4">
-            <Badge
-              variant="outline"
-              className={`${getCategoryColor(category)}`}
-            >
-              {category}
-            </Badge>
-
-            {badges && badges.length > 0 && (
-              <div className="flex gap-2">
-                {badges.map((badge, index) => (
-                  <Badge key={index} variant="secondary">
-                    {badge}
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
-          
-          <h3 className="text-xl font-bold mb-2">{title}</h3>
-          
-          <div className="flex items-center gap-3">
-            <div className="flex items-center">
-              <Star className="h-4 w-4 fill-amber-500 text-amber-500 mr-1" />
-              <span className="text-sm font-medium">
-                {rating > 0 ? rating.toFixed(1) : "جديد"}
-              </span>
+    <Card className="overflow-hidden transition-all hover:shadow-md h-full flex flex-col">
+      <CardHeader className="p-6 pb-4 border-b">
+        <Badge
+          variant="outline"
+          className={`mb-3 ${getCategoryColor(category)}`}
+        >
+          {category}
+        </Badge>
+        <h3 className="text-xl font-bold mb-1">{title}</h3>
+        
+        {(rating !== undefined && reviewCount !== undefined) && (
+          <div className="flex items-center text-sm text-muted-foreground">
+            <div className="flex items-center mr-2">
+              <Star className="h-4 w-4 fill-amber-400 text-amber-400 mr-1" />
+              <span className="font-medium">{rating.toFixed(1)}</span>
             </div>
-            
-            {reviewCount > 0 && (
-              <span className="text-xs text-muted-foreground">
-                ({reviewCount} تقييم)
-              </span>
-            )}
-            
-            <div className="flex items-center ml-auto">
-              <Clock className="h-4 w-4 mr-1 text-muted-foreground" />
-              <span className="text-sm font-medium">
-                {hourlyRate} ساعة
-              </span>
-            </div>
+            <span>({reviewCount} تقييم)</span>
           </div>
-        </div>
+        )}
       </CardHeader>
       
-      <CardContent className="pt-6">
-        <CardDescription className="line-clamp-3 h-18 mb-4">
-          {description}
-        </CardDescription>
+      <CardContent className="p-6 flex-grow">
+        <div className="line-clamp-3 h-18 mb-4">{description}</div>
         
-        <div className="flex items-center">
+        {badges && badges.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {badges.map((badge, index) => (
+              <Badge key={index} variant="secondary" className="text-xs">
+                {badge}
+              </Badge>
+            ))}
+          </div>
+        )}
+        
+        <div className="flex items-center mt-4">
           <Avatar className="h-8 w-8 mr-2">
             <AvatarImage src={provider.avatarUrl} alt={provider.name} />
             <AvatarFallback>{getInitials(provider.name)}</AvatarFallback>
           </Avatar>
-          <div>
+          <div className="flex-1">
             <div className="text-sm font-medium">{provider.name}</div>
-            <div className="text-xs text-muted-foreground">
-              {provider.university}
-            </div>
+            {provider.university && (
+              <div className="text-xs text-muted-foreground">
+                {provider.university}
+              </div>
+            )}
+          </div>
+          <div className="text-lg font-bold text-primary">
+            {hourlyRate} <span className="text-sm">ساعة</span>
           </div>
         </div>
       </CardContent>
       
-      <CardFooter className="border-t pt-4">
+      <CardFooter className="border-t p-4 mt-auto">
         <Button asChild className="w-full">
           <Link to={`/skills/${id}`} className="flex items-center justify-center">
             عرض التفاصيل

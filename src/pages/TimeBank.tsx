@@ -1,104 +1,79 @@
 
-import React, { useState } from "react";
-import { Navbar } from "@/components/layout/Navbar";
-import { useAuth } from "@/components/auth/AuthProvider";
-import { TimeBankTransactionForm } from "@/components/timebank/TimeBankTransactionForm";
-import { TimeBankStats } from "@/components/timebank/TimeBankStats";
+import React, { useEffect, useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TimeBankTabs } from "@/components/timebank/TimeBankTabs";
-import { useTimeBank } from "@/hooks/useTimeBank";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { TimeBankStats } from "@/components/timebank/TimeBankStats";
+import { TimeBankTransactionForm } from "@/components/timebank/TimeBankTransactionForm";
+import { TimeBankTransactionsList } from "@/components/timebank/TimeBankTransactionsList";
+import { TimeBankAnalytics } from "@/components/timebank/TimeBankAnalytics";
+import { TimeBankExport } from "@/components/timebank/TimeBankExport";
+import { TimeBankTimeline } from "@/components/timebank/TimeBankTimeline";
+import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/home/Footer";
 
-export default function TimeBank() {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { user } = useAuth();
-  const {
-    balance,
-    transactions,
-    loadingBalance,
-    loadingTransactions,
-    activeTab,
-    handleTabChange,
-    fetchTransactions,
-    fetchTimeBankBalance,
-  } = useTimeBank();
+const TimeBank = () => {
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleTransactionSuccess = () => {
-    setIsDialogOpen(false);
-    fetchTransactions(activeTab);
-    fetchTimeBankBalance();
-  };
+  // Simulate loading data from API
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="flex flex-col min-h-screen">
       <Navbar />
-
-      <div className="container mx-auto pt-20 pb-8 px-4">
-        <div className="flex flex-col lg:flex-row justify-between items-start gap-6">
+      <main className="flex-grow container mx-auto px-4 py-10 mt-16">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold mb-2">بنك الوقت</h1>
-            <p className="text-muted-foreground mb-6">
-              تبادل المهارات والخدمات من خلال وحدة الوقت
+            <p className="text-muted-foreground">
+              تبادل المهارات والخدمات مع الطلاب الآخرين على أساس ساعة بساعة
             </p>
           </div>
-
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                <span>معاملة جديدة</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>إنشاء معاملة جديدة</DialogTitle>
-                <DialogDescription>
-                  أضف معاملة جديدة إلى بنك الوقت الخاص بك
-                </DialogDescription>
-              </DialogHeader>
-              <TimeBankTransactionForm onSuccess={handleTransactionSuccess} />
-            </DialogContent>
-          </Dialog>
+          <TimeBankStats />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <TimeBankStats balance={balance} loading={loadingBalance} />
-        </div>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle>معاملات بنك الوقت</CardTitle>
-            <CardDescription>
-              جميع المعاملات التي قمت بإجرائها أو استلامها
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <TimeBankTabs
-              transactions={transactions}
-              loadingTransactions={loadingTransactions}
-              activeTab={activeTab}
-              onTabChange={handleTabChange}
-              currentUserId={user?.id || ""}
-              onStatusChange={() => fetchTransactions(activeTab)}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid grid-cols-1 sm:grid-cols-5 mb-8">
+            <TabsTrigger value="dashboard">لوحة التحكم</TabsTrigger>
+            <TabsTrigger value="transactions">المعاملات</TabsTrigger>
+            <TabsTrigger value="analytics">التحليلات</TabsTrigger>
+            <TabsTrigger value="timeline">السجل الزمني</TabsTrigger>
+            <TabsTrigger value="export">تصدير</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="dashboard" className="space-y-6">
+            <TimeBankTabs 
+              isLoading={isLoading} 
+              onCreateTransaction={() => setActiveTab("transactions")}
             />
-          </CardContent>
-        </Card>
-      </div>
+          </TabsContent>
+          
+          <TabsContent value="transactions" className="space-y-6">
+            <TimeBankTransactionForm />
+            <TimeBankTransactionsList />
+          </TabsContent>
+          
+          <TabsContent value="analytics" className="space-y-6">
+            <TimeBankAnalytics />
+          </TabsContent>
+          
+          <TabsContent value="timeline" className="space-y-6">
+            <TimeBankTimeline />
+          </TabsContent>
+          
+          <TabsContent value="export" className="space-y-6">
+            <TimeBankExport />
+          </TabsContent>
+        </Tabs>
+      </main>
+      <Footer />
     </div>
   );
-}
+};
+
+export default TimeBank;

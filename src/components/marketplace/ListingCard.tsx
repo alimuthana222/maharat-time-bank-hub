@@ -1,4 +1,3 @@
-
 import React from "react";
 import {
   Card,
@@ -14,7 +13,7 @@ import { Link } from "react-router-dom";
 import { ArrowUpRight, Clock, Calendar } from "lucide-react";
 import { timeAgo } from "@/lib/date-utils";
 
-interface ListingCardProps {
+export interface ListingCardProps {
   id: string;
   title: string;
   type: "offer" | "need";

@@ -1,59 +1,118 @@
 
-import React, { useState } from "react";
-import { Navbar } from "@/components/layout/Navbar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { 
-  Form, 
-  FormControl, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
-} from "@/components/ui/form";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { useNavigate, Navigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { Loader2, Mail, Lock, User, Building, ArrowLeft, CheckCircle } from "lucide-react";
+import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/home/Footer";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 // Login form schema
 const loginSchema = z.object({
-  email: z.string().email("بريد إلكتروني غير صالح"),
-  password: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل"),
+  email: z.string().email({
+    message: "يرجى إدخال بريد إلكتروني صالح",
+  }),
+  password: z.string().min(8, {
+    message: "كلمة المرور يجب أن تكون على الأقل 8 أحرف",
+  }),
 });
 
 // Registration form schema
-const registrationSchema = z.object({
-  username: z.string().min(3, "اسم المستخدم يجب أن يكون 3 أحرف على الأقل"),
-  fullName: z.string().min(2, "الاسم الكامل مطلوب"),
-  email: z.string().email("بريد إلكتروني غير صالح"),
-  university: z.string().optional(),
-  password: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل"),
-  confirmPassword: z.string().min(6, "كلمة المرور يجب أن تكون 6 أحرف على الأقل"),
-}).refine(data => data.password === data.confirmPassword, {
-  message: "كلمات المرور غير متطابقة",
-  path: ["confirmPassword"],
+const registerSchema = z.object({
+  email: z.string().email({
+    message: "يرجى إدخال بريد إلكتروني صالح",
+  }),
+  password: z.string().min(8, {
+    message: "كلمة المرور يجب أن تكون على الأقل 8 أحرف",
+  }),
+  username: z.string().min(3, {
+    message: "اسم المستخدم يجب أن يكون على الأقل 3 أحرف",
+  }),
+  fullName: z.string().min(3, {
+    message: "الاسم الكامل يجب أن يكون على الأقل 3 أحرف",
+  }),
+  university: z.string().min(2, {
+    message: "يرجى اختيار الجامعة",
+  }),
 });
 
+const universities = [
+  "جامعة الملك سعود",
+  "جامعة الملك فهد للبترول والمعادن",
+  "جامعة الملك عبد العزيز",
+  "جامعة الأميرة نورة بنت عبد الرحمن",
+  "جامعة الإمام محمد بن سعود الإسلامية",
+  "الجامعة الإسلامية",
+  "جامعة أم القرى",
+  "جامعة الملك فيصل",
+  "جامعة الملك خالد",
+  "جامعة القصيم",
+  "جامعة طيبة",
+  "جامعة الطائف",
+  "جامعة حائل",
+  "جامعة جازان",
+  "جامعة الباحة",
+  "جامعة الحدود الشمالية",
+  "جامعة نجران",
+  "جامعة الجوف",
+  "جامعة الأمير سطام بن عبد العزيز",
+  "جامعة شقراء",
+  "جامعة الأمير محمد بن فهد",
+  "جامعة الفيصل",
+  "جامعة دار العلوم",
+  "جامعة عفت",
+  "جامعة الأمير سلطان",
+];
+
 export default function Auth() {
+  const navigate = useNavigate();
   const { user, signIn, signUp } = useAuth();
   const [activeTab, setActiveTab] = useState("login");
-  const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [registerLoading, setRegisterLoading] = useState(false);
+  const [registerSuccess, setRegisterSuccess] = useState(false);
 
   // Redirect if already logged in
-  if (user) {
-    return <Navigate to="/" replace />;
-  }
+  useEffect(() => {
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
 
   // Login form
-  const loginForm = useForm<z.infer<typeof loginSchema>>({
+  const loginForm = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
@@ -62,221 +121,318 @@ export default function Auth() {
   });
 
   // Registration form
-  const registrationForm = useForm<z.infer<typeof registrationSchema>>({
-    resolver: zodResolver(registrationSchema),
+  const registerForm = useForm({
+    resolver: zodResolver(registerSchema),
     defaultValues: {
+      email: "",
+      password: "",
       username: "",
       fullName: "",
-      email: "",
       university: "",
-      password: "",
-      confirmPassword: "",
     },
   });
 
-  // Handle login
-  const onLoginSubmit = async (values: z.infer<typeof loginSchema>) => {
-    setIsLoading(true);
+  const onLoginSubmit = async (values) => {
+    setLoginLoading(true);
     try {
       const { error } = await signIn(values.email, values.password);
-      
       if (error) {
-        toast.error(error.message || "فشل تسجيل الدخول، يرجى المحاولة مرة أخرى");
+        toast.error(error.message || "فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.");
       } else {
-        toast.success("تم تسجيل الدخول بنجاح");
+        toast.success("تم تسجيل الدخول بنجاح!");
         navigate("/");
       }
-    } catch (error: any) {
-      toast.error(error?.message || "حدث خطأ أثناء تسجيل الدخول");
+    } catch (error) {
+      toast.error("حدث خطأ أثناء تسجيل الدخول");
     } finally {
-      setIsLoading(false);
+      setLoginLoading(false);
     }
   };
 
-  // Handle registration
-  const onRegisterSubmit = async (values: z.infer<typeof registrationSchema>) => {
-    setIsLoading(true);
+  const onRegisterSubmit = async (values) => {
+    setRegisterLoading(true);
     try {
-      const userData = {
+      const { error } = await signUp(values.email, values.password, {
         username: values.username,
         fullName: values.fullName,
         university: values.university,
-      };
-      
-      const { error } = await signUp(values.email, values.password, userData);
+      });
       
       if (error) {
-        toast.error(error.message || "فشل إنشاء الحساب، يرجى المحاولة مرة أخرى");
+        toast.error(error.message || "فشل إنشاء الحساب. يرجى المحاولة مرة أخرى.");
       } else {
-        toast.success("تم إنشاء الحساب بنجاح! يرجى التحقق من بريدك الإلكتروني للتفعيل.");
-        setActiveTab("login");
+        setRegisterSuccess(true);
+        toast.success("تم إنشاء الحساب بنجاح!");
       }
-    } catch (error: any) {
-      toast.error(error?.message || "حدث خطأ أثناء إنشاء الحساب");
+    } catch (error) {
+      toast.error("حدث خطأ أثناء إنشاء الحساب");
     } finally {
-      setIsLoading(false);
+      setRegisterLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="flex flex-col min-h-screen">
       <Navbar />
-      
-      <div className="container mx-auto py-16 flex flex-col items-center">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">مرحباً بك في مهارات</CardTitle>
-            <CardDescription>
-              منصة تبادل المهارات والخدمات للطلاب الجامعيين
-            </CardDescription>
-          </CardHeader>
-          
-          <CardContent>
+      <main className="flex-grow flex items-center justify-center pt-16 px-4 py-12">
+        <div className="w-full max-w-md">
+          {registerSuccess ? (
+            <Card className="w-full">
+              <CardHeader className="text-center">
+                <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                  <CheckCircle className="h-6 w-6 text-primary" />
+                </div>
+                <CardTitle className="text-2xl">تم إنشاء الحساب بنجاح!</CardTitle>
+                <CardDescription>
+                  تم إنشاء حسابك بنجاح. يرجى التحقق من بريدك الإلكتروني لتأكيد حسابك.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col items-center space-y-4">
+                <p className="text-center text-muted-foreground">
+                  تم إرسال رسالة تأكيد إلى بريدك الإلكتروني. يرجى الضغط على الرابط في البريد لتأكيد حسابك والبدء في استخدام منصة مهارات.
+                </p>
+              </CardContent>
+              <CardFooter>
+                <Button className="w-full" onClick={() => setActiveTab("login")}>
+                  العودة إلى تسجيل الدخول
+                </Button>
+              </CardFooter>
+            </Card>
+          ) : (
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsList className="grid grid-cols-2 mb-8">
                 <TabsTrigger value="login">تسجيل الدخول</TabsTrigger>
                 <TabsTrigger value="register">إنشاء حساب</TabsTrigger>
               </TabsList>
               
-              {/* Login Form */}
               <TabsContent value="login">
-                <Form {...loginForm}>
-                  <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
-                    <FormField
-                      control={loginForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>البريد الإلكتروني</FormLabel>
-                          <FormControl>
-                            <Input placeholder="أدخل بريدك الإلكتروني" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={loginForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>كلمة المرور</FormLabel>
-                          <FormControl>
-                            <Input type="password" placeholder="●●●●●●●●" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                      تسجيل الدخول
+                <Card>
+                  <CardHeader className="space-y-1">
+                    <CardTitle className="text-2xl">تسجيل الدخول</CardTitle>
+                    <CardDescription>
+                      أدخل بريدك الإلكتروني وكلمة المرور للدخول إلى حسابك
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Form {...loginForm}>
+                      <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                        <FormField
+                          control={loginForm.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>البريد الإلكتروني</FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                                  <Input placeholder="أدخل بريدك الإلكتروني" className="pl-10" {...field} />
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={loginForm.control}
+                          name="password"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>كلمة المرور</FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                                  <Input
+                                    type="password"
+                                    placeholder="كلمة المرور"
+                                    className="pl-10"
+                                    {...field}
+                                  />
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <div className="text-sm text-right">
+                          <Link to="/reset-password" className="text-primary hover:underline">
+                            نسيت كلمة المرور؟
+                          </Link>
+                        </div>
+                        <Button type="submit" className="w-full" disabled={loginLoading}>
+                          {loginLoading ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              جاري تسجيل الدخول...
+                            </>
+                          ) : (
+                            "تسجيل الدخول"
+                          )}
+                        </Button>
+                      </form>
+                    </Form>
+                  </CardContent>
+                  <CardFooter className="border-t pt-4">
+                    <Button variant="outline" className="w-full" asChild>
+                      <Link to="/" className="flex items-center justify-center">
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        العودة للصفحة الرئيسية
+                      </Link>
                     </Button>
-                  </form>
-                </Form>
+                  </CardFooter>
+                </Card>
               </TabsContent>
               
-              {/* Registration Form */}
               <TabsContent value="register">
-                <Form {...registrationForm}>
-                  <form onSubmit={registrationForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                    <FormField
-                      control={registrationForm.control}
-                      name="username"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>اسم المستخدم</FormLabel>
-                          <FormControl>
-                            <Input placeholder="أدخل اسم المستخدم" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={registrationForm.control}
-                      name="fullName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>الاسم الكامل</FormLabel>
-                          <FormControl>
-                            <Input placeholder="أدخل اسمك الكامل" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={registrationForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>البريد الإلكتروني</FormLabel>
-                          <FormControl>
-                            <Input placeholder="أدخل بريدك الإلكتروني" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={registrationForm.control}
-                      name="university"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>الجامعة</FormLabel>
-                          <FormControl>
-                            <Input placeholder="(اختياري) أدخل اسم جامعتك" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={registrationForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>كلمة المرور</FormLabel>
-                          <FormControl>
-                            <Input type="password" placeholder="●●●●●●●●" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={registrationForm.control}
-                      name="confirmPassword"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>تأكيد كلمة المرور</FormLabel>
-                          <FormControl>
-                            <Input type="password" placeholder="●●●●●●●●" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                      {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                      إنشاء حساب
+                <Card>
+                  <CardHeader className="space-y-1">
+                    <CardTitle className="text-2xl">إنشاء حساب جديد</CardTitle>
+                    <CardDescription>
+                      أدخل معلوماتك لإنشاء حساب جديد
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Form {...registerForm}>
+                      <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
+                        <FormField
+                          control={registerForm.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>البريد الإلكتروني</FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                                  <Input placeholder="أدخل بريدك الإلكتروني" className="pl-10" {...field} />
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <div className="grid grid-cols-1 gap-4">
+                          <FormField
+                            control={registerForm.control}
+                            name="username"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>اسم المستخدم</FormLabel>
+                                <FormControl>
+                                  <div className="relative">
+                                    <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                                    <Input placeholder="اسم المستخدم" className="pl-10" {...field} />
+                                  </div>
+                                </FormControl>
+                                <FormDescription>
+                                  اسم المستخدم الخاص بك في المنصة
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={registerForm.control}
+                            name="fullName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>الاسم الكامل</FormLabel>
+                                <FormControl>
+                                  <div className="relative">
+                                    <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                                    <Input placeholder="الاسم الكامل" className="pl-10" {...field} />
+                                  </div>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        <FormField
+                          control={registerForm.control}
+                          name="university"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>الجامعة</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <div className="relative">
+                                    <Building className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground pointer-events-none" />
+                                    <SelectTrigger className="pl-10">
+                                      <SelectValue placeholder="اختر جامعتك" />
+                                    </SelectTrigger>
+                                  </div>
+                                </FormControl>
+                                <SelectContent className="max-h-80">
+                                  {universities.map((university) => (
+                                    <SelectItem key={university} value={university}>
+                                      {university}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={registerForm.control}
+                          name="password"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>كلمة المرور</FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                                  <Input
+                                    type="password"
+                                    placeholder="كلمة المرور"
+                                    className="pl-10"
+                                    {...field}
+                                  />
+                                </div>
+                              </FormControl>
+                              <FormDescription>
+                                يجب أن تكون كلمة المرور على الأقل 8 أحرف
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <Button type="submit" className="w-full" disabled={registerLoading}>
+                          {registerLoading ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              جاري إنشاء الحساب...
+                            </>
+                          ) : (
+                            "إنشاء الحساب"
+                          )}
+                        </Button>
+                      </form>
+                    </Form>
+                  </CardContent>
+                  <CardFooter className="flex flex-col border-t pt-4">
+                    <p className="text-sm text-center text-muted-foreground mb-4">
+                      بالتسجيل أنت توافق على{" "}
+                      <Link to="/terms" className="text-primary hover:underline">
+                        شروط الاستخدام
+                      </Link>{" "}
+                      و{" "}
+                      <Link to="/privacy" className="text-primary hover:underline">
+                        سياسة الخصوصية
+                      </Link>
+                      .
+                    </p>
+                    <Button variant="outline" className="w-full" onClick={() => setActiveTab("login")}>
+                      لديك حساب بالفعل؟ تسجيل الدخول
                     </Button>
-                  </form>
-                </Form>
+                  </CardFooter>
+                </Card>
               </TabsContent>
             </Tabs>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </div>
+      </main>
+      <Footer />
     </div>
   );
 }

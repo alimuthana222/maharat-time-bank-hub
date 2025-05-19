@@ -1,183 +1,125 @@
 
 import React from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/components/auth/AuthProvider";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import {
-  CheckCircle,
-  XCircle,
-  Clock,
-  User,
-  CalendarClock,
-  ArrowRight,
-  ArrowLeft,
-  Loader2
-} from "lucide-react";
+import { CheckCircle, XCircle, Clock, ArrowRight } from "lucide-react";
+import { timeAgo } from "@/lib/date-utils";
 import { toast } from "sonner";
-import { formatDistanceToNow } from "date-fns";
-import { ar } from "date-fns/locale";
 
-interface Transaction {
-  id: string;
-  provider_id: string;
-  recipient_id: string;
-  hours: number;
-  description: string;
-  status: "pending" | "approved" | "rejected";
-  created_at: string;
-  provider_name?: string;
-  recipient_name?: string;
+export interface TimeBankTransactionUser {
+  name: string;
+  avatarUrl?: string;
 }
 
-interface TimeBankTransactionProps {
-  transaction: Transaction;
-  currentUserId: string;
-  onStatusChange?: () => void;
+export interface TimeBankTransactionProps {
+  transaction: {
+    id: string;
+    providerId: string;
+    recipientId: string;
+    hours: number;
+    status: "pending" | "completed" | "rejected" | "canceled";
+    createdAt: string;
+    description: string;
+    provider: TimeBankTransactionUser;
+    recipient: TimeBankTransactionUser;
+  };
+  onApprove?: (id: string) => void;
+  onReject?: (id: string) => void;
+  showActions?: boolean;
 }
 
-export function TimeBankTransaction({
+export function TimeBankTransaction({ 
   transaction,
-  currentUserId,
-  onStatusChange,
+  onApprove,
+  onReject,
+  showActions = true
 }: TimeBankTransactionProps) {
-  const [processing, setProcessing] = React.useState(false);
-  const { isAdmin, isModerator } = useAuth();
-
-  const isProvider = transaction.provider_id === currentUserId;
-  const isRecipient = transaction.recipient_id === currentUserId;
-  const canApprove = isRecipient || isAdmin() || isModerator();
-  const isPending = transaction.status === "pending";
-
-  const handleStatusChange = async (status: "approved" | "rejected") => {
-    setProcessing(true);
-    try {
-      const { error } = await supabase
-        .from("time_bank_transactions")
-        .update({ status })
-        .eq("id", transaction.id);
-
-      if (error) throw error;
-
-      toast.success(
-        `تم ${
-          status === "approved" ? "قبول" : "رفض"
-        } المعاملة بنجاح`
-      );
-
-      if (onStatusChange) {
-        onStatusChange();
-      }
-    } catch (error) {
-      console.error("Error updating transaction status:", error);
-      toast.error("حدث خطأ أثناء تحديث حالة المعاملة");
-    } finally {
-      setProcessing(false);
-    }
+  // Get initials for avatar fallback
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase();
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "pending":
-        return (
-          <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">
-            <Clock className="h-3 w-3 mr-1" />
-            في انتظار الموافقة
-          </Badge>
-        );
-      case "approved":
-        return (
-          <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
-            <CheckCircle className="h-3 w-3 mr-1" />
-            تمت الموافقة
-          </Badge>
-        );
-      case "rejected":
-        return (
-          <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">
-            <XCircle className="h-3 w-3 mr-1" />
-            تم الرفض
-          </Badge>
-        );
-      default:
-        return null;
+  // Define status badge properties
+  const statusBadge = {
+    pending: { label: "قيد الانتظار", color: "bg-amber-500/10 text-amber-600 border-amber-200" },
+    completed: { label: "مكتمل", color: "bg-green-500/10 text-green-600 border-green-200" },
+    rejected: { label: "مرفوض", color: "bg-red-500/10 text-red-600 border-red-200" },
+    canceled: { label: "ملغي", color: "bg-gray-500/10 text-gray-600 border-gray-200" },
+  };
+  
+  const handleApprove = () => {
+    if (onApprove) {
+      onApprove(transaction.id);
+    } else {
+      // Demo functionality
+      toast.success("تم قبول المعاملة بنجاح");
     }
   };
-
-  const formatDate = (dateString: string) => {
-    try {
-      return formatDistanceToNow(new Date(dateString), {
-        addSuffix: true,
-        locale: ar,
-      });
-    } catch (error) {
-      return dateString;
+  
+  const handleReject = () => {
+    if (onReject) {
+      onReject(transaction.id);
+    } else {
+      // Demo functionality
+      toast.success("تم رفض المعاملة");
     }
   };
 
   return (
-    <Card className={isPending ? "border-yellow-300 shadow-sm" : ""}>
-      <CardContent className="p-4">
-        <div className="flex flex-col space-y-3">
-          <div className="flex justify-between items-start">
-            <div className="flex items-center gap-2">
-              {isProvider ? (
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <User className="h-4 w-4 mr-1" />
-                  <span>أنت</span>
-                  <ArrowRight className="h-4 w-4 mx-1" />
-                  <span>{transaction.recipient_name}</span>
-                </div>
-              ) : (
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <User className="h-4 w-4 mr-1" />
-                  <span>{transaction.provider_name}</span>
-                  <ArrowLeft className="h-4 w-4 mx-1" />
-                  <span>أنت</span>
-                </div>
-              )}
-            </div>
-            {getStatusBadge(transaction.status)}
+    <div className="py-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="flex items-center -space-x-2 space-x-reverse">
+            <Avatar className="border-2 border-background">
+              <AvatarImage src={transaction.provider.avatarUrl} alt={transaction.provider.name} />
+              <AvatarFallback>{getInitials(transaction.provider.name)}</AvatarFallback>
+            </Avatar>
+            <Avatar className="border-2 border-background">
+              <AvatarImage src={transaction.recipient.avatarUrl} alt={transaction.recipient.name} />
+              <AvatarFallback>{getInitials(transaction.recipient.name)}</AvatarFallback>
+            </Avatar>
           </div>
-
-          <p className="text-lg font-semibold">
-            {transaction.hours} {transaction.hours === 1 ? "ساعة" : "ساعات"}
-          </p>
-
-          <p className="text-sm">{transaction.description}</p>
-
-          <div className="flex items-center text-xs text-muted-foreground">
-            <CalendarClock className="h-3 w-3 mr-1" />
-            <span>{formatDate(transaction.created_at)}</span>
+          
+          <div className="space-y-1">
+            <div className="flex items-center flex-wrap gap-2">
+              <span className="font-medium">{transaction.provider.name}</span>
+              <ArrowRight className="h-3.5 w-3.5 text-muted-foreground mx-1" />
+              <span className="font-medium">{transaction.recipient.name}</span>
+              <Badge variant="outline" className={statusBadge[transaction.status].color}>
+                {statusBadge[transaction.status].label}
+              </Badge>
+            </div>
+            
+            <p className="text-sm text-muted-foreground">{transaction.description}</p>
+            
+            <div className="flex items-center text-sm">
+              <Clock className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+              <span className="text-muted-foreground">{timeAgo(transaction.createdAt)}</span>
+              <span className="mx-2 text-muted-foreground">•</span>
+              <span className="font-medium text-primary">{transaction.hours} ساعة</span>
+            </div>
           </div>
         </div>
-      </CardContent>
-      {isPending && canApprove && (
-        <CardFooter className="flex justify-end gap-2 p-4 pt-0">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={processing}
-            onClick={() => handleStatusChange("rejected")}
-          >
-            {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4 mr-1" />}
-            رفض
-          </Button>
-          <Button
-            size="sm"
-            disabled={processing}
-            onClick={() => handleStatusChange("approved")}
-          >
-            {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-1" />}
-            قبول
-          </Button>
-        </CardFooter>
-      )}
-    </Card>
+        
+        {showActions && transaction.status === "pending" && (
+          <div className="flex items-center space-x-2 space-x-reverse">
+            <Button size="sm" variant="outline" className="h-8 px-3" onClick={handleApprove}>
+              <CheckCircle className="mr-1 h-3.5 w-3.5" />
+              قبول
+            </Button>
+            <Button size="sm" variant="outline" className="h-8 px-3" onClick={handleReject}>
+              <XCircle className="mr-1 h-3.5 w-3.5" />
+              رفض
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
