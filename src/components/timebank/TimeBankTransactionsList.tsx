@@ -3,7 +3,7 @@ import React from "react";
 import { TimeBankTransaction } from "@/components/timebank/TimeBankTransaction";
 import { Loader2 } from "lucide-react";
 
-interface Transaction {
+export interface Transaction {
   id: string;
   provider_id: string;
   recipient_id: string;

@@ -1,212 +1,144 @@
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, MapPin, Clock, Users, CalendarPlus, Share2, Bell } from "lucide-react";
+import React from "react";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
-import { toast } from "sonner";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useAuth } from "@/context/AuthContext";
+import { Calendar, Clock, MapPin, Users } from "lucide-react";
 
-interface EventProps {
+export interface EventProps {
   id: string;
   title: string;
   description: string;
+  startDate: string;
+  endDate: string;
   location: string;
-  type: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  maxAttendees: number | null;
-  attendees: Array<{ id: string; name: string }>;
   organizer: {
     id: string;
     name: string;
+    avatarUrl: string;
+    university?: string;
   };
-  createdAt: string;
+  attendees: number;
+  maxAttendees: number;
+  category: string;
+  tags: string[];
+  isOnline: boolean;
+  isAttending: boolean;
+  imageUrl: string;
 }
 
-export function EventCard({ event }: { event: EventProps }) {
-  const [showDetails, setShowDetails] = useState(false);
-  const [isAttending, setIsAttending] = useState(false);
-  const { user } = useAuth();
+interface EventCardProps {
+  event: EventProps;
+  isLoggedIn?: boolean;
+}
 
-  const formattedDate = event.date ? format(new Date(event.date), "EEEE d MMMM yyyy", { locale: ar }) : "";
+export function EventCard({ event, isLoggedIn = false }: EventCardProps) {
+  const startDate = new Date(event.startDate);
+  const endDate = new Date(event.endDate);
   
-  const formatTime = (time: string) => {
-    return new Date(`2000-01-01T${time}`).toLocaleTimeString('ar-SA', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
+  const formattedDate = format(startDate, 'EEEE d MMMM yyyy', { locale: ar });
+  const formattedStartTime = format(startDate, 'h:mm a', { locale: ar });
+  const formattedEndTime = format(endDate, 'h:mm a', { locale: ar });
+  
+  const availableSeats = event.maxAttendees - event.attendees;
+  const isFullyBooked = availableSeats <= 0;
+  
+  const handleAttendanceToggle = () => {
+    // This would normally be connected to your API
+    console.log(event.isAttending ? "Leaving event" : "Joining event", event.id);
   };
-
-  const handleAttend = () => {
-    if (!user) {
-      toast.error("يرجى تسجيل الدخول للانضمام إلى الفعالية");
-      return;
-    }
-
-    if (isAttending) {
-      toast.info("تم إلغاء تسجيلك في هذه الفعالية");
-    } else {
-      toast.success("تم تسجيلك في الفعالية بنجاح");
-    }
-    setIsAttending(!isAttending);
-  };
-
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: event.title,
-        text: `الفعالية: ${event.title} | المكان: ${event.location} | التاريخ: ${formattedDate}`,
-        url: window.location.href,
-      }).catch((error) => console.log('Error sharing', error));
-    } else {
-      // Fallback
-      navigator.clipboard.writeText(`${event.title} - ${formattedDate} - ${event.location}`)
-        .then(() => toast.success("تم نسخ تفاصيل الفعالية إلى الحافظة"))
-        .catch(() => toast.error("حدث خطأ أثناء نسخ التفاصيل"));
-    }
-  };
-
-  const handleRemind = () => {
-    toast.success("سيتم تذكيرك قبل موعد الفعالية");
-  };
-
-  const getEventTypeInArabic = (type: string) => {
-    const types: Record<string, string> = {
-      academic: "أكاديمية",
-      cultural: "ثقافية",
-      social: "اجتماعية",
-      professional: "مهنية",
-      entertainment: "ترفيهية",
-      sports: "رياضية",
-      volunteer: "تطوعية",
-      other: "أخرى"
-    };
-    return types[type] || type;
-  };
-
+  
   return (
-    <>
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex justify-between items-start">
-            <CardTitle className="text-lg">{event.title}</CardTitle>
-            <Badge>{getEventTypeInArabic(event.type)}</Badge>
+    <Card className="overflow-hidden h-full flex flex-col">
+      <div className="relative h-48">
+        <img 
+          src={event.imageUrl} 
+          alt={event.title}
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute top-2 right-2">
+          <Badge className="bg-primary text-primary-foreground">
+            {event.category}
+          </Badge>
+        </div>
+      </div>
+      
+      <CardContent className="flex-grow p-5">
+        <h3 className="text-xl font-bold mb-2">{event.title}</h3>
+        
+        <div className="space-y-3 text-sm">
+          <div className="flex items-start">
+            <Calendar className="h-4 w-4 mr-2 mt-0.5 text-muted-foreground" />
+            <span>{formattedDate}</span>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span>{formattedDate}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <span>من {formatTime(event.startTime)} إلى {formatTime(event.endTime)}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-              <span>{event.location}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              <span>
-                {event.attendees.length} مشارك
-                {event.maxAttendees && ` (الحد الأقصى: ${event.maxAttendees})`}
-              </span>
-            </div>
-            <p className="text-sm text-muted-foreground line-clamp-2">
-              {event.description}
-            </p>
-          </div>
-        </CardContent>
-        <CardFooter className="flex justify-between pt-2 border-t">
-          <Button variant="outline" size="sm" onClick={() => setShowDetails(true)}>
-            عرض التفاصيل
-          </Button>
-          <Button 
-            variant={isAttending ? "destructive" : "default"} 
-            size="sm"
-            onClick={handleAttend}
-          >
-            {isAttending ? "إلغاء المشاركة" : "المشاركة"}
-          </Button>
-        </CardFooter>
-      </Card>
-
-      <Dialog open={showDetails} onOpenChange={setShowDetails}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle className="text-xl">{event.title}</DialogTitle>
-            <DialogDescription>
-              <Badge className="mb-4">{getEventTypeInArabic(event.type)}</Badge>
-            </DialogDescription>
-          </DialogHeader>
           
-          <div className="space-y-4">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span>{formattedDate}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span>من {formatTime(event.startTime)} إلى {formatTime(event.endTime)}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span>{event.location}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-muted-foreground" />
-                <span>
-                  {event.attendees.length} مشارك
-                  {event.maxAttendees && ` (الحد الأقصى: ${event.maxAttendees})`}
-                </span>
-              </div>
-            </div>
-            
-            <Separator />
-            
-            <div>
-              <h4 className="font-medium mb-2">وصف الفعالية</h4>
-              <p className="text-muted-foreground">{event.description}</p>
-            </div>
-            
-            <Separator />
-            
-            <div>
-              <h4 className="font-medium mb-2">منظم الفعالية</h4>
-              <p>{event.organizer.name}</p>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row gap-2 pt-4">
-              <Button 
-                variant={isAttending ? "destructive" : "default"} 
-                onClick={handleAttend}
-                className="flex-1"
-              >
-                <CalendarPlus className="mr-2 h-4 w-4" />
-                {isAttending ? "إلغاء المشاركة" : "المشاركة"}
-              </Button>
-              <Button variant="outline" onClick={handleShare} className="flex-1">
-                <Share2 className="mr-2 h-4 w-4" />
-                مشاركة
-              </Button>
-              <Button variant="outline" onClick={handleRemind} className="flex-1">
-                <Bell className="mr-2 h-4 w-4" />
-                تذكير
-              </Button>
+          <div className="flex items-start">
+            <Clock className="h-4 w-4 mr-2 mt-0.5 text-muted-foreground" />
+            <span>من {formattedStartTime} إلى {formattedEndTime}</span>
+          </div>
+          
+          <div className="flex items-start">
+            <MapPin className="h-4 w-4 mr-2 mt-0.5 text-muted-foreground" />
+            <span>{event.location}</span>
+          </div>
+          
+          <div className="flex items-start">
+            <Users className="h-4 w-4 mr-2 mt-0.5 text-muted-foreground" />
+            <span>
+              {isFullyBooked 
+                ? "مكتمل العدد" 
+                : `${availableSeats} مقعد متاح من أصل ${event.maxAttendees}`}
+            </span>
+          </div>
+        </div>
+        
+        <div className="mt-4 flex gap-1 flex-wrap">
+          {event.tags.slice(0, 3).map((tag) => (
+            <Badge key={tag} variant="outline" className="text-xs">
+              {tag}
+            </Badge>
+          ))}
+          {event.tags.length > 3 && (
+            <Badge variant="outline" className="text-xs">
+              +{event.tags.length - 3}
+            </Badge>
+          )}
+        </div>
+      </CardContent>
+      
+      <CardFooter className="bg-muted/20 p-5 border-t">
+        <div className="w-full flex items-center justify-between">
+          <div className="flex items-center">
+            <Avatar className="h-8 w-8 mr-2">
+              <AvatarImage src={event.organizer.avatarUrl} alt={event.organizer.name} />
+              <AvatarFallback>{event.organizer.name[0]}</AvatarFallback>
+            </Avatar>
+            <div className="text-sm">
+              <p className="font-medium">{event.organizer.name}</p>
+              {event.organizer.university && (
+                <p className="text-xs text-muted-foreground">
+                  {event.organizer.university}
+                </p>
+              )}
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
-    </>
+          
+          {isLoggedIn && (
+            <Button
+              variant={event.isAttending ? "outline" : "default"}
+              size="sm"
+              className={event.isAttending ? "text-primary border-primary" : ""}
+              disabled={!event.isAttending && isFullyBooked}
+              onClick={handleAttendanceToggle}
+            >
+              {event.isAttending ? "إلغاء الحضور" : "سجل الآن"}
+            </Button>
+          )}
+        </div>
+      </CardFooter>
+    </Card>
   );
 }

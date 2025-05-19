@@ -4,7 +4,7 @@ import { TimeBankCard } from "@/components/timebank/TimeBankCard";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 
-interface TimeBankBalanceProps {
+export interface TimeBankBalanceProps {
   balance: {
     hours_earned: number;
     hours_spent: number;

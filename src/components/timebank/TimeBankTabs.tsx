@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TimeBankTransaction } from "@/components/timebank/TimeBankTransaction";
+import { TimeBankTransaction, TimeBankTransactionStatus } from "@/components/timebank/TimeBankTransaction";
 import { Clock, PlusCircle } from "lucide-react";
 import { TimeBankCard } from "@/components/timebank/TimeBankCard";
 
@@ -27,7 +27,7 @@ export function TimeBankTabs({
       providerId: "user-1",
       recipientId: "user-2",
       hours: 2,
-      status: "completed",
+      status: "completed" as TimeBankTransactionStatus,
       createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
       description: "تدريس مادة الرياضيات لمدة ساعتين",
       provider: {
@@ -44,7 +44,7 @@ export function TimeBankTabs({
       providerId: "user-3",
       recipientId: "user-1",
       hours: 1.5,
-      status: "pending",
+      status: "pending" as TimeBankTransactionStatus,
       createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
       description: "مساعدة في تصميم شعار للمشروع",
       provider: {
@@ -61,7 +61,7 @@ export function TimeBankTabs({
       providerId: "user-1",
       recipientId: "user-4",
       hours: 3,
-      status: "pending",
+      status: "pending" as TimeBankTransactionStatus,
       createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
       description: "تطوير صفحة ويب بتقنية React",
       provider: {

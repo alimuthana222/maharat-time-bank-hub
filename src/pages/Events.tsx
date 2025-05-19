@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { EventCard } from "@/components/community/EventCard";
+import { EventCard, EventProps } from "@/components/community/EventCard";
 import { EventForm } from "@/components/community/EventForm";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
@@ -32,7 +32,7 @@ import {
 import { formatDate } from "@/lib/date-utils";
 
 // Sample events data
-const dummyEvents = [
+const dummyEvents: EventProps[] = [
   {
     id: "1",
     title: "ورشة عمل: مقدمة في تطوير تطبيقات الويب",
@@ -230,7 +230,7 @@ export default function Events() {
       
       acc[monthYear].push(event);
       return acc;
-    }, {});
+    }, {} as Record<string, EventProps[]>);
     
     return grouped;
   };
@@ -238,21 +238,11 @@ export default function Events() {
   const groupedEvents = groupEventsByMonth();
   const eventMonths = Object.keys(groupedEvents);
   
-  // Toggle attendance
-  const toggleAttendance = (eventId) => {
-    // In a real app, this would be an API call
-    const updatedEvents = filteredEvents.map(event => {
-      if (event.id === eventId) {
-        return {
-          ...event,
-          isAttending: !event.isAttending,
-          attendees: event.isAttending ? event.attendees - 1 : event.attendees + 1
-        };
-      }
-      return event;
-    });
-    
-    setFilteredEvents(updatedEvents);
+  // Handle new event creation
+  const handleEventCreated = (newEvent: any) => {
+    setIsCreateDialogOpen(false);
+    // In a real application, we'd add this to the events list
+    console.log("New event created:", newEvent);
   };
 
   return (
@@ -285,7 +275,7 @@ export default function Events() {
                     أدخل تفاصيل الفعالية التي ترغب في تنظيمها
                   </DialogDescription>
                 </DialogHeader>
-                <EventForm onSubmit={() => setIsCreateDialogOpen(false)} />
+                <EventForm onEventCreated={handleEventCreated} />
               </DialogContent>
             </Dialog>
           </div>
@@ -364,7 +354,6 @@ export default function Events() {
                     <EventCard 
                       key={event.id}
                       event={event}
-                      onAttendanceToggle={() => toggleAttendance(event.id)}
                       isLoggedIn={!!user}
                     />
                   ))}

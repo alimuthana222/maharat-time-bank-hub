@@ -1,125 +1,188 @@
 
 import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Clock, ArrowRight } from "lucide-react";
-import { timeAgo } from "@/lib/date-utils";
-import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
+import { ar } from "date-fns/locale";
+import { CheckCircle, Clock, XCircle } from "lucide-react";
 
+// Define the status types
+export type TimeBankTransactionStatus = "pending" | "approved" | "rejected" | "completed" | "canceled";
+
+// Define the user type for provider and recipient
 export interface TimeBankTransactionUser {
   name: string;
-  avatarUrl?: string;
+  avatarUrl: string;
+  university?: string;
 }
 
+// Define the transaction props interface
 export interface TimeBankTransactionProps {
-  transaction: {
-    id: string;
-    providerId: string;
-    recipientId: string;
-    hours: number;
-    status: "pending" | "completed" | "rejected" | "canceled";
-    createdAt: string;
-    description: string;
-    provider: TimeBankTransactionUser;
-    recipient: TimeBankTransactionUser;
-  };
-  onApprove?: (id: string) => void;
-  onReject?: (id: string) => void;
-  showActions?: boolean;
+  id: string;
+  providerId: string;
+  recipientId: string;
+  hours: number;
+  status: TimeBankTransactionStatus;
+  createdAt: string;
+  description: string;
+  provider: TimeBankTransactionUser;
+  recipient: TimeBankTransactionUser;
 }
 
-export function TimeBankTransaction({ 
+interface TransactionProps {
+  transaction: any;
+  currentUserId?: string;
+  onStatusChange?: () => void;
+}
+
+export function TimeBankTransaction({
   transaction,
-  onApprove,
-  onReject,
-  showActions = true
-}: TimeBankTransactionProps) {
-  // Get initials for avatar fallback
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase();
+  currentUserId,
+  onStatusChange,
+}: TransactionProps) {
+  // Map from backend status to display status if needed
+  const mapStatus = (status: string): TimeBankTransactionStatus => {
+    if (["pending", "approved", "rejected", "completed", "canceled"].includes(status)) {
+      return status as TimeBankTransactionStatus;
+    }
+    return "pending"; // Default fallback
   };
 
-  // Define status badge properties
-  const statusBadge = {
-    pending: { label: "قيد الانتظار", color: "bg-amber-500/10 text-amber-600 border-amber-200" },
-    completed: { label: "مكتمل", color: "bg-green-500/10 text-green-600 border-green-200" },
-    rejected: { label: "مرفوض", color: "bg-red-500/10 text-red-600 border-red-200" },
-    canceled: { label: "ملغي", color: "bg-gray-500/10 text-gray-600 border-gray-200" },
-  };
+  const status = mapStatus(transaction.status);
   
+  // Format date appropriately
+  const formattedDate = transaction.created_at 
+    ? formatDistanceToNow(new Date(transaction.created_at), { addSuffix: true, locale: ar })
+    : transaction.createdAt 
+      ? formatDistanceToNow(new Date(transaction.createdAt), { addSuffix: true, locale: ar })
+      : "غير معروف";
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "approved":
+      case "completed":
+        return "bg-green-500";
+      case "pending":
+        return "bg-amber-500";
+      case "rejected":
+      case "canceled":
+        return "bg-red-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "approved":
+        return "تمت الموافقة";
+      case "completed":
+        return "مكتمل";
+      case "pending":
+        return "قيد الانتظار";
+      case "rejected":
+        return "مرفوض";
+      case "canceled":
+        return "ملغي";
+      default:
+        return "غير معروف";
+    }
+  };
+
+  // Get provider and recipient information
+  const provider = transaction.provider || {
+    name: transaction.provider_name || "غير معروف",
+    avatarUrl: transaction.provider_avatar || "https://i.pravatar.cc/150?u=" + transaction.provider_id,
+  };
+
+  const recipient = transaction.recipient || {
+    name: transaction.recipient_name || "غير معروف",
+    avatarUrl: transaction.recipient_avatar || "https://i.pravatar.cc/150?u=" + transaction.recipient_id,
+  };
+
+  // Check if the current user is the recipient of this transaction
+  const isRecipient = currentUserId && (currentUserId === transaction.recipient_id || currentUserId === transaction.recipientId);
+  const isPending = status === "pending";
+
   const handleApprove = () => {
-    if (onApprove) {
-      onApprove(transaction.id);
-    } else {
-      // Demo functionality
-      toast.success("تم قبول المعاملة بنجاح");
-    }
+    // In a real app, this would update in the database
+    console.log("Approving transaction:", transaction.id);
+    if (onStatusChange) onStatusChange();
   };
-  
+
   const handleReject = () => {
-    if (onReject) {
-      onReject(transaction.id);
-    } else {
-      // Demo functionality
-      toast.success("تم رفض المعاملة");
-    }
+    // In a real app, this would update in the database
+    console.log("Rejecting transaction:", transaction.id);
+    if (onStatusChange) onStatusChange();
   };
 
   return (
-    <div className="py-4">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <div className="flex items-center -space-x-2 space-x-reverse">
-            <Avatar className="border-2 border-background">
-              <AvatarImage src={transaction.provider.avatarUrl} alt={transaction.provider.name} />
-              <AvatarFallback>{getInitials(transaction.provider.name)}</AvatarFallback>
+    <Card className="mb-4">
+      <CardContent className="p-6">
+        <div className="flex flex-col md:flex-row justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={provider.avatarUrl} alt={provider.name} />
+              <AvatarFallback>{provider.name?.[0]}</AvatarFallback>
             </Avatar>
-            <Avatar className="border-2 border-background">
-              <AvatarImage src={transaction.recipient.avatarUrl} alt={transaction.recipient.name} />
-              <AvatarFallback>{getInitials(transaction.recipient.name)}</AvatarFallback>
-            </Avatar>
+            <div>
+              <div className="font-medium">{provider.name}</div>
+              <div className="text-sm text-muted-foreground mb-2">
+                {transaction.description || transaction.description}
+              </div>
+              <div className="flex flex-wrap gap-2 items-center text-xs">
+                <Badge variant="outline" className="font-normal">
+                  {transaction.hours || transaction.hours} ساعة
+                </Badge>
+                <Badge
+                  className={`${getStatusColor(status)} text-white`}
+                >
+                  {getStatusText(status)}
+                </Badge>
+                <span className="text-muted-foreground">
+                  {formattedDate}
+                </span>
+              </div>
+            </div>
           </div>
-          
-          <div className="space-y-1">
-            <div className="flex items-center flex-wrap gap-2">
-              <span className="font-medium">{transaction.provider.name}</span>
-              <ArrowRight className="h-3.5 w-3.5 text-muted-foreground mx-1" />
-              <span className="font-medium">{transaction.recipient.name}</span>
-              <Badge variant="outline" className={statusBadge[transaction.status].color}>
-                {statusBadge[transaction.status].label}
-              </Badge>
+
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex items-center gap-2">
+              <div className="text-sm text-muted-foreground text-left">
+                المستلم: {recipient.name}
+              </div>
+              <Avatar className="h-6 w-6">
+                <AvatarImage src={recipient.avatarUrl} alt={recipient.name} />
+                <AvatarFallback>{recipient.name?.[0]}</AvatarFallback>
+              </Avatar>
             </div>
-            
-            <p className="text-sm text-muted-foreground">{transaction.description}</p>
-            
-            <div className="flex items-center text-sm">
-              <Clock className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
-              <span className="text-muted-foreground">{timeAgo(transaction.createdAt)}</span>
-              <span className="mx-2 text-muted-foreground">•</span>
-              <span className="font-medium text-primary">{transaction.hours} ساعة</span>
-            </div>
+
+            {isRecipient && isPending && (
+              <div className="flex gap-2 mt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-red-500 border-red-500 hover:bg-red-50"
+                  onClick={handleReject}
+                >
+                  <XCircle className="mr-1 h-4 w-4" />
+                  رفض
+                </Button>
+                <Button
+                  size="sm"
+                  className="bg-green-500 hover:bg-green-600"
+                  onClick={handleApprove}
+                >
+                  <CheckCircle className="mr-1 h-4 w-4" />
+                  موافقة
+                </Button>
+              </div>
+            )}
           </div>
         </div>
-        
-        {showActions && transaction.status === "pending" && (
-          <div className="flex items-center space-x-2 space-x-reverse">
-            <Button size="sm" variant="outline" className="h-8 px-3" onClick={handleApprove}>
-              <CheckCircle className="mr-1 h-3.5 w-3.5" />
-              قبول
-            </Button>
-            <Button size="sm" variant="outline" className="h-8 px-3" onClick={handleReject}>
-              <XCircle className="mr-1 h-3.5 w-3.5" />
-              رفض
-            </Button>
-          </div>
-        )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

@@ -10,12 +10,16 @@ import { TimeBankExport } from "@/components/timebank/TimeBankExport";
 import { TimeBankTimeline } from "@/components/timebank/TimeBankTimeline";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/home/Footer";
+import { useTimeBank } from "@/hooks/useTimeBank";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 const TimeBank = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
+  const { balance, loadingBalance, transactions, loadingTransactions, fetchTransactions } = useTimeBank();
 
-  // Simulate loading data from API
+  // Simulate loading data from API if not using the real API
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
@@ -34,7 +38,7 @@ const TimeBank = () => {
               تبادل المهارات والخدمات مع الطلاب الآخرين على أساس ساعة بساعة
             </p>
           </div>
-          <TimeBankStats />
+          <TimeBankStats balance={balance} loading={loadingBalance} />
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -55,7 +59,12 @@ const TimeBank = () => {
           
           <TabsContent value="transactions" className="space-y-6">
             <TimeBankTransactionForm />
-            <TimeBankTransactionsList />
+            <TimeBankTransactionsList 
+              transactions={transactions}
+              loading={loadingTransactions}
+              currentUserId={user?.id || ""}
+              onStatusChange={() => fetchTransactions("all")}
+            />
           </TabsContent>
           
           <TabsContent value="analytics" className="space-y-6">
