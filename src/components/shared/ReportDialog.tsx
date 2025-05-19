@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 
-interface ReportDialogProps {
+export interface ReportDialogProps {
   isOpen: boolean;
   onClose: () => void;
   contentId: string;

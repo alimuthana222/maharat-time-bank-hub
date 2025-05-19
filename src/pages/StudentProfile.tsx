@@ -28,6 +28,15 @@ interface UserProfile {
     id: string;
     name: string;
     level: "beginner" | "intermediate" | "expert";
+    category: string; // Added this
+    title: string; // Added this
+    description: string; // Added this
+    hourlyRate: number; // Added this
+    provider: { // Added this
+      name: string;
+      university?: string;
+      avatarUrl?: string;
+    };
   }[];
   portfolioProjects: {
     id: string;
@@ -49,9 +58,10 @@ interface UserProfile {
     };
     rating: number;
     categories: {
-      name: string;
-      rating: number;
-    }[];
+      quality: number;
+      speed: number;
+      cooperation: number;
+    };
     comment: string;
     date: string;
   }[];
@@ -80,11 +90,76 @@ export default function StudentProfile() {
         bio: "طالب في كلية علوم الحاسب، مهتم بتطوير الويب والذكاء الاصطناعي. أعمل على عدة مشاريع تقنية وأقدم خدمات برمجية للطلاب.",
         joinedDate: "2023-09-15",
         skills: [
-          { id: "skill1", name: "تطوير الواجهات الأمامية", level: "expert" as const },
-          { id: "skill2", name: "React.js", level: "expert" as const },
-          { id: "skill3", name: "تصميم قواعد البيانات", level: "intermediate" as const },
-          { id: "skill4", name: "Node.js", level: "intermediate" as const },
-          { id: "skill5", name: "تصميم واجهات المستخدم", level: "expert" as const },
+          { 
+            id: "skill1", 
+            name: "تطوير الواجهات الأمامية", 
+            level: "expert" as const,
+            title: "تطوير الواجهات الأمامية",
+            category: "برمجة",
+            description: "تطوير واجهات مستخدم تفاعلية باستخدام أحدث التقنيات",
+            hourlyRate: 3,
+            provider: {
+              name: "أحمد محمد عبدالله",
+              university: "جامعة الملك سعود",
+              avatarUrl: "https://i.pravatar.cc/300?img=12"
+            }
+          },
+          { 
+            id: "skill2", 
+            name: "React.js", 
+            level: "expert" as const,
+            title: "React.js",
+            category: "برمجة",
+            description: "تطوير تطبيقات الويب باستخدام React.js",
+            hourlyRate: 4,
+            provider: {
+              name: "أحمد محمد عبدالله",
+              university: "جامعة الملك سعود",
+              avatarUrl: "https://i.pravatar.cc/300?img=12"
+            }
+          },
+          { 
+            id: "skill3", 
+            name: "تصميم قواعد البيانات", 
+            level: "intermediate" as const,
+            title: "تصميم قواعد البيانات",
+            category: "برمجة",
+            description: "تصميم وتطوير قواعد بيانات فعالة",
+            hourlyRate: 3,
+            provider: {
+              name: "أحمد محمد عبدالله",
+              university: "جامعة الملك سعود",
+              avatarUrl: "https://i.pravatar.cc/300?img=12"
+            }
+          },
+          { 
+            id: "skill4", 
+            name: "Node.js", 
+            level: "intermediate" as const,
+            title: "Node.js",
+            category: "برمجة",
+            description: "تطوير خدمات الويب باستخدام Node.js",
+            hourlyRate: 3,
+            provider: {
+              name: "أحمد محمد عبدالله",
+              university: "جامعة الملك سعود",
+              avatarUrl: "https://i.pravatar.cc/300?img=12"
+            }
+          },
+          { 
+            id: "skill5", 
+            name: "تصميم واجهات المستخدم", 
+            level: "expert" as const,
+            title: "تصميم واجهات المستخدم",
+            category: "تصميم",
+            description: "تصميم واجهات مستخدم جذابة وسهلة الاستخدام",
+            hourlyRate: 4,
+            provider: {
+              name: "أحمد محمد عبدالله",
+              university: "جامعة الملك سعود",
+              avatarUrl: "https://i.pravatar.cc/300?img=12"
+            }
+          },
         ],
         portfolioProjects: [
           {
@@ -128,11 +203,11 @@ export default function StudentProfile() {
               university: "جامعة الملك سعود"
             },
             rating: 5,
-            categories: [
-              { name: "الجودة", rating: 5 },
-              { name: "التواصل", rating: 5 },
-              { name: "الالتزام بالمواعيد", rating: 5 }
-            ],
+            categories: {
+              quality: 5,
+              speed: 5,
+              cooperation: 5
+            },
             comment: "قام أحمد بمساعدتي في مشروع تطوير موقع ويب، وكان العمل ممتازا وفي الوقت المحدد.",
             date: "2023-08-15"
           },
@@ -145,11 +220,11 @@ export default function StudentProfile() {
               university: "جامعة الملك فهد"
             },
             rating: 4,
-            categories: [
-              { name: "الجودة", rating: 4 },
-              { name: "التواصل", rating: 5 },
-              { name: "الالتزام بالمواعيد", rating: 3 }
-            ],
+            categories: {
+              quality: 4,
+              speed: 5,
+              cooperation: 3
+            },
             comment: "ساعدني أحمد في تصميم قاعدة بيانات لمشروعي التخرج، كان التصميم جيدا جدا لكن احتجت لبعض التعديلات الإضافية.",
             date: "2023-07-20"
           }
@@ -176,45 +251,6 @@ export default function StudentProfile() {
     
     navigate(`/messages?userId=${id}`);
   };
-  
-  const sampleReviews = [
-    {
-      id: "review1",
-      user: {
-        name: "سارة أحمد",
-        avatarUrl: "https://i.pravatar.cc/150?img=5",
-        university: "جامعة الملك سعود"
-      },
-      rating: 5,
-      comment: "قام أحمد بمساعدتي في مشروع تطوير موقع ويب، وكان العمل ممتازا وفي الوقت المحدد.",
-      date: "2023-08-15",
-      service: "تطوير موقع ويب"
-    },
-    {
-      id: "review2",
-      user: {
-        name: "محمد علي",
-        avatarUrl: "https://i.pravatar.cc/150?img=3",
-        university: "جامعة الملك فهد"
-      },
-      rating: 4,
-      comment: "ساعدني أحمد في تصميم قاعدة بيانات لمشروعي التخرج، كان التصميم جيدا جدا لكن احتجت لبعض التعديلات الإضافية.",
-      date: "2023-07-20",
-      service: "تصميم قاعدة بيانات"
-    },
-    {
-      id: "review3",
-      user: {
-        name: "فاطمة الزهراء",
-        avatarUrl: "https://i.pravatar.cc/150?img=20",
-        university: "جامعة الأميرة نورة"
-      },
-      rating: 5,
-      comment: "قدم لي أحمد دروساً في البرمجة بلغة جافا، وكان أسلوبه في الشرح واضح ومميز. استفدت كثيراً من خبرته.",
-      date: "2023-06-05",
-      service: "دروس في البرمجة بلغة جافا"
-    }
-  ];
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -236,12 +272,13 @@ export default function StudentProfile() {
         ) : profileData ? (
           <>
             <ProfileHeader 
-              fullName={profileData.fullName}
-              username={profileData.username}
-              avatarUrl={profileData.avatarUrl}
+              name={profileData.fullName}
               university={profileData.university}
-              bio={profileData.bio}
-              joinedDate={profileData.joinedDate}
+              major="علوم الحاسب"
+              level="طالب بكالوريوس"
+              avatarUrl={profileData.avatarUrl}
+              rating={4.5}
+              availability="available"
             />
             
             <div className="flex flex-col md:flex-row mt-6 gap-6">
@@ -258,23 +295,41 @@ export default function StudentProfile() {
                   </TabsContent>
                   
                   <TabsContent value="portfolio">
-                    <ProfilePortfolio projects={profileData.portfolioProjects} />
+                    <ProfilePortfolio portfolioItems={profileData.portfolioProjects.map(project => ({
+                      id: project.id,
+                      title: project.title,
+                      description: project.description,
+                      imageUrl: project.imageUrl,
+                      link: project.url
+                    }))} />
                   </TabsContent>
                   
                   <TabsContent value="reviews">
-                    <ProfileReviews reviews={sampleReviews} />
+                    <ProfileReviews reviews={profileData.reviews.map(review => ({
+                      id: review.id,
+                      reviewer: {
+                        name: review.reviewer.name,
+                        avatarUrl: review.reviewer.avatarUrl
+                      },
+                      rating: review.rating,
+                      comment: review.comment,
+                      date: review.date,
+                      categories: {
+                        quality: review.categories.quality,
+                        speed: review.categories.speed,
+                        cooperation: review.categories.cooperation
+                      }
+                    }))} />
                   </TabsContent>
                 </Tabs>
                 
                 <ReportDialog
-                  open={isReportDialogOpen}
-                  onOpenChange={setIsReportDialogOpen}
-                  onSubmit={handleReport}
-                  reportedUser={profileData}
+                  isOpen={isReportDialogOpen}
+                  onClose={() => setIsReportDialogOpen(false)}
+                  contentId={profileData?.id || ''}
                   contentType="profile"
-                >
-                  <></>
-                </ReportDialog>
+                  reportedUserId={profileData?.id || ''}
+                />
               </div>
               
               <div className="md:w-1/3 mt-6 md:mt-0 space-y-4">
