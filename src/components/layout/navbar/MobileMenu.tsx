@@ -1,8 +1,9 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { getTheme, setTheme, type Theme } from "@/lib/theme-utils";
 import { 
   Menu,
   Search,
@@ -31,7 +32,7 @@ export function MobileMenu() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [currentTheme, setCurrentTheme] = useState<Theme>("light");
 
   const navLinks = [
     { name: "الرئيسية", path: "/", icon: Home },
@@ -40,6 +41,11 @@ export function MobileMenu() {
     { name: "الفعاليات", path: "/events", icon: Calendar },
     { name: "المجتمع", path: "/community", icon: Users },
   ];
+
+  useEffect(() => {
+    const theme = getTheme();
+    setCurrentTheme(theme);
+  }, []);
 
   const isActiveLink = (path: string) => {
     if (path === "/") {
@@ -57,10 +63,9 @@ export function MobileMenu() {
   };
 
   const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light";
+    const newTheme = currentTheme === "light" ? "dark" : "light";
     setTheme(newTheme);
-    localStorage.setItem("theme", newTheme);
-    document.documentElement.classList.toggle("dark", newTheme === "dark");
+    setCurrentTheme(newTheme);
   };
 
   const handleLogout = async () => {
@@ -129,7 +134,7 @@ export function MobileMenu() {
               className="w-full justify-start"
               onClick={toggleTheme}
             >
-              {theme === "dark" ? (
+              {currentTheme === "dark" ? (
                 <>
                   <Sun className="mr-2 h-5 w-5" />
                   الوضع الفاتح
