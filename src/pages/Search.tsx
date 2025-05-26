@@ -52,7 +52,7 @@ export default function SearchPage() {
         .from('skills')
         .select(`
           id, title, description, category, created_at,
-          profiles:provider_id (username, avatar_url)
+          profiles!provider_id (username, avatar_url)
         `)
         .or(`title.ilike.${searchTerm},description.ilike.${searchTerm}`)
         .limit(20);
@@ -77,7 +77,7 @@ export default function SearchPage() {
         .from('marketplace_listings')
         .select(`
           id, title, description, category, created_at,
-          profiles:user_id (username, avatar_url)
+          profiles!user_id (username, avatar_url)
         `)
         .or(`title.ilike.${searchTerm},description.ilike.${searchTerm}`)
         .eq('status', 'active')
@@ -103,7 +103,7 @@ export default function SearchPage() {
         .from('posts')
         .select(`
           id, title, content, category, created_at,
-          profiles:user_id (username, avatar_url)
+          profiles!user_id (username, avatar_url)
         `)
         .or(`title.ilike.${searchTerm},content.ilike.${searchTerm}`)
         .eq('is_hidden', false)
