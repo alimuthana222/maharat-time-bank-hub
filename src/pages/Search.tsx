@@ -47,81 +47,108 @@ export default function SearchPage() {
       const searchTerm = `%${query}%`;
       const results: SearchResult[] = [];
 
-      // Search skills
-      const { data: skills } = await supabase
+      // Search skills with profile data
+      const { data: skillsData } = await supabase
         .from('skills')
-        .select(`
-          id, title, description, category, created_at,
-          profiles!provider_id (username, avatar_url)
-        `)
+        .select('id, title, description, category, created_at, provider_id')
         .or(`title.ilike.${searchTerm},description.ilike.${searchTerm}`)
         .limit(20);
 
-      if (skills) {
-        results.push(...skills.map(skill => ({
-          id: skill.id,
-          title: skill.title,
-          description: skill.description,
-          type: 'skill' as const,
-          category: skill.category,
-          user: skill.profiles ? {
-            username: skill.profiles.username,
-            avatar_url: skill.profiles.avatar_url
-          } : undefined,
-          created_at: skill.created_at
-        })));
+      if (skillsData) {
+        // Get profile data for skills
+        const providerIds = skillsData.map(skill => skill.provider_id);
+        const { data: skillProfiles } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url')
+          .in('id', providerIds);
+
+        const skillsWithProfiles = skillsData.map(skill => {
+          const profile = skillProfiles?.find(p => p.id === skill.provider_id);
+          return {
+            id: skill.id,
+            title: skill.title,
+            description: skill.description,
+            type: 'skill' as const,
+            category: skill.category,
+            user: profile ? {
+              username: profile.username,
+              avatar_url: profile.avatar_url
+            } : undefined,
+            created_at: skill.created_at
+          };
+        });
+
+        results.push(...skillsWithProfiles);
       }
 
-      // Search marketplace listings
-      const { data: listings } = await supabase
+      // Search marketplace listings with profile data
+      const { data: listingsData } = await supabase
         .from('marketplace_listings')
-        .select(`
-          id, title, description, category, created_at,
-          profiles!user_id (username, avatar_url)
-        `)
+        .select('id, title, description, category, created_at, user_id')
         .or(`title.ilike.${searchTerm},description.ilike.${searchTerm}`)
         .eq('status', 'active')
         .limit(20);
 
-      if (listings) {
-        results.push(...listings.map(listing => ({
-          id: listing.id,
-          title: listing.title,
-          description: listing.description,
-          type: 'listing' as const,
-          category: listing.category,
-          user: listing.profiles ? {
-            username: listing.profiles.username,
-            avatar_url: listing.profiles.avatar_url
-          } : undefined,
-          created_at: listing.created_at
-        })));
+      if (listingsData) {
+        // Get profile data for listings
+        const userIds = listingsData.map(listing => listing.user_id);
+        const { data: listingProfiles } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url')
+          .in('id', userIds);
+
+        const listingsWithProfiles = listingsData.map(listing => {
+          const profile = listingProfiles?.find(p => p.id === listing.user_id);
+          return {
+            id: listing.id,
+            title: listing.title,
+            description: listing.description,
+            type: 'listing' as const,
+            category: listing.category,
+            user: profile ? {
+              username: profile.username,
+              avatar_url: profile.avatar_url
+            } : undefined,
+            created_at: listing.created_at
+          };
+        });
+
+        results.push(...listingsWithProfiles);
       }
 
-      // Search posts
-      const { data: posts } = await supabase
+      // Search posts with profile data
+      const { data: postsData } = await supabase
         .from('posts')
-        .select(`
-          id, title, content, category, created_at,
-          profiles!user_id (username, avatar_url)
-        `)
+        .select('id, title, content, category, created_at, user_id')
         .or(`title.ilike.${searchTerm},content.ilike.${searchTerm}`)
         .eq('is_hidden', false)
         .limit(20);
 
-      if (posts) {
-        results.push(...posts.map(post => ({
-          id: post.id,
-          title: post.title,
-          description: post.content.substring(0, 200) + '...',
-          type: 'post' as const,
-          category: post.category,
-          user: post.profiles ? {
-            username: post.profiles.username,
-            avatar_url: post.profiles.avatar_url
-          } : undefined,
-          created_at: post.created_at
-        })));
+      if (postsData) {
+        // Get profile data for posts
+        const postUserIds = postsData.map(post => post.user_id);
+        const { data: postProfiles } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url')
+          .in('id', postUserIds);
+
+        const postsWithProfiles = postsData.map(post => {
+          const profile = postProfiles?.find(p => p.id === post.user_id);
+          return {
+            id: post.id,
+            title: post.title,
+            description: post.content.substring(0, 200) + '...',
+            type: 'post' as const,
+            category: post.category,
+            user: profile ? {
+              username: profile.username,
+              avatar_url: profile.avatar_url
+            } : undefined,
+            created_at: post.created_at
+          };
+        });
+
+        results.push(...postsWithProfiles);
       }
 
       // Search users
