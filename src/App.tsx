@@ -7,6 +7,7 @@ import Register from "./pages/Register";
 import Auth from "./pages/Auth";
 import NewAuth from "./pages/NewAuth";
 import NewRegister from "./pages/NewRegister";
+import UserOnboarding from "./pages/UserOnboarding";
 import Marketplace from "./pages/Marketplace";
 import TimeBank from "./pages/TimeBank";
 import Dashboard from "./pages/Dashboard";

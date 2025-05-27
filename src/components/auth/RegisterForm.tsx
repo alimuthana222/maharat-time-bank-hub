@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -28,10 +28,10 @@ import { toast } from "sonner";
 
 const registerSchema = z.object({
   email: z.string().email("يرجى إدخال بريد إلكتروني صالح"),
-  password: z.string().min(8, "كلمة المرور يجب أن تكون 8 أحرف على الأقل"),
-  username: z.string().min(3, "اسم المستخدم يجب أن يكون 3 أحرف على الأقل"),
+  password: z.string().min(8, "كلمة المرور يجب أن تكون على الأقل 8 أحرف"),
+  username: z.string().min(3, "اسم المستخدم يجب أن يكون على الأقل 3 أحرف"),
   fullName: z.string().min(2, "الاسم الكامل مطلوب"),
-  university: z.string().min(1, "يرجى اختيار الجامعة"),
+  university: z.string().min(2, "يرجى اختيار الجامعة"),
 });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -50,9 +50,9 @@ const universities = [
 ];
 
 export function RegisterForm() {
+  const navigate = useNavigate();
   const { signUp } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -73,11 +73,12 @@ export function RegisterForm() {
         fullName: values.fullName,
         university: values.university,
       });
-      
+
       if (error) {
         toast.error(error.message || "فشل إنشاء الحساب");
       } else {
-        setShowSuccess(true);
+        toast.success("تم إنشاء الحساب بنجاح!");
+        navigate("/onboarding");
       }
     } catch (error) {
       toast.error("حدث خطأ أثناء إنشاء الحساب");
@@ -85,26 +86,6 @@ export function RegisterForm() {
       setIsLoading(false);
     }
   };
-
-  if (showSuccess) {
-    return (
-      <Card>
-        <CardHeader className="text-center">
-          <CardTitle>تم إنشاء الحساب بنجاح!</CardTitle>
-        </CardHeader>
-        <CardContent className="text-center space-y-4">
-          <p className="text-muted-foreground">
-            تم إرسال رسالة تأكيد إلى بريدك الإلكتروني. يرجى تأكيد حسابك للمتابعة.
-          </p>
-        </CardContent>
-        <CardFooter>
-          <Button className="w-full" asChild>
-            <Link to="/auth">تسجيل الدخول</Link>
-          </Button>
-        </CardFooter>
-      </Card>
-    );
-  }
 
   return (
     <Card>
@@ -246,7 +227,7 @@ export function RegisterForm() {
       <CardFooter className="text-center">
         <p className="text-sm text-muted-foreground">
           لديك حساب بالفعل؟{" "}
-          <Link to="/auth" className="text-primary hover:underline">
+          <Link to="/new-auth" className="text-primary hover:underline">
             تسجيل الدخول
           </Link>
         </p>
