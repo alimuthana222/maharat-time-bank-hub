@@ -157,14 +157,14 @@ export function TimeBankTransactionForm({ onSuccess }: { onSuccess?: () => void 
                           <span>جاري تحميل المستخدمين...</span>
                         </div>
                       ) : users.length > 0 ? (
-                        users.map((user) => (
-                          <SelectItem key={user.id} value={user.id}>
-                            {user.full_name || user.username}
+                        users.map((profile) => (
+                          <SelectItem key={profile.id} value={profile.id}>
+                            {profile.full_name || profile.username}
                           </SelectItem>
                         ))
                       ) : (
-                        <div className="py-2 text-center text-muted-foreground">
-                          لا يوجد مستخدمين
+                        <div className="py-2 text-center text-sm text-muted-foreground">
+                          لا يوجد مستخدمون متاحون
                         </div>
                       )}
                     </SelectContent>
@@ -173,6 +173,7 @@ export function TimeBankTransactionForm({ onSuccess }: { onSuccess?: () => void 
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
               name="hours"
@@ -182,45 +183,53 @@ export function TimeBankTransactionForm({ onSuccess }: { onSuccess?: () => void 
                   <FormControl>
                     <Input
                       type="number"
-                      min={1}
-                      max={100}
-                      step={1}
-                      placeholder="أدخل عدد الساعات"
-                      {...field}
+                      min="1"
+                      max="100"
                       disabled={isSubmitting}
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>وصف المعاملة</FormLabel>
+                  <FormLabel>وصف الخدمة</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="أدخل وصفًا للمعاملة"
-                      className="h-24"
-                      {...field}
+                      placeholder="اكتب وصفاً مفصلاً للخدمة المقدمة..."
                       disabled={isSubmitting}
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : null}
-              إنشاء معاملة
-            </Button>
           </form>
         </Form>
       </CardContent>
+      <CardFooter>
+        <Button
+          onClick={form.handleSubmit(onSubmit)}
+          disabled={isSubmitting}
+          className="w-full"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              جاري الإنشاء...
+            </>
+          ) : (
+            "إنشاء المعاملة"
+          )}
+        </Button>
+      </CardFooter>
     </Card>
   );
 }

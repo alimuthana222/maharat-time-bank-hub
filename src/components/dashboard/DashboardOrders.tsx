@@ -1,228 +1,287 @@
 
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, MessageSquare, X } from "lucide-react";
+import { MessageSquare, Star, Clock, CheckCircle } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { ar } from "date-fns/locale";
 
-// Sample orders data
-const orders = [
-  {
-    id: "OR-001",
-    title: "مساعدة في مشروع تخرج",
-    client: "سارة العتيبي",
-    status: "pending",
-    date: "2025-04-15",
-    category: "برمجة",
-    hourlyRate: 3,
-    estimatedHours: 5,
-  },
-  {
-    id: "OR-002",
-    title: "ترجمة بحث علمي",
-    client: "خالد محمد",
-    status: "inProgress",
-    date: "2025-04-10",
-    category: "ترجمة",
-    hourlyRate: 2,
-    estimatedHours: 3,
-  },
-  {
-    id: "OR-003",
-    title: "تصميم عرض تقديمي",
-    client: "نورة السالم",
-    status: "completed",
-    date: "2025-04-05",
-    category: "تصميم",
-    hourlyRate: 2,
-    estimatedHours: 2,
-    completedHours: 3,
-  },
-  {
-    id: "OR-004",
-    title: "شرح مادة الإحصاء",
-    client: "فهد العتيبي",
-    status: "completed",
-    date: "2025-04-01",
-    category: "تدريس",
-    hourlyRate: 3,
-    estimatedHours: 8,
-    completedHours: 8,
-  },
-  {
-    id: "OR-005",
-    title: "تنسيق وتحرير بحث",
-    client: "هدى الزهراني",
-    status: "cancelled",
-    date: "2025-03-20",
-    category: "تحرير",
-    hourlyRate: 2,
-    estimatedHours: 4,
-  },
-];
+interface Order {
+  id: string;
+  title: string;
+  client: {
+    name: string;
+    avatar?: string;
+    rating: number;
+  };
+  status: "pending" | "active" | "completed" | "cancelled";
+  hours: number;
+  totalPrice: number;
+  dueDate: string;
+  createdAt: string;
+  description: string;
+}
 
 export function DashboardOrders() {
-  const getStatusBadge = (status: string) => {
+  const [orders, setOrders] = useState<Order[]>([
+    {
+      id: "1",
+      title: "جلسة تدريس رياضيات",
+      client: {
+        name: "أحمد محمد",
+        avatar: "https://i.pravatar.cc/150?u=ahmed",
+        rating: 4.8
+      },
+      status: "pending",
+      hours: 2,
+      totalPrice: 4,
+      dueDate: "2024-01-20",
+      createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+      description: "جلسة تدريس رياضيات للمرحلة الثانوية - الجبر والهندسة"
+    },
+    {
+      id: "2",
+      title: "تصميم شعار شركة",
+      client: {
+        name: "سارة أحمد",
+        avatar: "https://i.pravatar.cc/150?u=sarah",
+        rating: 4.9
+      },
+      status: "active",
+      hours: 5,
+      totalPrice: 15,
+      dueDate: "2024-01-25",
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+      description: "تصميم شعار احترافي لشركة ناشئة في مجال التقنية"
+    },
+    {
+      id: "3",
+      title: "مراجعة بحث تخرج",
+      client: {
+        name: "محمد عبدالله",
+        avatar: "https://i.pravatar.cc/150?u=mohammed",
+        rating: 4.7
+      },
+      status: "completed",
+      hours: 3,
+      totalPrice: 9,
+      dueDate: "2024-01-15",
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+      description: "مراجعة وتدقيق بحث تخرج في مجال الهندسة"
+    }
+  ]);
+
+  const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">قيد الانتظار</Badge>;
-      case "inProgress":
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800">قيد التنفيذ</Badge>;
+        return "bg-yellow-500/10 text-yellow-600 border-yellow-200";
+      case "active":
+        return "bg-blue-500/10 text-blue-600 border-blue-200";
       case "completed":
-        return <Badge variant="outline" className="bg-green-100 text-green-800">مكتمل</Badge>;
+        return "bg-green-500/10 text-green-600 border-green-200";
       case "cancelled":
-        return <Badge variant="outline" className="bg-red-100 text-red-800">ملغي</Badge>;
+        return "bg-red-500/10 text-red-600 border-red-200";
       default:
-        return <Badge variant="outline">غير معروف</Badge>;
+        return "bg-gray-500/10 text-gray-600 border-gray-200";
     }
   };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "قيد الانتظار";
+      case "active":
+        return "قيد التنفيذ";
+      case "completed":
+        return "مكتمل";
+      case "cancelled":
+        return "ملغي";
+      default:
+        return "غير معروف";
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "pending":
+        return <Clock className="h-4 w-4" />;
+      case "active":
+        return <Clock className="h-4 w-4" />;
+      case "completed":
+        return <CheckCircle className="h-4 w-4" />;
+      default:
+        return <Clock className="h-4 w-4" />;
+    }
+  };
+
+  const handleStatusUpdate = (orderId: string, newStatus: string) => {
+    setOrders(prev => prev.map(order => 
+      order.id === orderId ? { ...order, status: newStatus as any } : order
+    ));
+  };
+
+  const pendingOrders = orders.filter(order => order.status === "pending");
+  const activeOrders = orders.filter(order => order.status === "active");
+  const completedOrders = orders.filter(order => order.status === "completed");
+
+  const OrderCard = ({ order }: { order: Order }) => (
+    <Card className="mb-4">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={order.client.avatar} alt={order.client.name} />
+              <AvatarFallback>{order.client.name.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div>
+              <h3 className="font-medium">{order.title}</h3>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-muted-foreground">{order.client.name}</p>
+                <div className="flex items-center gap-1">
+                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                  <span className="text-xs">{order.client.rating}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <Badge variant="outline" className={getStatusColor(order.status)}>
+            {getStatusIcon(order.status)}
+            <span className="mr-1">{getStatusText(order.status)}</span>
+          </Badge>
+        </div>
+      </CardHeader>
+      
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">{order.description}</p>
+        
+        <div className="flex items-center justify-between text-sm">
+          <span>{order.hours} ساعة</span>
+          <span className="font-medium">{order.totalPrice} ساعة (إجمالي)</span>
+          <span className="text-muted-foreground">
+            التسليم: {new Date(order.dueDate).toLocaleDateString('ar-SA')}
+          </span>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">
+            {formatDistanceToNow(new Date(order.createdAt), { addSuffix: true, locale: ar })}
+          </span>
+          
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm">
+              <MessageSquare className="h-4 w-4 mr-1" />
+              رسالة
+            </Button>
+            
+            {order.status === "pending" && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-red-600 border-red-200 hover:bg-red-50"
+                  onClick={() => handleStatusUpdate(order.id, "cancelled")}
+                >
+                  رفض
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => handleStatusUpdate(order.id, "active")}
+                >
+                  قبول
+                </Button>
+              </>
+            )}
+            
+            {order.status === "active" && (
+              <Button
+                size="sm"
+                onClick={() => handleStatusUpdate(order.id, "completed")}
+              >
+                إكمال
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold">إدارة الطلبات</h2>
-      
+      <div>
+        <h2 className="text-2xl font-bold mb-2">طلباتي</h2>
+        <p className="text-muted-foreground">
+          تابع وأدر الطلبات الواردة لخدماتك
+        </p>
+      </div>
+
       <Tabs defaultValue="all" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="all">الكل</TabsTrigger>
-          <TabsTrigger value="pending">قيد الانتظار</TabsTrigger>
-          <TabsTrigger value="inProgress">قيد التنفيذ</TabsTrigger>
-          <TabsTrigger value="completed">مكتملة</TabsTrigger>
-          <TabsTrigger value="cancelled">ملغية</TabsTrigger>
+        <TabsList>
+          <TabsTrigger value="all">جميع الطلبات ({orders.length})</TabsTrigger>
+          <TabsTrigger value="pending">قيد الانتظار ({pendingOrders.length})</TabsTrigger>
+          <TabsTrigger value="active">نشط ({activeOrders.length})</TabsTrigger>
+          <TabsTrigger value="completed">مكتمل ({completedOrders.length})</TabsTrigger>
         </TabsList>
-        
-        <TabsContent value="all" className="space-y-4">
-          {orders.map((order) => (
-            <OrderCard key={order.id} order={order} />
-          ))}
+
+        <TabsContent value="all" className="mt-6">
+          {orders.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">لا توجد طلبات بعد</p>
+            </div>
+          ) : (
+            <div>
+              {orders.map((order) => (
+                <OrderCard key={order.id} order={order} />
+              ))}
+            </div>
+          )}
         </TabsContent>
-        
-        <TabsContent value="pending" className="space-y-4">
-          {orders.filter(o => o.status === "pending").map((order) => (
-            <OrderCard key={order.id} order={order} />
-          ))}
+
+        <TabsContent value="pending" className="mt-6">
+          {pendingOrders.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">لا توجد طلبات قيد الانتظار</p>
+            </div>
+          ) : (
+            <div>
+              {pendingOrders.map((order) => (
+                <OrderCard key={order.id} order={order} />
+              ))}
+            </div>
+          )}
         </TabsContent>
-        
-        <TabsContent value="inProgress" className="space-y-4">
-          {orders.filter(o => o.status === "inProgress").map((order) => (
-            <OrderCard key={order.id} order={order} />
-          ))}
+
+        <TabsContent value="active" className="mt-6">
+          {activeOrders.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">لا توجد طلبات نشطة</p>
+            </div>
+          ) : (
+            <div>
+              {activeOrders.map((order) => (
+                <OrderCard key={order.id} order={order} />
+              ))}
+            </div>
+          )}
         </TabsContent>
-        
-        <TabsContent value="completed" className="space-y-4">
-          {orders.filter(o => o.status === "completed").map((order) => (
-            <OrderCard key={order.id} order={order} />
-          ))}
-        </TabsContent>
-        
-        <TabsContent value="cancelled" className="space-y-4">
-          {orders.filter(o => o.status === "cancelled").map((order) => (
-            <OrderCard key={order.id} order={order} />
-          ))}
+
+        <TabsContent value="completed" className="mt-6">
+          {completedOrders.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">لم تكمل أي طلبات بعد</p>
+            </div>
+          ) : (
+            <div>
+              {completedOrders.map((order) => (
+                <OrderCard key={order.id} order={order} />
+              ))}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>
-  );
-}
-
-interface OrderCardProps {
-  order: {
-    id: string;
-    title: string;
-    client: string;
-    status: string;
-    date: string;
-    category: string;
-    hourlyRate: number;
-    estimatedHours: number;
-    completedHours?: number;
-  };
-}
-
-function OrderCard({ order }: OrderCardProps) {
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "pending":
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">قيد الانتظار</Badge>;
-      case "inProgress":
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800">قيد التنفيذ</Badge>;
-      case "completed":
-        return <Badge variant="outline" className="bg-green-100 text-green-800">مكتمل</Badge>;
-      case "cancelled":
-        return <Badge variant="outline" className="bg-red-100 text-red-800">ملغي</Badge>;
-      default:
-        return <Badge variant="outline">غير معروف</Badge>;
-    }
-  };
-
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-        <div>
-          <CardTitle className="text-lg">{order.title}</CardTitle>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-sm text-muted-foreground">#{order.id}</span>
-            <span className="text-sm text-muted-foreground">•</span>
-            <span className="text-sm text-muted-foreground">{order.date}</span>
-          </div>
-        </div>
-        {getStatusBadge(order.status)}
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-          <div>
-            <p className="text-muted-foreground">العميل</p>
-            <p className="font-medium">{order.client}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">التصنيف</p>
-            <p className="font-medium">{order.category}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">المعدل بالساعة</p>
-            <p className="font-medium">{order.hourlyRate} ساعة</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">الساعات المقدرة</p>
-            <p className="font-medium">{order.estimatedHours} ساعة</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">الإجمالي المتوقع</p>
-            <p className="font-medium">{order.hourlyRate * order.estimatedHours} ساعة</p>
-          </div>
-          {order.completedHours && (
-            <div>
-              <p className="text-muted-foreground">الساعات الفعلية</p>
-              <p className="font-medium">{order.completedHours} ساعة</p>
-            </div>
-          )}
-        </div>
-      </CardContent>
-      <CardFooter className="flex justify-between border-t pt-4">
-        <div className="flex gap-2">
-          {order.status === "pending" && (
-            <>
-              <Button variant="default" size="sm">
-                <Check className="h-4 w-4 mr-1" />
-                قبول
-              </Button>
-              <Button variant="destructive" size="sm">
-                <X className="h-4 w-4 mr-1" />
-                رفض
-              </Button>
-            </>
-          )}
-          {order.status === "inProgress" && (
-            <Button variant="default" size="sm">
-              <Check className="h-4 w-4 mr-1" />
-              إكمال الطلب
-            </Button>
-          )}
-        </div>
-        <Button variant="ghost" size="sm">
-          <MessageSquare className="h-4 w-4 mr-1" />
-          تواصل
-        </Button>
-      </CardFooter>
-    </Card>
   );
 }

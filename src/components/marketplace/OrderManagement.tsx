@@ -1,218 +1,296 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/components/auth/AuthProvider";
-import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Clock, CheckCircle, XCircle, Star } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
-import { Calendar, User, MessageSquare, DollarSign } from "lucide-react";
 
 interface Order {
   id: string;
-  listing_id: string;
-  buyer_id: string;
-  seller_id: string;
-  status: "pending" | "accepted" | "completed" | "cancelled";
+  title: string;
+  description: string;
+  status: "pending" | "accepted" | "in_progress" | "completed" | "cancelled";
   hours: number;
-  total_price: number;
-  message?: string;
-  created_at: string;
-  listing_title: string;
-  buyer_name: string;
-  seller_name: string;
+  totalPrice: number;
+  createdAt: string;
+  client: {
+    name: string;
+    avatar?: string;
+  };
+  provider: {
+    name: string;
+    avatar?: string;
+  };
+  type: "sent" | "received";
 }
 
 export function OrderManagement() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
-
-  useEffect(() => {
-    if (user) {
-      fetchOrders();
+  const [orders, setOrders] = useState<Order[]>([
+    {
+      id: "1",
+      title: "تدريس الرياضيات",
+      description: "جلسة تدريس رياضيات للمرحلة الثانوية",
+      status: "pending",
+      hours: 2,
+      totalPrice: 4,
+      createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+      client: {
+        name: "أحمد محمد",
+        avatar: "https://i.pravatar.cc/150?u=ahmed"
+      },
+      provider: {
+        name: "أنت",
+        avatar: "https://i.pravatar.cc/150?u=you"
+      },
+      type: "received"
+    },
+    {
+      id: "2",
+      title: "تصميم موقع ويب",
+      description: "تصميم موقع شخصي بسيط",
+      status: "in_progress",
+      hours: 5,
+      totalPrice: 15,
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+      client: {
+        name: "أنت",
+        avatar: "https://i.pravatar.cc/150?u=you"
+      },
+      provider: {
+        name: "سارة أحمد",
+        avatar: "https://i.pravatar.cc/150?u=sarah"
+      },
+      type: "sent"
+    },
+    {
+      id: "3",
+      title: "مراجعة بحث علمي",
+      description: "مراجعة وتدقيق بحث تخرج",
+      status: "completed",
+      hours: 3,
+      totalPrice: 9,
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+      client: {
+        name: "أنت",
+        avatar: "https://i.pravatar.cc/150?u=you"
+      },
+      provider: {
+        name: "د. خالد العمري",
+        avatar: "https://i.pravatar.cc/150?u=khalid"
+      },
+      type: "sent"
     }
-  }, [user]);
-
-  const fetchOrders = async () => {
-    if (!user) return;
-
-    try {
-      // This would be a proper SQL query with joins in a real implementation
-      const mockOrders: Order[] = [
-        {
-          id: "1",
-          listing_id: "listing-1",
-          buyer_id: "buyer-1",
-          seller_id: user.id,
-          status: "pending",
-          hours: 2,
-          total_price: 100,
-          message: "أحتاج مساعدة في حل واجب الرياضيات",
-          created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          listing_title: "تدريس الرياضيات",
-          buyer_name: "أحمد محمد",
-          seller_name: "أنت",
-        },
-        {
-          id: "2",
-          listing_id: "listing-2",
-          buyer_id: user.id,
-          seller_id: "seller-1",
-          status: "accepted",
-          hours: 3,
-          total_price: 150,
-          message: "أريد تعلم البرمجة من الصفر",
-          created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          listing_title: "تعليم البرمجة",
-          buyer_name: "أنت",
-          seller_name: "سارة أحمد",
-        },
-      ];
-
-      setOrders(mockOrders);
-    } catch (error) {
-      toast.error("حدث خطأ أثناء تحميل الطلبات");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateOrderStatus = async (orderId: string, status: string) => {
-    try {
-      // Update order status in database
-      setOrders(orders.map(order => 
-        order.id === orderId ? { ...order, status: status as any } : order
-      ));
-      
-      toast.success(`تم تحديث حالة الطلب إلى ${status}`);
-    } catch (error) {
-      toast.error("حدث خطأ أثناء تحديث الطلب");
-    }
-  };
+  ]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "pending": return "bg-yellow-500";
-      case "accepted": return "bg-blue-500";
-      case "completed": return "bg-green-500";
-      case "cancelled": return "bg-red-500";
-      default: return "bg-gray-500";
+      case "pending":
+        return "bg-yellow-500/10 text-yellow-600 border-yellow-200";
+      case "accepted":
+        return "bg-blue-500/10 text-blue-600 border-blue-200";
+      case "in_progress":
+        return "bg-purple-500/10 text-purple-600 border-purple-200";
+      case "completed":
+        return "bg-green-500/10 text-green-600 border-green-200";
+      case "cancelled":
+        return "bg-red-500/10 text-red-600 border-red-200";
+      default:
+        return "bg-gray-500/10 text-gray-600 border-gray-200";
     }
   };
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case "pending": return "قيد الانتظار";
-      case "accepted": return "مقبول";
-      case "completed": return "مكتمل";
-      case "cancelled": return "ملغي";
-      default: return status;
+      case "pending":
+        return "قيد الانتظار";
+      case "accepted":
+        return "تم القبول";
+      case "in_progress":
+        return "قيد التنفيذ";
+      case "completed":
+        return "مكتمل";
+      case "cancelled":
+        return "ملغي";
+      default:
+        return "غير معروف";
     }
   };
 
-  if (loading) {
-    return <div className="p-6 text-center">جاري تحميل الطلبات...</div>;
-  }
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "pending":
+        return <Clock className="h-4 w-4" />;
+      case "completed":
+        return <CheckCircle className="h-4 w-4" />;
+      case "cancelled":
+        return <XCircle className="h-4 w-4" />;
+      default:
+        return <Clock className="h-4 w-4" />;
+    }
+  };
+
+  const handleStatusUpdate = (orderId: string, newStatus: string) => {
+    setOrders(prev => prev.map(order => 
+      order.id === orderId ? { ...order, status: newStatus as any } : order
+    ));
+  };
+
+  const sentOrders = orders.filter(order => order.type === "sent");
+  const receivedOrders = orders.filter(order => order.type === "received");
+
+  const OrderCard = ({ order }: { order: Order }) => (
+    <Card className="mb-4">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10">
+              <AvatarImage 
+                src={order.type === "sent" ? order.provider.avatar : order.client.avatar} 
+                alt={order.type === "sent" ? order.provider.name : order.client.name} 
+              />
+              <AvatarFallback>
+                {(order.type === "sent" ? order.provider.name : order.client.name).charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h3 className="font-medium">{order.title}</h3>
+              <p className="text-sm text-muted-foreground">
+                {order.type === "sent" ? `مع ${order.provider.name}` : `من ${order.client.name}`}
+              </p>
+            </div>
+          </div>
+          <Badge variant="outline" className={getStatusColor(order.status)}>
+            {getStatusIcon(order.status)}
+            <span className="mr-1">{getStatusText(order.status)}</span>
+          </Badge>
+        </div>
+      </CardHeader>
+      
+      <CardContent className="pt-0">
+        <p className="text-sm text-muted-foreground mb-3">{order.description}</p>
+        
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex gap-4 text-sm">
+            <span>{order.hours} ساعة</span>
+            <span className="font-medium">{order.totalPrice} ساعة (إجمالي)</span>
+          </div>
+          <span className="text-xs text-muted-foreground">
+            {formatDistanceToNow(new Date(order.createdAt), { addSuffix: true, locale: ar })}
+          </span>
+        </div>
+
+        {order.type === "received" && order.status === "pending" && (
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleStatusUpdate(order.id, "cancelled")}
+              className="text-red-600 border-red-200 hover:bg-red-50"
+            >
+              رفض
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => handleStatusUpdate(order.id, "accepted")}
+            >
+              قبول
+            </Button>
+          </div>
+        )}
+
+        {order.status === "accepted" && (
+          <Button
+            size="sm"
+            onClick={() => handleStatusUpdate(order.id, "in_progress")}
+            className="w-full"
+          >
+            بدء التنفيذ
+          </Button>
+        )}
+
+        {order.status === "in_progress" && (
+          <Button
+            size="sm"
+            onClick={() => handleStatusUpdate(order.id, "completed")}
+            className="w-full"
+          >
+            إكمال الطلب
+          </Button>
+        )}
+
+        {order.status === "completed" && order.type === "sent" && (
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" className="flex-1">
+              <Star className="h-4 w-4 mr-1" />
+              تقييم الخدمة
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">إدارة الطلبات</h2>
-        <Badge variant="outline">{orders.length} طلب</Badge>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold mb-2">إدارة الطلبات</h2>
+        <p className="text-muted-foreground">
+          تابع حالة طلباتك والطلبات الواردة إليك
+        </p>
       </div>
 
-      {orders.length === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <p className="text-muted-foreground">لا توجد طلبات حالياً</p>
-          </CardContent>
-        </Card>
-      ) : (
-        orders.map((order) => (
-          <Card key={order.id}>
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-lg">{order.listing_title}</CardTitle>
-                  <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <User className="h-4 w-4" />
-                      {order.buyer_id === user?.id ? order.seller_name : order.buyer_name}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-4 w-4" />
-                      {formatDistanceToNow(new Date(order.created_at), { 
-                        addSuffix: true, 
-                        locale: ar 
-                      })}
-                    </div>
-                  </div>
-                </div>
-                <Badge className={`${getStatusColor(order.status)} text-white`}>
-                  {getStatusText(order.status)}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {order.message && (
-                  <div className="p-3 bg-muted rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <MessageSquare className="h-4 w-4" />
-                      <span className="font-medium">رسالة العميل:</span>
-                    </div>
-                    <p className="text-sm">{order.message}</p>
-                  </div>
-                )}
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1">
-                      <DollarSign className="h-4 w-4" />
-                      <span>{order.total_price} ريال</span>
-                    </div>
-                    <div>
-                      <span>{order.hours} ساعة</span>
-                    </div>
-                  </div>
-                  
-                  {order.status === "pending" && order.seller_id === user?.id && (
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => updateOrderStatus(order.id, "cancelled")}
-                      >
-                        رفض
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => updateOrderStatus(order.id, "accepted")}
-                      >
-                        قبول
-                      </Button>
-                    </div>
-                  )}
-                  
-                  {order.status === "accepted" && (
-                    <Button
-                      size="sm"
-                      onClick={() => updateOrderStatus(order.id, "completed")}
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      تم الإنجاز
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))
-      )}
+      <Tabs defaultValue="all" className="w-full">
+        <TabsList>
+          <TabsTrigger value="all">جميع الطلبات</TabsTrigger>
+          <TabsTrigger value="sent">الطلبات المرسلة</TabsTrigger>
+          <TabsTrigger value="received">الطلبات الواردة</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="all" className="mt-6">
+          {orders.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">لا توجد طلبات بعد</p>
+            </div>
+          ) : (
+            <div>
+              {orders.map((order) => (
+                <OrderCard key={order.id} order={order} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="sent" className="mt-6">
+          {sentOrders.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">لم ترسل أي طلبات بعد</p>
+            </div>
+          ) : (
+            <div>
+              {sentOrders.map((order) => (
+                <OrderCard key={order.id} order={order} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="received" className="mt-6">
+          {receivedOrders.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">لم تتلق أي طلبات بعد</p>
+            </div>
+          )}
+          <div>
+            {receivedOrders.map((order) => (
+              <OrderCard key={order.id} order={order} />
+            ))}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

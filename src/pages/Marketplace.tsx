@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { ListingCard } from "@/components/marketplace/ListingCard";
 import { CreateListingForm } from "@/components/marketplace/CreateListingForm";
 import { OrderManagement } from "@/components/marketplace/OrderManagement";
-import { BookingSystem } from "@/components/marketplace/BookingSystem";
 import { ResponsiveContainer, ResponsiveGrid } from "@/components/ui/mobile-responsive";
 import { PageLoading } from "@/components/common/LoadingStates";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,39 +24,61 @@ export default function Marketplace() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [isLoading, setIsLoading] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
-
-  // Mock listings data
-  const listings = [
+  const [listings, setListings] = useState([
     {
       id: "1",
       title: "تدريس الرياضيات",
-      description: "دروس خصوصية في الرياضيات لجميع المراحل الدراسية",
-      category: "education",
-      hourlyRate: 50,
-      providerId: "provider-1",
-      providerName: "أحمد محمد",
-      rating: 4.8,
-      reviewsCount: 23,
+      description: "دروس خصوصية في الرياضيات لجميع المراحل الدراسية مع شرح مفصل وحل التمارين",
+      category: "تدريس",
+      type: "offer" as const,
+      hourlyRate: 2,
+      postedBy: {
+        name: "أحمد محمد",
+        university: "جامعة الملك سعود",
+        avatarUrl: "https://i.pravatar.cc/150?u=ahmed"
+      },
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+      tags: ["رياضيات", "تدريس", "مراجعة"],
     },
     {
       id: "2", 
       title: "تصميم مواقع ويب",
-      description: "تصميم وتطوير مواقع ويب احترافية باستخدام أحدث التقنيات",
-      category: "technology",
-      hourlyRate: 75,
-      providerId: "provider-2",
-      providerName: "سارة أحمد",
-      rating: 4.9,
-      reviewsCount: 41,
+      description: "تصميم وتطوير مواقع ويب احترافية باستخدام أحدث التقنيات والأدوات",
+      category: "برمجة",
+      type: "offer" as const,
+      hourlyRate: 3,
+      postedBy: {
+        name: "سارة أحمد",
+        university: "جامعة الملك عبدالعزيز",
+        avatarUrl: "https://i.pravatar.cc/150?u=sarah"
+      },
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+      tags: ["ويب", "تصميم", "برمجة"],
     },
-  ];
+    {
+      id: "3",
+      title: "مساعدة في البحث العلمي",
+      description: "أبحث عن مساعدة في كتابة وتنسيق البحث العلمي وجمع المراجع",
+      category: "كتابة",
+      type: "need" as const,
+      hourlyRate: 1,
+      postedBy: {
+        name: "محمد عبدالله",
+        university: "جامعة الإمام",
+        avatarUrl: "https://i.pravatar.cc/150?u=mohammed"
+      },
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
+      tags: ["بحث", "كتابة", "أكاديمي"],
+    }
+  ]);
 
   const categories = [
     { value: "all", label: "جميع التصنيفات" },
-    { value: "education", label: "تعليم" },
-    { value: "technology", label: "تقنية" },
-    { value: "design", label: "تصميم" },
-    { value: "writing", label: "كتابة" },
+    { value: "تدريس", label: "تدريس" },
+    { value: "برمجة", label: "برمجة" },
+    { value: "تصميم", label: "تصميم" },
+    { value: "ترجمة", label: "ترجمة" },
+    { value: "كتابة", label: "كتابة" },
   ];
 
   const filteredListings = listings.filter(listing => {
@@ -66,6 +87,11 @@ export default function Marketplace() {
     const matchesCategory = selectedCategory === "all" || listing.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
+
+  const handleCreateListing = (newListing: any) => {
+    setListings(prev => [newListing, ...prev]);
+    setShowCreateForm(false);
+  };
 
   if (isLoading) {
     return <PageLoading />;
@@ -121,7 +147,7 @@ export default function Marketplace() {
               {/* Listings Grid */}
               <ResponsiveGrid cols={{ default: 1, md: 2, lg: 3 }}>
                 {filteredListings.map((listing) => (
-                  <ListingCard key={listing.id} listing={listing} />
+                  <ListingCard key={listing.id} {...listing} />
                 ))}
               </ResponsiveGrid>
 
@@ -143,7 +169,20 @@ export default function Marketplace() {
 
             <TabsContent value="create">
               <div className="max-w-2xl mx-auto">
-                <CreateListingForm onSuccess={() => {}} />
+                <CreateListingForm 
+                  open={showCreateForm}
+                  onOpenChange={setShowCreateForm}
+                  onCreateListing={handleCreateListing}
+                />
+                
+                {!showCreateForm && (
+                  <div className="text-center py-12">
+                    <Button onClick={() => setShowCreateForm(true)} size="lg">
+                      <Plus className="h-4 w-4 mr-2" />
+                      إنشاء خدمة جديدة
+                    </Button>
+                  </div>
+                )}
               </div>
             </TabsContent>
           </Tabs>

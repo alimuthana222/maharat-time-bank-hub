@@ -102,7 +102,10 @@ export function CreateListingForm({
         postedBy: {
           name: "أنت",
           university: "جامعتك",
+          avatarUrl: "https://i.pravatar.cc/150?u=you"
         },
+        createdAt: new Date().toISOString(),
+        tags: [values.category],
       };
       
       onCreateListing(newListing);

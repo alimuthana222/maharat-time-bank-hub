@@ -1,109 +1,136 @@
 
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { ResponsiveGrid } from "@/components/ui/mobile-responsive";
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line
+} from "recharts";
 
 export function DashboardStats() {
-  // Sample data for charts
   const monthlyData = [
-    { name: 'يناير', hours: 10 },
-    { name: 'فبراير', hours: 15 },
-    { name: 'مارس', hours: 8 },
-    { name: 'أبريل', hours: 20 },
-    { name: 'مايو', hours: 12 },
-    { name: 'يونيو', hours: 25 },
+    { month: "يناير", earned: 8, spent: 5 },
+    { month: "فبراير", earned: 12, spent: 7 },
+    { month: "مارس", earned: 15, spent: 10 },
+    { month: "أبريل", earned: 18, spent: 12 },
+    { month: "مايو", earned: 22, spent: 15 },
+    { month: "يونيو", earned: 25, spent: 18 }
   ];
 
-  const popularServices = [
-    { category: 'برمجة', count: 45 },
-    { category: 'تصميم', count: 32 },
-    { category: 'ترجمة', count: 28 },
-    { category: 'تدريس', count: 20 },
-    { category: 'تحرير', count: 15 },
+  const categoryData = [
+    { name: "تدريس", value: 35, color: "#3b82f6" },
+    { name: "برمجة", value: 25, color: "#10b981" },
+    { name: "تصميم", value: 20, color: "#f59e0b" },
+    { name: "ترجمة", value: 15, color: "#ef4444" },
+    { name: "أخرى", value: 5, color: "#8b5cf6" }
+  ];
+
+  const recentActivity = [
+    { date: "2024-01-15", type: "earned", hours: 3, description: "جلسة تدريس رياضيات" },
+    { date: "2024-01-14", type: "spent", hours: 2, description: "مساعدة في البرمجة" },
+    { date: "2024-01-13", type: "earned", hours: 1, description: "مراجعة مقال" },
+    { date: "2024-01-12", type: "spent", hours: 4, description: "تصميم شعار" }
   ];
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold">الإحصائيات والتحليلات</h2>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <ResponsiveGrid cols={{ default: 1, lg: 2 }}>
+        {/* Monthly Performance */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">ساعات مكتسبة (بالشهر)</CardTitle>
+            <CardTitle>الأداء الشهري</CardTitle>
           </CardHeader>
-          <CardContent className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
               <BarChart data={monthlyData}>
-                <XAxis dataKey="name" />
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="hours" fill="#8B5CF6" />
+                <Bar dataKey="earned" fill="#3b82f6" name="ساعات مكتسبة" />
+                <Bar dataKey="spent" fill="#ef4444" name="ساعات مصروفة" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
+        {/* Category Distribution */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">المهارات الأكثر طلباً</CardTitle>
+            <CardTitle>توزيع الخدمات</CardTitle>
           </CardHeader>
-          <CardContent className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={popularServices} layout="vertical">
-                <XAxis type="number" />
-                <YAxis dataKey="category" type="category" />
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={categoryData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {categoryData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
                 <Tooltip />
-                <Bar dataKey="count" fill="#F97316" />
-              </BarChart>
+              </PieChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">إجمالي الساعات</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">120</div>
-            <p className="text-muted-foreground text-sm">ساعة مكتسبة</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">معدل التقييم</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center">
-              <div className="text-3xl font-bold">4.8</div>
-              <div className="mr-2 flex">
-                {[...Array(5)].map((_, i) => (
-                  <svg
-                    key={i}
-                    className={`w-5 h-5 ${i < 4 ? 'text-yellow-400' : 'text-gray-300'}`}
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-                  </svg>
-                ))}
-              </div>
+            <div className="flex flex-wrap gap-2 mt-4">
+              {categoryData.map((item, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <div 
+                    className="w-3 h-3 rounded-full" 
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <span className="text-sm">{item.name}</span>
+                </div>
+              ))}
             </div>
-            <p className="text-muted-foreground text-sm">من 24 تقييم</p>
           </CardContent>
         </Card>
+      </ResponsiveGrid>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">خدمات مكتملة</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">18</div>
-            <p className="text-muted-foreground text-sm">خدمة مكتملة</p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Recent Activity */}
+      <Card>
+        <CardHeader>
+          <CardTitle>النشاط الأخير</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {recentActivity.map((activity, index) => (
+              <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                <div className="flex items-center gap-3">
+                  <div className={`w-2 h-2 rounded-full ${
+                    activity.type === 'earned' ? 'bg-green-500' : 'bg-red-500'
+                  }`} />
+                  <div>
+                    <p className="font-medium">{activity.description}</p>
+                    <p className="text-sm text-muted-foreground">{activity.date}</p>
+                  </div>
+                </div>
+                <div className={`text-sm font-medium ${
+                  activity.type === 'earned' ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {activity.type === 'earned' ? '+' : '-'}{activity.hours} ساعة
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
