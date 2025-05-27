@@ -5,6 +5,8 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Auth from "./pages/Auth";
+import NewAuth from "./pages/NewAuth";
+import NewRegister from "./pages/NewRegister";
 import Marketplace from "./pages/Marketplace";
 import TimeBank from "./pages/TimeBank";
 import Dashboard from "./pages/Dashboard";
@@ -51,6 +53,8 @@ function App() {
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/new-auth" element={<NewAuth />} />
+            <Route path="/new-register" element={<NewRegister />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/marketplace" element={<Marketplace />} />
