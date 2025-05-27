@@ -283,12 +283,13 @@ export function OrderManagement() {
             <div className="text-center py-12">
               <p className="text-muted-foreground">لم تتلق أي طلبات بعد</p>
             </div>
+          ) : (
+            <div>
+              {receivedOrders.map((order) => (
+                <OrderCard key={order.id} order={order} />
+              ))}
+            </div>
           )}
-          <div>
-            {receivedOrders.map((order) => (
-              <OrderCard key={order.id} order={order} />
-            ))}
-          </div>
         </TabsContent>
       </Tabs>
     </div>
