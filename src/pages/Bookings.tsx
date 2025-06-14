@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Navbar } from "@/components/layout/Navbar";
-import { BookingsList } from "@/components/bookings/BookingsList";
+import { RealBookingsList } from "@/components/bookings/RealBookingsList";
 import { Calendar } from "lucide-react";
 
 export default function Bookings() {
@@ -18,7 +18,7 @@ export default function Bookings() {
           </div>
         </div>
         
-        <BookingsList />
+        <RealBookingsList />
       </div>
     </div>
   );

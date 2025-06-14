@@ -247,6 +247,30 @@ export type Database = {
         }
         Relationships: []
       }
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string | null
+          participant1_id: string
+          participant2_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          participant1_id: string
+          participant2_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          participant1_id?: string
+          participant2_id?: string
+        }
+        Relationships: []
+      }
       event_registrations: {
         Row: {
           event_id: string
@@ -434,6 +458,47 @@ export type Database = {
           sender_id?: string
         }
         Relationships: []
+      }
+      new_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          file_url: string | null
+          id: string
+          is_read: boolean | null
+          message_type: string | null
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          is_read?: boolean | null
+          message_type?: string | null
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          is_read?: boolean | null
+          message_type?: string | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "new_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
@@ -636,9 +701,15 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           created_at: string
+          experience_years: number | null
           full_name: string | null
+          hourly_rate: number | null
           id: string
           last_seen: string | null
+          location: string | null
+          phone: string | null
+          skills: string[] | null
+          status: string | null
           university: string | null
           username: string
         }
@@ -646,9 +717,15 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          experience_years?: number | null
           full_name?: string | null
+          hourly_rate?: number | null
           id: string
           last_seen?: string | null
+          location?: string | null
+          phone?: string | null
+          skills?: string[] | null
+          status?: string | null
           university?: string | null
           username: string
         }
@@ -656,9 +733,15 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          experience_years?: number | null
           full_name?: string | null
+          hourly_rate?: number | null
           id?: string
           last_seen?: string | null
+          location?: string | null
+          phone?: string | null
+          skills?: string[] | null
+          status?: string | null
           university?: string | null
           username?: string
         }

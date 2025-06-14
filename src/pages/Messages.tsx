@@ -1,20 +1,25 @@
 
 import React from "react";
 import { Navbar } from "@/components/layout/Navbar";
-import { MessageSystem } from "@/components/messaging/MessageSystem";
-import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import { RealMessageSystem } from "@/components/messaging/RealMessageSystem";
+import { MessageCircle } from "lucide-react";
 
 export default function Messages() {
   return (
-    <ProtectedRoute>
-      <div className="min-h-screen bg-background flex flex-col">
-        <Navbar />
-        
-        <div className="container mx-auto pt-20 pb-8 px-4">
-          <h1 className="text-3xl font-bold mb-8">الرسائل</h1>
-          <MessageSystem />
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+      
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center gap-3 mb-8">
+          <MessageCircle className="h-8 w-8 text-blue-600" />
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">الرسائل</h1>
+            <p className="text-gray-600">تواصل مع الطلاب ومقدمي الخدمات</p>
+          </div>
         </div>
+        
+        <RealMessageSystem />
       </div>
-    </ProtectedRoute>
+    </div>
   );
 }
