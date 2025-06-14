@@ -73,7 +73,7 @@ export function UserMenu() {
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
-            <Link to={`/profile/${user.id}`}>
+            <Link to="/profile">
               <User className="mr-2 h-4 w-4" />
               <span>الملف الشخصي</span>
             </Link>
