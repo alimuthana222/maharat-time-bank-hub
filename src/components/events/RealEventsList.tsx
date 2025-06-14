@@ -83,10 +83,7 @@ export function RealEventsList() {
       
       let query = supabase
         .from("events")
-        .select(`
-          *,
-          profiles!events_organizer_id_fkey(username, avatar_url)
-        `)
+        .select("*")
         .eq("status", "upcoming")
         .order("start_date", { ascending: true });
 
@@ -106,39 +103,49 @@ export function RealEventsList() {
         query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
       }
 
-      const { data, error } = await query;
+      const { data: eventsData, error } = await query;
 
       if (error) throw error;
 
+      if (!eventsData) {
+        setEvents([]);
+        return;
+      }
+
+      // Get organizer profiles separately
+      const organizerIds = eventsData.map(event => event.organizer_id);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, username, avatar_url")
+        .in("id", organizerIds);
+
+      const profilesMap = profiles?.reduce((acc, profile) => {
+        acc[profile.id] = profile;
+        return acc;
+      }, {} as Record<string, any>) || {};
+
       // Check user registrations
-      if (user && data) {
-        const eventIds = data.map(event => event.id);
+      let registeredEventIds = new Set<string>();
+      if (user && eventsData.length > 0) {
+        const eventIds = eventsData.map(event => event.id);
         const { data: registrations } = await supabase
           .from("event_registrations")
           .select("event_id")
           .eq("user_id", user.id)
           .in("event_id", eventIds);
 
-        const registeredEventIds = new Set(registrations?.map(r => r.event_id) || []);
-
-        const eventsWithRegistration = data.map(event => ({
-          ...event,
-          organizer_name: event.profiles?.username || "منظم الفعالية",
-          organizer_avatar: event.profiles?.avatar_url,
-          user_registered: registeredEventIds.has(event.id),
-          status: event.status as "upcoming" | "ongoing" | "completed" | "cancelled"
-        }));
-
-        setEvents(eventsWithRegistration);
-      } else {
-        setEvents(data?.map(event => ({
-          ...event,
-          organizer_name: event.profiles?.username || "منظم الفعالية",
-          organizer_avatar: event.profiles?.avatar_url,
-          user_registered: false,
-          status: event.status as "upcoming" | "ongoing" | "completed" | "cancelled"
-        })) || []);
+        registeredEventIds = new Set(registrations?.map(r => r.event_id) || []);
       }
+
+      const eventsWithDetails = eventsData.map(event => ({
+        ...event,
+        organizer_name: profilesMap[event.organizer_id]?.username || "منظم الفعالية",
+        organizer_avatar: profilesMap[event.organizer_id]?.avatar_url,
+        user_registered: registeredEventIds.has(event.id),
+        status: event.status as "upcoming" | "ongoing" | "completed" | "cancelled"
+      }));
+
+      setEvents(eventsWithDetails);
     } catch (error) {
       console.error("Error fetching events:", error);
       toast.error("حدث خطأ أثناء تحميل الفعاليات");

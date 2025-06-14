@@ -93,10 +93,7 @@ export function RealCommunityPosts() {
       
       let query = supabase
         .from("community_posts")
-        .select(`
-          *,
-          profiles!community_posts_author_id_fkey(username, avatar_url)
-        `)
+        .select("*")
         .eq("is_hidden", false)
         .order("is_pinned", { ascending: false })
         .order("created_at", { ascending: false });
@@ -109,37 +106,48 @@ export function RealCommunityPosts() {
         query = query.or(`title.ilike.%${searchQuery}%,content.ilike.%${searchQuery}%`);
       }
 
-      const { data, error } = await query;
+      const { data: postsData, error } = await query;
 
       if (error) throw error;
 
+      if (!postsData) {
+        setPosts([]);
+        return;
+      }
+
+      // Get author profiles separately
+      const authorIds = postsData.map(post => post.author_id);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, username, avatar_url")
+        .in("id", authorIds);
+
+      const profilesMap = profiles?.reduce((acc, profile) => {
+        acc[profile.id] = profile;
+        return acc;
+      }, {} as Record<string, any>) || {};
+
       // Check user likes
-      if (user && data) {
-        const postIds = data.map(post => post.id);
+      let likedPostIds = new Set<string>();
+      if (user && postsData.length > 0) {
+        const postIds = postsData.map(post => post.id);
         const { data: likes } = await supabase
           .from("post_likes")
           .select("post_id")
           .eq("user_id", user.id)
           .in("post_id", postIds);
 
-        const likedPostIds = new Set(likes?.map(l => l.post_id) || []);
-
-        const postsWithLikes = data.map(post => ({
-          ...post,
-          author_name: post.profiles?.username || "مستخدم",
-          author_avatar: post.profiles?.avatar_url,
-          user_liked: likedPostIds.has(post.id)
-        }));
-
-        setPosts(postsWithLikes);
-      } else {
-        setPosts(data?.map(post => ({
-          ...post,
-          author_name: post.profiles?.username || "مستخدم",
-          author_avatar: post.profiles?.avatar_url,
-          user_liked: false
-        })) || []);
+        likedPostIds = new Set(likes?.map(l => l.post_id) || []);
       }
+
+      const postsWithDetails = postsData.map(post => ({
+        ...post,
+        author_name: profilesMap[post.author_id]?.username || "مستخدم",
+        author_avatar: profilesMap[post.author_id]?.avatar_url,
+        user_liked: likedPostIds.has(post.id)
+      }));
+
+      setPosts(postsWithDetails);
     } catch (error) {
       console.error("Error fetching posts:", error);
       toast.error("حدث خطأ أثناء تحميل المنشورات");
@@ -150,23 +158,37 @@ export function RealCommunityPosts() {
 
   const fetchComments = async (postId: string) => {
     try {
-      const { data, error } = await supabase
+      const { data: commentsData, error } = await supabase
         .from("post_comments")
-        .select(`
-          *,
-          profiles!post_comments_author_id_fkey(username, avatar_url)
-        `)
+        .select("*")
         .eq("post_id", postId)
         .eq("is_hidden", false)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
 
-      const commentsWithAuthor = data?.map(comment => ({
+      if (!commentsData) {
+        setComments(prev => ({ ...prev, [postId]: [] }));
+        return;
+      }
+
+      // Get comment author profiles
+      const authorIds = commentsData.map(comment => comment.author_id);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, username, avatar_url")
+        .in("id", authorIds);
+
+      const profilesMap = profiles?.reduce((acc, profile) => {
+        acc[profile.id] = profile;
+        return acc;
+      }, {} as Record<string, any>) || {};
+
+      const commentsWithAuthor = commentsData.map(comment => ({
         ...comment,
-        author_name: comment.profiles?.username || "مستخدم",
-        author_avatar: comment.profiles?.avatar_url
-      })) || [];
+        author_name: profilesMap[comment.author_id]?.username || "مستخدم",
+        author_avatar: profilesMap[comment.author_id]?.avatar_url
+      }));
 
       setComments(prev => ({
         ...prev,

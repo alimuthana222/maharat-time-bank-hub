@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -166,43 +165,48 @@ export function RealAdminDashboard() {
   const fetchContent = async () => {
     try {
       // Fetch posts
-      const { data: posts } = await supabase
+      const { data: postsData } = await supabase
         .from("community_posts")
-        .select(`
-          id,
-          title,
-          is_hidden,
-          created_at,
-          profiles!community_posts_author_id_fkey(username)
-        `)
+        .select("id, title, is_hidden, created_at, author_id")
         .order("created_at", { ascending: false })
         .limit(25);
 
       // Fetch events
-      const { data: events } = await supabase
+      const { data: eventsData } = await supabase
         .from("events")
-        .select(`
-          id,
-          title,
-          created_at,
-          profiles!events_organizer_id_fkey(username)
-        `)
+        .select("id, title, created_at, organizer_id")
         .order("created_at", { ascending: false })
         .limit(25);
 
+      // Get author profiles for posts and events
+      const allAuthorIds = [
+        ...(postsData?.map(post => post.author_id) || []),
+        ...(eventsData?.map(event => event.organizer_id) || [])
+      ];
+
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, username")
+        .in("id", allAuthorIds);
+
+      const profilesMap = profiles?.reduce((acc, profile) => {
+        acc[profile.id] = profile;
+        return acc;
+      }, {} as Record<string, any>) || {};
+
       const contentItems: ContentItem[] = [
-        ...(posts?.map(post => ({
+        ...(postsData?.map(post => ({
           id: post.id,
           title: post.title,
-          author_name: post.profiles?.username || "مجهول",
+          author_name: profilesMap[post.author_id]?.username || "مجهول",
           created_at: post.created_at,
           is_hidden: post.is_hidden,
           type: "post" as const
         })) || []),
-        ...(events?.map(event => ({
+        ...(eventsData?.map(event => ({
           id: event.id,
           title: event.title,
-          author_name: event.profiles?.username || "مجهول",
+          author_name: profilesMap[event.organizer_id]?.username || "مجهول",
           created_at: event.created_at,
           is_hidden: false,
           type: "event" as const
@@ -215,7 +219,7 @@ export function RealAdminDashboard() {
     }
   };
 
-  const assignRole = async (userId: string, role: "admin" | "moderator" | "owner" | "user") => {
+  const assignRole = async (userId: string, role: "admin" | "moderator" | "owner") => {
     if (!isOwner()) {
       toast.error("هذه العملية متاحة للمالك فقط");
       return;
@@ -247,7 +251,7 @@ export function RealAdminDashboard() {
     }
   };
 
-  const removeRole = async (userId: string, role: "admin" | "moderator" | "owner" | "user") => {
+  const removeRole = async (userId: string, role: "admin" | "moderator" | "owner") => {
     if (!isOwner()) {
       toast.error("هذه العملية متاحة للمالك فقط");
       return;
@@ -466,6 +470,7 @@ export function RealAdminDashboard() {
         </TabsContent>
 
         <TabsContent value="users" className="space-y-6">
+          {/* Users management section */}
           <Card>
             <CardHeader>
               <CardTitle>إدارة المستخدمين</CardTitle>
@@ -502,7 +507,7 @@ export function RealAdminDashboard() {
                     
                     {isOwner() && (
                       <div className="flex gap-2">
-                        <Select onValueChange={(role: "admin" | "moderator") => assignRole(user.id, role)}>
+                        <Select onValueChange={(role: "admin" | "moderator" | "owner") => assignRole(user.id, role)}>
                           <SelectTrigger className="w-32">
                             <SelectValue placeholder="إضافة دور" />
                           </SelectTrigger>
@@ -517,7 +522,7 @@ export function RealAdminDashboard() {
                             key={role}
                             variant="outline"
                             size="sm"
-                            onClick={() => removeRole(user.id, role as "admin" | "moderator" | "owner" | "user")}
+                            onClick={() => removeRole(user.id, role as "admin" | "moderator" | "owner")}
                           >
                             إزالة {role === "admin" ? "مدير" : "مشرف"}
                           </Button>
@@ -532,6 +537,7 @@ export function RealAdminDashboard() {
         </TabsContent>
 
         <TabsContent value="content" className="space-y-6">
+          {/* Content management section */}
           <Card>
             <CardHeader>
               <CardTitle>إدارة المحتوى</CardTitle>
@@ -584,6 +590,7 @@ export function RealAdminDashboard() {
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-6">
+          {/* Settings section */}
           <Card>
             <CardHeader>
               <CardTitle>إعدادات النظام</CardTitle>
