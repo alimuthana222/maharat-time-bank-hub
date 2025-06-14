@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -101,23 +100,26 @@ export function RealOwnerDashboard() {
         .from('bookings')
         .select('*', { count: 'exact', head: true });
 
-      // Fetch completed bookings for revenue calculation
+      // Calculate revenue from completed bookings (simplified calculation)
       const { data: completedBookings } = await supabase
         .from('bookings')
-        .select(`
-          id,
-          total_hours,
-          service_id,
-          created_at,
-          marketplace_listings!inner(hourly_rate)
-        `)
+        .select('total_hours, service_id')
         .eq('status', 'completed');
 
+      // Get services with hourly rates
+      const { data: services } = await supabase
+        .from('marketplace_listings')
+        .select('id, hourly_rate');
+
       // Calculate total revenue
-      const totalRevenue = completedBookings?.reduce((sum, booking) => {
-        const hourlyRate = booking.marketplace_listings?.hourly_rate || 0;
-        return sum + (hourlyRate * (booking.total_hours || 0));
-      }, 0) || 0;
+      let totalRevenue = 0;
+      if (completedBookings && services) {
+        const serviceRatesMap = new Map(services.map(s => [s.id, s.hourly_rate]));
+        totalRevenue = completedBookings.reduce((sum, booking) => {
+          const hourlyRate = serviceRatesMap.get(booking.service_id) || 0;
+          return sum + (hourlyRate * (booking.total_hours || 0));
+        }, 0);
+      }
 
       // Fetch time bank total hours
       const { data: timeBankData } = await supabase
@@ -151,7 +153,6 @@ export function RealOwnerDashboard() {
       const currentDate = new Date();
       const currentMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
       const lastMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
-      const twoMonthsAgo = new Date(currentDate.getFullYear(), currentDate.getMonth() - 2, 1);
 
       const { count: currentMonthUsers } = await supabase
         .from('profiles')
@@ -175,43 +176,45 @@ export function RealOwnerDashboard() {
         .order('created_at', { ascending: false })
         .limit(10);
 
-      // Fetch recent activity (bookings, listings, events)
+      // Fetch recent activity with separate queries to avoid relation errors
       const { data: recentBookings } = await supabase
         .from('bookings')
-        .select(`
-          id, 
-          created_at, 
-          status,
-          profiles!bookings_client_id_fkey(username)
-        `)
+        .select('id, created_at, status, client_id')
         .order('created_at', { ascending: false })
         .limit(5);
 
       const { data: recentListings } = await supabase
         .from('marketplace_listings')
-        .select(`
-          id, 
-          created_at, 
-          title,
-          profiles!marketplace_listings_user_id_fkey(username)
-        `)
+        .select('id, created_at, title, user_id')
         .order('created_at', { ascending: false })
         .limit(5);
+
+      // Get user details for recent activities
+      const bookingUserIds = recentBookings?.map(b => b.client_id) || [];
+      const listingUserIds = recentListings?.map(l => l.user_id) || [];
+      const allUserIds = [...new Set([...bookingUserIds, ...listingUserIds])];
+
+      const { data: activityUsers } = await supabase
+        .from('profiles')
+        .select('id, username')
+        .in('id', allUserIds);
+
+      const usersMap = new Map(activityUsers?.map(u => [u.id, u.username]) || []);
 
       const recentActivity = [
         ...(recentBookings?.map(booking => ({
           id: booking.id,
           type: 'حجز',
-          description: `حجز جديد من ${booking.profiles?.username || 'مستخدم'}`,
+          description: `حجز جديد من ${usersMap.get(booking.client_id) || 'مستخدم'}`,
           date: booking.created_at,
-          user: booking.profiles?.username
+          user: usersMap.get(booking.client_id)
         })) || []),
         ...(recentListings?.map(listing => ({
           id: listing.id,
           type: 'خدمة',
           description: `خدمة جديدة: ${listing.title}`,
           date: listing.created_at,
-          user: listing.profiles?.username
+          user: usersMap.get(listing.user_id)
         })) || [])
       ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10);
 
@@ -229,21 +232,22 @@ export function RealOwnerDashboard() {
           .gte('created_at', monthStart.toISOString())
           .lte('created_at', monthEnd.toISOString());
 
-        // Calculate revenue for this month
+        // Calculate revenue for this month (simplified)
         const { data: monthBookings } = await supabase
           .from('bookings')
-          .select(`
-            total_hours,
-            marketplace_listings!inner(hourly_rate)
-          `)
+          .select('total_hours, service_id')
           .eq('status', 'completed')
           .gte('created_at', monthStart.toISOString())
           .lte('created_at', monthEnd.toISOString());
 
-        const monthRevenue = monthBookings?.reduce((sum, booking) => {
-          const hourlyRate = booking.marketplace_listings?.hourly_rate || 0;
-          return sum + (hourlyRate * (booking.total_hours || 0));
-        }, 0) || 0;
+        let monthRevenue = 0;
+        if (monthBookings && services) {
+          const serviceRatesMap = new Map(services.map(s => [s.id, s.hourly_rate]));
+          monthRevenue = monthBookings.reduce((sum, booking) => {
+            const hourlyRate = serviceRatesMap.get(booking.service_id) || 0;
+            return sum + (hourlyRate * (booking.total_hours || 0));
+          }, 0);
+        }
 
         userGrowth.push({
           month: date.toLocaleDateString('ar-SA', { month: 'short' }),
@@ -255,33 +259,44 @@ export function RealOwnerDashboard() {
       // Fetch top providers
       const { data: topProvidersData } = await supabase
         .from('profiles')
-        .select(`
-          id,
-          username,
-          full_name,
-          marketplace_listings(id, hourly_rate),
-          bookings!bookings_provider_id_fkey(total_hours, status)
-        `)
+        .select('id, username, full_name')
         .limit(10);
 
-      const topProviders = topProvidersData?.map(provider => {
-        const servicesCount = provider.marketplace_listings?.length || 0;
-        const completedBookings = provider.bookings?.filter(b => b.status === 'completed') || [];
-        const revenue = completedBookings.reduce((sum, booking) => {
-          // Find the service for this booking to get hourly rate
-          const service = provider.marketplace_listings?.find(s => s.id);
-          const hourlyRate = service?.hourly_rate || 0;
-          return sum + (hourlyRate * (booking.total_hours || 0));
-        }, 0);
+      // Get service counts for each provider
+      const topProviders = [];
+      if (topProvidersData) {
+        for (const provider of topProvidersData) {
+          const { count: servicesCount } = await supabase
+            .from('marketplace_listings')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', provider.id);
 
-        return {
-          id: provider.id,
-          username: provider.username,
-          full_name: provider.full_name || provider.username,
-          services_count: servicesCount,
-          revenue
-        };
-      }).sort((a, b) => b.revenue - a.revenue).slice(0, 5) || [];
+          const { data: providerBookings } = await supabase
+            .from('bookings')
+            .select('total_hours, service_id')
+            .eq('provider_id', provider.id)
+            .eq('status', 'completed');
+
+          let revenue = 0;
+          if (providerBookings && services) {
+            const serviceRatesMap = new Map(services.map(s => [s.id, s.hourly_rate]));
+            revenue = providerBookings.reduce((sum, booking) => {
+              const hourlyRate = serviceRatesMap.get(booking.service_id) || 0;
+              return sum + (hourlyRate * (booking.total_hours || 0));
+            }, 0);
+          }
+
+          topProviders.push({
+            id: provider.id,
+            username: provider.username,
+            full_name: provider.full_name || provider.username,
+            services_count: servicesCount || 0,
+            revenue
+          });
+        }
+      }
+
+      topProviders.sort((a, b) => b.revenue - a.revenue).splice(5);
 
       setData({
         totalUsers: totalUsers || 0,
