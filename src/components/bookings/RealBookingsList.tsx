@@ -18,17 +18,14 @@ interface Booking {
   created_at: string;
   client_id: string;
   provider_id: string;
-  service?: {
-    title: string;
-  };
   client?: {
     username: string;
     full_name?: string;
-  };
+  } | null;
   provider?: {
     username: string;
     full_name?: string;
-  };
+  } | null;
 }
 
 export function RealBookingsList() {
@@ -47,13 +44,12 @@ export function RealBookingsList() {
     if (!user) return;
 
     try {
+      setLoading(true);
+      
+      // Build the query based on filter
       let query = supabase
         .from("bookings")
-        .select(`
-          *,
-          client:profiles!bookings_client_id_fkey(username, full_name),
-          provider:profiles!bookings_provider_id_fkey(username, full_name)
-        `)
+        .select("*")
         .order("created_at", { ascending: false });
 
       if (filter === "sent") {
@@ -64,14 +60,50 @@ export function RealBookingsList() {
         query = query.or(`client_id.eq.${user.id},provider_id.eq.${user.id}`);
       }
 
-      const { data, error } = await query;
+      const { data: bookingsData, error } = await query;
 
       if (error) throw error;
 
-      setBookings(data || []);
+      if (bookingsData && bookingsData.length > 0) {
+        // Fetch profiles for all unique user IDs
+        const userIds = new Set<string>();
+        bookingsData.forEach(booking => {
+          userIds.add(booking.client_id);
+          userIds.add(booking.provider_id);
+        });
+
+        const { data: profilesData, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, username, full_name")
+          .in("id", Array.from(userIds));
+
+        if (profilesError) {
+          console.error("Error fetching profiles:", profilesError);
+        }
+
+        // Create a map of profiles for quick lookup
+        const profilesMap = new Map();
+        if (profilesData) {
+          profilesData.forEach(profile => {
+            profilesMap.set(profile.id, profile);
+          });
+        }
+
+        // Combine bookings with profile data
+        const bookingsWithProfiles = bookingsData.map(booking => ({
+          ...booking,
+          client: profilesMap.get(booking.client_id) || null,
+          provider: profilesMap.get(booking.provider_id) || null,
+        }));
+
+        setBookings(bookingsWithProfiles);
+      } else {
+        setBookings([]);
+      }
     } catch (error) {
       console.error("Error fetching bookings:", error);
       toast.error("خطأ في تحميل الحجوزات");
+      setBookings([]);
     } finally {
       setLoading(false);
     }
@@ -167,8 +199,8 @@ export function RealBookingsList() {
                       <User className="h-4 w-4" />
                       <span>
                         {booking.client_id === user?.id 
-                          ? `إلى: ${booking.provider?.full_name || booking.provider?.username}`
-                          : `من: ${booking.client?.full_name || booking.client?.username}`
+                          ? `إلى: ${booking.provider?.full_name || booking.provider?.username || "مستخدم غير معروف"}`
+                          : `من: ${booking.client?.full_name || booking.client?.username || "مستخدم غير معروف"}`
                         }
                       </span>
                     </div>
