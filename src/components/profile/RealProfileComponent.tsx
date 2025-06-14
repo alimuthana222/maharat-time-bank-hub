@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
@@ -81,28 +80,47 @@ export function RealProfileComponent() {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
+      // First, fetch reviews for this user
+      const { data: reviewsData, error: reviewsError } = await supabase
         .from("reviews")
-        .select(`
-          id,
-          rating,
-          comment,
-          created_at,
-          reviewer:profiles!reviews_reviewer_id_fkey(username, full_name)
-        `)
+        .select("id, rating, comment, created_at, reviewer_id")
         .eq("reviewed_user_id", user.id)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (reviewsError) throw reviewsError;
 
-      const reviewsWithReviewer = data?.map(review => ({
-        ...review,
-        reviewer: review.reviewer || { username: "مستخدم محذوف", full_name: null }
-      })) || [];
+      if (!reviewsData || reviewsData.length === 0) {
+        setReviews([]);
+        return;
+      }
 
-      setReviews(reviewsWithReviewer);
+      // Get unique reviewer IDs
+      const reviewerIds = [...new Set(reviewsData.map(review => review.reviewer_id))];
+
+      // Fetch reviewer profiles
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, username, full_name")
+        .in("id", reviewerIds);
+
+      if (profilesError) throw profilesError;
+
+      // Combine reviews with reviewer data
+      const reviewsWithReviewers = reviewsData.map(review => {
+        const reviewer = profilesData?.find(profile => profile.id === review.reviewer_id);
+        return {
+          id: review.id,
+          rating: review.rating,
+          comment: review.comment,
+          created_at: review.created_at,
+          reviewer: reviewer || { username: "مستخدم محذوف", full_name: null }
+        };
+      });
+
+      setReviews(reviewsWithReviewers);
     } catch (error) {
       console.error("Error fetching reviews:", error);
+      setReviews([]);
     }
   };
 
