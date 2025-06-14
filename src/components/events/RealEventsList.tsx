@@ -86,7 +86,7 @@ export function RealEventsList() {
         .from("events")
         .select(`
           *,
-          organizer:profiles!events_organizer_id_fkey(username, avatar_url)
+          profiles!events_organizer_id_fkey(username, avatar_url)
         `)
         .eq("status", "upcoming")
         .order("start_date", { ascending: true });
@@ -124,18 +124,20 @@ export function RealEventsList() {
 
         const eventsWithRegistration = data.map(event => ({
           ...event,
-          organizer_name: event.organizer?.username || "منظم الفعالية",
-          organizer_avatar: event.organizer?.avatar_url,
-          user_registered: registeredEventIds.has(event.id)
+          organizer_name: event.profiles?.username || "منظم الفعالية",
+          organizer_avatar: event.profiles?.avatar_url,
+          user_registered: registeredEventIds.has(event.id),
+          status: event.status as "upcoming" | "ongoing" | "completed" | "cancelled"
         }));
 
         setEvents(eventsWithRegistration);
       } else {
         setEvents(data?.map(event => ({
           ...event,
-          organizer_name: event.organizer?.username || "منظم الفعالية",
-          organizer_avatar: event.organizer?.avatar_url,
-          user_registered: false
+          organizer_name: event.profiles?.username || "منظم الفعالية",
+          organizer_avatar: event.profiles?.avatar_url,
+          user_registered: false,
+          status: event.status as "upcoming" | "ongoing" | "completed" | "cancelled"
         })) || []);
       }
     } catch (error) {

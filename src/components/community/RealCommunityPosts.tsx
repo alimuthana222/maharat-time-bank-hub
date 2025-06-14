@@ -96,7 +96,7 @@ export function RealCommunityPosts() {
         .from("community_posts")
         .select(`
           *,
-          author:profiles!community_posts_author_id_fkey(username, avatar_url)
+          profiles!community_posts_author_id_fkey(username, avatar_url)
         `)
         .eq("is_hidden", false)
         .order("is_pinned", { ascending: false })
@@ -127,8 +127,8 @@ export function RealCommunityPosts() {
 
         const postsWithLikes = data.map(post => ({
           ...post,
-          author_name: post.author?.username || "مستخدم",
-          author_avatar: post.author?.avatar_url,
+          author_name: post.profiles?.username || "مستخدم",
+          author_avatar: post.profiles?.avatar_url,
           user_liked: likedPostIds.has(post.id)
         }));
 
@@ -136,8 +136,8 @@ export function RealCommunityPosts() {
       } else {
         setPosts(data?.map(post => ({
           ...post,
-          author_name: post.author?.username || "مستخدم",
-          author_avatar: post.author?.avatar_url,
+          author_name: post.profiles?.username || "مستخدم",
+          author_avatar: post.profiles?.avatar_url,
           user_liked: false
         })) || []);
       }
@@ -155,7 +155,7 @@ export function RealCommunityPosts() {
         .from("post_comments")
         .select(`
           *,
-          author:profiles!post_comments_author_id_fkey(username, avatar_url)
+          profiles!post_comments_author_id_fkey(username, avatar_url)
         `)
         .eq("post_id", postId)
         .eq("is_hidden", false)
@@ -165,8 +165,8 @@ export function RealCommunityPosts() {
 
       const commentsWithAuthor = data?.map(comment => ({
         ...comment,
-        author_name: comment.author?.username || "مستخدم",
-        author_avatar: comment.author?.avatar_url
+        author_name: comment.profiles?.username || "مستخدم",
+        author_avatar: comment.profiles?.avatar_url
       })) || [];
 
       setComments(prev => ({
@@ -212,8 +212,11 @@ export function RealCommunityPosts() {
           table: "post_comments"
         },
         (payload) => {
-          if (payload.new && expandedComments.has(payload.new.post_id)) {
-            fetchComments(payload.new.post_id);
+          if (payload.new && typeof payload.new === 'object' && 'post_id' in payload.new) {
+            const postId = payload.new.post_id as string;
+            if (expandedComments.has(postId)) {
+              fetchComments(postId);
+            }
           }
         }
       )

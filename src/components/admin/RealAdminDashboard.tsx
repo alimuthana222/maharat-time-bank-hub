@@ -173,7 +173,7 @@ export function RealAdminDashboard() {
           title,
           is_hidden,
           created_at,
-          author:profiles!community_posts_author_id_fkey(username)
+          profiles!community_posts_author_id_fkey(username)
         `)
         .order("created_at", { ascending: false })
         .limit(25);
@@ -185,7 +185,7 @@ export function RealAdminDashboard() {
           id,
           title,
           created_at,
-          organizer:profiles!events_organizer_id_fkey(username)
+          profiles!events_organizer_id_fkey(username)
         `)
         .order("created_at", { ascending: false })
         .limit(25);
@@ -194,7 +194,7 @@ export function RealAdminDashboard() {
         ...(posts?.map(post => ({
           id: post.id,
           title: post.title,
-          author_name: post.author?.username || "مجهول",
+          author_name: post.profiles?.username || "مجهول",
           created_at: post.created_at,
           is_hidden: post.is_hidden,
           type: "post" as const
@@ -202,7 +202,7 @@ export function RealAdminDashboard() {
         ...(events?.map(event => ({
           id: event.id,
           title: event.title,
-          author_name: event.organizer?.username || "مجهول",
+          author_name: event.profiles?.username || "مجهول",
           created_at: event.created_at,
           is_hidden: false,
           type: "event" as const
@@ -215,7 +215,7 @@ export function RealAdminDashboard() {
     }
   };
 
-  const assignRole = async (userId: string, role: string) => {
+  const assignRole = async (userId: string, role: "admin" | "moderator" | "owner" | "user") => {
     if (!isOwner()) {
       toast.error("هذه العملية متاحة للمالك فقط");
       return;
@@ -224,20 +224,20 @@ export function RealAdminDashboard() {
     try {
       const { error } = await supabase
         .from("user_roles")
-        .insert([{ user_id: userId, role }]);
+        .insert({ user_id: userId, role });
 
       if (error && error.code !== "23505") throw error;
 
       // Log admin action
       await supabase
         .from("admin_actions")
-        .insert([{
+        .insert({
           admin_id: user?.id,
           action_type: "assign_role",
           target_type: "user",
           target_id: userId,
           details: { role }
-        }]);
+        });
 
       toast.success(`تم تعيين صلاحية ${role} بنجاح`);
       fetchUsers();
@@ -247,7 +247,7 @@ export function RealAdminDashboard() {
     }
   };
 
-  const removeRole = async (userId: string, role: string) => {
+  const removeRole = async (userId: string, role: "admin" | "moderator" | "owner" | "user") => {
     if (!isOwner()) {
       toast.error("هذه العملية متاحة للمالك فقط");
       return;
@@ -265,13 +265,13 @@ export function RealAdminDashboard() {
       // Log admin action
       await supabase
         .from("admin_actions")
-        .insert([{
+        .insert({
           admin_id: user?.id,
           action_type: "remove_role",
           target_type: "user",
           target_id: userId,
           details: { role }
-        }]);
+        });
 
       toast.success(`تم إزالة صلاحية ${role} بنجاح`);
       fetchUsers();
@@ -294,13 +294,13 @@ export function RealAdminDashboard() {
       // Log admin action
       await supabase
         .from("admin_actions")
-        .insert([{
+        .insert({
           admin_id: user?.id,
           action_type: isHidden ? "show_content" : "hide_content",
           target_type: type,
           target_id: contentId,
           details: {}
-        }]);
+        });
 
       toast.success(isHidden ? "تم إظهار المحتوى" : "تم إخفاء المحتوى");
       fetchContent();
@@ -325,13 +325,13 @@ export function RealAdminDashboard() {
       // Log admin action
       await supabase
         .from("admin_actions")
-        .insert([{
+        .insert({
           admin_id: user?.id,
           action_type: "delete_content",
           target_type: type,
           target_id: contentId,
           details: {}
-        }]);
+        });
 
       toast.success("تم حذف المحتوى بنجاح");
       fetchContent();
@@ -502,7 +502,7 @@ export function RealAdminDashboard() {
                     
                     {isOwner() && (
                       <div className="flex gap-2">
-                        <Select onValueChange={(role) => assignRole(user.id, role)}>
+                        <Select onValueChange={(role: "admin" | "moderator") => assignRole(user.id, role)}>
                           <SelectTrigger className="w-32">
                             <SelectValue placeholder="إضافة دور" />
                           </SelectTrigger>
@@ -517,7 +517,7 @@ export function RealAdminDashboard() {
                             key={role}
                             variant="outline"
                             size="sm"
-                            onClick={() => removeRole(user.id, role)}
+                            onClick={() => removeRole(user.id, role as "admin" | "moderator" | "owner" | "user")}
                           >
                             إزالة {role === "admin" ? "مدير" : "مشرف"}
                           </Button>
