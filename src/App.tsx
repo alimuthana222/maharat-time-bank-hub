@@ -13,6 +13,7 @@ import Marketplace from "./pages/Marketplace";
 import Messages from "./pages/Messages";
 import StudentProfile from "./pages/StudentProfile";
 import Search from "./pages/Search";
+import Bookings from "./pages/Bookings";
 import Community from "./pages/Community";
 import Events from "./pages/Events";
 import RealEvents from "./pages/RealEvents";
@@ -69,6 +70,12 @@ function App() {
               <Route path="/search" element={
                 <ProtectedRoute>
                   <Search />
+                </ProtectedRoute>
+              } />
+
+              <Route path="/bookings" element={
+                <ProtectedRoute>
+                  <Bookings />
                 </ProtectedRoute>
               } />
               

@@ -1,20 +1,26 @@
 
 import React, { useState } from "react";
-import { useAuth } from "@/components/auth/AuthProvider";
-import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, Clock } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
+import { CalendarIcon, Clock } from "lucide-react";
+import { format } from "date-fns";
+import { ar } from "date-fns/locale";
 
 interface ServiceBookingDialogProps {
   listing: {
     id: string;
     title: string;
-    hourly_rate: number;
     user_id: string;
+    hourly_rate: number;
+    type: string;
   };
 }
 
@@ -22,20 +28,27 @@ export function ServiceBookingDialog({ listing }: ServiceBookingDialogProps) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    booking_date: "",
-    duration: "60",
-    message: ""
-  });
+  const [selectedDate, setSelectedDate] = useState<Date>();
+  const [selectedTime, setSelectedTime] = useState("");
+  const [duration, setDuration] = useState("60");
+  const [message, setMessage] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleBooking = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user || !selectedDate || !selectedTime) {
+      toast.error("يرجى ملء جميع الحقول المطلوبة");
+      return;
+    }
 
     setLoading(true);
     try {
-      const bookingDate = new Date(formData.booking_date);
-      const durationHours = Math.ceil(parseInt(formData.duration) / 60);
+      // دمج التاريخ والوقت
+      const [hours, minutes] = selectedTime.split(':');
+      const bookingDateTime = new Date(selectedDate);
+      bookingDateTime.setHours(parseInt(hours), parseInt(minutes));
+
+      // حساب إجمالي الساعات
+      const totalHours = Math.ceil(parseInt(duration) / 60);
 
       const { error } = await supabase
         .from("bookings")
@@ -43,21 +56,22 @@ export function ServiceBookingDialog({ listing }: ServiceBookingDialogProps) {
           client_id: user.id,
           provider_id: listing.user_id,
           service_id: listing.id,
-          booking_date: bookingDate.toISOString(),
-          duration: parseInt(formData.duration),
-          total_hours: durationHours,
-          message: formData.message
+          booking_date: bookingDateTime.toISOString(),
+          duration: parseInt(duration),
+          total_hours: totalHours,
+          message: message,
+          status: "pending"
         });
 
       if (error) throw error;
 
       toast.success("تم إرسال طلب الحجز بنجاح!");
       setOpen(false);
-      setFormData({
-        booking_date: "",
-        duration: "60",
-        message: ""
-      });
+      setSelectedDate(undefined);
+      setSelectedTime("");
+      setDuration("60");
+      setMessage("");
+      
     } catch (error) {
       console.error("Error creating booking:", error);
       toast.error("خطأ في إرسال طلب الحجز");
@@ -66,68 +80,108 @@ export function ServiceBookingDialog({ listing }: ServiceBookingDialogProps) {
     }
   };
 
-  const calculateCost = () => {
-    const hours = Math.ceil(parseInt(formData.duration || "60") / 60);
-    return hours * listing.hourly_rate;
-  };
+  // أوقات متاحة
+  const timeSlots = [
+    "09:00", "10:00", "11:00", "12:00", "13:00", 
+    "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"
+  ];
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full">احجز الآن</Button>
+        <Button className="w-full">
+          <Clock className="mr-2 h-4 w-4" />
+          احجز الآن
+        </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>حجز خدمة: {listing.title}</DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">تاريخ ووقت الحجز</label>
-            <Input
-              type="datetime-local"
-              value={formData.booking_date}
-              onChange={(e) => setFormData({...formData, booking_date: e.target.value})}
-              min={new Date().toISOString().slice(0, 16)}
-              required
-            />
+        <form onSubmit={handleBooking} className="space-y-4">
+          <div className="space-y-2">
+            <Label>التاريخ</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-left"
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {selectedDate ? format(selectedDate, "PPP", { locale: ar }) : "اختر التاريخ"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  disabled={(date) => date < new Date()}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">مدة الخدمة (بالدقائق)</label>
+          <div className="space-y-2">
+            <Label>الوقت</Label>
+            <select 
+              value={selectedTime} 
+              onChange={(e) => setSelectedTime(e.target.value)}
+              className="w-full p-2 border rounded-md"
+              required
+            >
+              <option value="">اختر الوقت</option>
+              {timeSlots.map((time) => (
+                <option key={time} value={time}>{time}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>المدة (بالدقائق)</Label>
             <Input
               type="number"
               min="30"
               step="30"
-              value={formData.duration}
-              onChange={(e) => setFormData({...formData, duration: e.target.value})}
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+              placeholder="60"
               required
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">رسالة إضافية</label>
+          <div className="space-y-2">
+            <Label>رسالة إضافية (اختياري)</Label>
             <Textarea
-              value={formData.message}
-              onChange={(e) => setFormData({...formData, message: e.target.value})}
-              placeholder="اكتب أي تفاصيل إضافية عن الخدمة المطلوبة..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="اكتب أي تفاصيل إضافية للحجز"
               rows={3}
             />
           </div>
 
-          <div className="bg-gray-50 p-3 rounded-lg">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">التكلفة المتوقعة:</span>
-              <span className="font-bold text-lg">{calculateCost().toLocaleString()} د.ع</span>
+          {/* ملخص التكلفة */}
+          <div className="p-3 bg-gray-50 rounded-lg">
+            <div className="flex justify-between text-sm">
+              <span>المدة:</span>
+              <span>{duration} دقيقة</span>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              ({Math.ceil(parseInt(formData.duration || "60") / 60)} ساعة × {listing.hourly_rate.toLocaleString()} د.ع)
-            </p>
+            <div className="flex justify-between text-sm">
+              <span>التكلفة:</span>
+              <span>
+                {listing.type === 'skill_exchange' 
+                  ? `${Math.ceil(parseInt(duration) / 60)} ساعة من بنك الوقت`
+                  : `${(listing.hourly_rate * Math.ceil(parseInt(duration) / 60)).toLocaleString()} د.ع`
+                }
+              </span>
+            </div>
           </div>
 
-          <div className="flex gap-2 pt-4">
+          <div className="flex gap-3 pt-4">
             <Button type="submit" disabled={loading} className="flex-1">
-              {loading ? "جاري الإرسال..." : "إرسال طلب الحجز"}
+              {loading ? "جاري الإرسال..." : "تأكيد الحجز"}
             </Button>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               إلغاء

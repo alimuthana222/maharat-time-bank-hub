@@ -46,7 +46,6 @@ export function RealBookingsList() {
     try {
       setLoading(true);
       
-      // Build the query based on filter
       let query = supabase
         .from("bookings")
         .select("*")
@@ -65,7 +64,6 @@ export function RealBookingsList() {
       if (error) throw error;
 
       if (bookingsData && bookingsData.length > 0) {
-        // Fetch profiles for all unique user IDs
         const userIds = new Set<string>();
         bookingsData.forEach(booking => {
           userIds.add(booking.client_id);
@@ -81,7 +79,6 @@ export function RealBookingsList() {
           console.error("Error fetching profiles:", profilesError);
         }
 
-        // Create a map of profiles for quick lookup
         const profilesMap = new Map();
         if (profilesData) {
           profilesData.forEach(profile => {
@@ -89,7 +86,6 @@ export function RealBookingsList() {
           });
         }
 
-        // Combine bookings with profile data
         const bookingsWithProfiles = bookingsData.map(booking => ({
           ...booking,
           client: profilesMap.get(booking.client_id) || null,
@@ -158,7 +154,6 @@ export function RealBookingsList() {
 
   return (
     <div className="space-y-6">
-      {/* فلاتر الحجوزات */}
       <div className="flex gap-2">
         <Button 
           variant={filter === "all" ? "default" : "outline"}
@@ -180,7 +175,6 @@ export function RealBookingsList() {
         </Button>
       </div>
 
-      {/* قائمة الحجوزات */}
       <div className="space-y-4">
         {bookings.length === 0 ? (
           <div className="text-center py-12 text-gray-500">
@@ -240,7 +234,6 @@ export function RealBookingsList() {
                   </div>
                 )}
 
-                {/* أزرار التحكم للمزودين */}
                 {booking.provider_id === user?.id && booking.status === "pending" && (
                   <div className="flex gap-2 pt-2">
                     <Button
