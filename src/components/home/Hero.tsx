@@ -1,81 +1,89 @@
 
+import React from "react";
 import { Button } from "@/components/ui/button";
+import { ArrowRight, Users, Clock, Calendar, MessageSquare } from "lucide-react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Brain, Clock, Users, Sparkles } from "lucide-react";
 
 export function Hero() {
   return (
-    <div className="relative overflow-hidden bg-background">
-      {/* Background decoration */}
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute start-1/2 top-0 -translate-x-1/2 blur-3xl xl:-top-6" aria-hidden="true">
-          <div className="aspect-[1155/678] w-[72.1875rem] bg-gradient-to-tr from-primary/30 to-secondary/30 opacity-30" style={{ clipPath: "polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)" }}></div>
-        </div>
-      </div>
-
-      <div className="pb-16 pt-14 sm:pb-20 lg:pb-24 lg:pt-20">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="mx-auto max-w-4xl text-center">
-            <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-6xl lg:text-7xl">
-              منصة تبادل المهارات والخدمات للطلاب
-            </h1>
-            <p className="mt-6 text-lg leading-8 text-muted-foreground">
-              ساعد زملائك واستفد من مهاراتهم. نظام بنك الوقت يضمن تبادل عادل للخدمات بين الطلاب.
-            </p>
-            <div className="mt-10 flex items-center justify-center gap-x-6">
-              <Button asChild size="lg" className="text-lg px-8 py-6">
-                <Link to="/register" className="flex items-center gap-2">
-                  ابدأ الآن
-                  <ArrowRight className="h-5 w-5" />
-                </Link>
+    <div className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <div className="container mx-auto px-4 py-20 lg:py-28">
+        <div className="text-center">
+          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+            منصة تبادل المهارات
+            <span className="text-blue-600 block">للطلاب العراقيين</span>
+          </h1>
+          
+          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
+            انضم إلى أكبر مجتمع لتبادل المهارات والمعرفة بين طلاب الجامعات العراقية. 
+            شارك خبراتك، تعلم مهارات جديدة، وابني شبكة علاقات مهنية قوية.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+            <Link to="/auth">
+              <Button size="lg" className="px-8 py-4 text-lg">
+                ابدأ رحلتك الآن
+                <ArrowRight className="mr-2 h-5 w-5" />
               </Button>
-              <Button asChild variant="outline" size="lg" className="text-lg px-8 py-6">
-                <Link to="/marketplace">استكشف المهارات</Link>
+            </Link>
+            
+            <Link to="/community">
+              <Button variant="outline" size="lg" className="px-8 py-4 text-lg">
+                استكشف المجتمع
               </Button>
-            </div>
+            </Link>
           </div>
           
-          <div className="mt-16 flow-root sm:mt-24">
-            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-2xl bg-white/5 border border-primary/10 p-8 text-center shadow-lg transition-all hover:border-primary/20 hover:shadow-xl">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                  <Brain className="h-7 w-7 text-primary" aria-hidden="true" />
-                </div>
-                <h3 className="mt-6 text-lg font-semibold leading-8">مهارات متنوعة</h3>
-                <p className="mt-2 text-base leading-7 text-muted-foreground">
-                  تبادل المهارات في التصميم والبرمجة والترجمة والتدريس الخصوصي وأكثر
-                </p>
+          {/* Features Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div className="text-center p-6 rounded-lg bg-white shadow-sm border">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <Clock className="h-6 w-6 text-blue-600" />
               </div>
-              <div className="rounded-2xl bg-white/5 border border-secondary/10 p-8 text-center shadow-lg transition-all hover:border-secondary/20 hover:shadow-xl">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-secondary/10">
-                  <Clock className="h-7 w-7 text-secondary" aria-hidden="true" />
-                </div>
-                <h3 className="mt-6 text-lg font-semibold leading-8">بنك الوقت</h3>
-                <p className="mt-2 text-base leading-7 text-muted-foreground">
-                  بنك الوقت يضمن تبادل عادل للخدمات، ساعة بساعة
-                </p>
+              <h3 className="font-semibold text-gray-900 mb-2">بنك الوقت</h3>
+              <p className="text-gray-600 text-sm">
+                تبادل الساعات مع زملائك الطلاب لتعلم مهارات جديدة
+              </p>
+            </div>
+            
+            <div className="text-center p-6 rounded-lg bg-white shadow-sm border">
+              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <Users className="h-6 w-6 text-purple-600" />
               </div>
-              <div className="rounded-2xl bg-white/5 border border-accent/10 p-8 text-center shadow-lg transition-all hover:border-accent/20 hover:shadow-xl">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-accent/10">
-                  <Users className="h-7 w-7 text-accent" aria-hidden="true" />
-                </div>
-                <h3 className="mt-6 text-lg font-semibold leading-8">سوق الاحتياجات</h3>
-                <p className="mt-2 text-base leading-7 text-muted-foreground">
-                  نشر احتياجاتك وعروضك في سوق مخصص للطلاب
-                </p>
+              <h3 className="font-semibold text-gray-900 mb-2">سوق المهارات</h3>
+              <p className="text-gray-600 text-sm">
+                اعرض مهاراتك واحصل على خدمات من طلاب آخرين
+              </p>
+            </div>
+            
+            <div className="text-center p-6 rounded-lg bg-white shadow-sm border">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <Calendar className="h-6 w-6 text-green-600" />
               </div>
-              <div className="rounded-2xl bg-white/5 border border-primary/10 p-8 text-center shadow-lg transition-all hover:border-primary/20 hover:shadow-xl">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-                  <Sparkles className="h-7 w-7 text-primary" aria-hidden="true" />
-                </div>
-                <h3 className="mt-6 text-lg font-semibold leading-8">فعاليات المجتمع</h3>
-                <p className="mt-2 text-base leading-7 text-muted-foreground">
-                  شارك في الفعاليات وورش العمل وتواصل مع مجتمع الطلاب
-                </p>
+              <h3 className="font-semibold text-gray-900 mb-2">الفعاليات</h3>
+              <p className="text-gray-600 text-sm">
+                احضر ونظم فعاليات تعليمية ومهنية في جامعتك
+              </p>
+            </div>
+            
+            <div className="text-center p-6 rounded-lg bg-white shadow-sm border">
+              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <MessageSquare className="h-6 w-6 text-orange-600" />
               </div>
+              <h3 className="font-semibold text-gray-900 mb-2">المجتمع</h3>
+              <p className="text-gray-600 text-sm">
+                تواصل وتفاعل مع طلاب من جميع الجامعات العراقية
+              </p>
             </div>
           </div>
         </div>
+      </div>
+      
+      {/* Background decoration */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-10 left-10 w-20 h-20 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
+        <div className="absolute top-10 right-10 w-20 h-20 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-8 left-20 w-20 h-20 bg-pink-200 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
       </div>
     </div>
   );

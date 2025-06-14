@@ -1,37 +1,41 @@
 
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, ShoppingBag, Clock, Calendar, Users } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-const navLinks = [
-  { name: "الرئيسية", path: "/", icon: Home },
-  { name: "سوق المهارات", path: "/marketplace", icon: ShoppingBag },
-  { name: "بنك الوقت", path: "/time-bank", icon: Clock },
-  { name: "الفعاليات", path: "/events", icon: Calendar },
-  { name: "المجتمع", path: "/community", icon: Users },
+const navItems = [
+  { href: "/", label: "الرئيسية" },
+  { href: "/community", label: "المجتمع" },
+  { href: "/events", label: "الفعاليات" },
+  { href: "/marketplace", label: "السوق" },
+  { href: "/timebank", label: "بنك الوقت" },
 ];
 
-export function NavLinks() {
+interface NavLinksProps {
+  className?: string;
+  mobile?: boolean;
+  onItemClick?: () => void;
+}
+
+export function NavLinks({ className, mobile = false, onItemClick }: NavLinksProps) {
   const location = useLocation();
-  
-  const isActiveLink = (path: string) => {
-    if (path === "/") {
-      return location.pathname === "/";
-    }
-    return location.pathname.startsWith(path);
-  };
 
   return (
-    <nav className="hidden md:flex items-center gap-6 text-sm">
-      {navLinks.map((link) => (
-        <Link 
-          key={link.path}
-          to={link.path} 
-          className={`font-medium transition-colors hover:text-primary ${
-            isActiveLink(link.path) ? "text-primary" : ""
-          }`}
+    <nav className={cn("flex gap-6", mobile && "flex-col gap-4", className)}>
+      {navItems.map((item) => (
+        <Link
+          key={item.href}
+          to={item.href}
+          onClick={onItemClick}
+          className={cn(
+            "text-sm font-medium transition-colors hover:text-primary",
+            location.pathname === item.href 
+              ? "text-primary border-b-2 border-primary pb-1" 
+              : "text-muted-foreground",
+            mobile && "text-base py-2"
+          )}
         >
-          {link.name}
+          {item.label}
         </Link>
       ))}
     </nav>

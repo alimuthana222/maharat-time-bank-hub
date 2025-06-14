@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_actions: {
+        Row: {
+          action_type: string
+          admin_id: string
+          created_at: string
+          details: Json | null
+          id: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          action_type: string
+          admin_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          action_type?: string
+          admin_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: []
+      }
       comments: {
         Row: {
           content: string
@@ -50,6 +80,51 @@ export type Database = {
           },
         ]
       }
+      community_posts: {
+        Row: {
+          author_id: string
+          category: string | null
+          comments_count: number | null
+          content: string
+          created_at: string
+          id: string
+          is_hidden: boolean | null
+          is_pinned: boolean | null
+          likes_count: number | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          category?: string | null
+          comments_count?: number | null
+          content: string
+          created_at?: string
+          id?: string
+          is_hidden?: boolean | null
+          is_pinned?: boolean | null
+          likes_count?: number | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          category?: string | null
+          comments_count?: number | null
+          content?: string
+          created_at?: string
+          id?: string
+          is_hidden?: boolean | null
+          is_pinned?: boolean | null
+          likes_count?: number | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       content_reports: {
         Row: {
           content_id: string
@@ -85,6 +160,101 @@ export type Database = {
           reported_user_id?: string
           reporter_id?: string
           status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      event_registrations: {
+        Row: {
+          event_id: string
+          id: string
+          registration_date: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          event_id: string
+          id?: string
+          registration_date?: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          event_id?: string
+          id?: string
+          registration_date?: string
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          category: string
+          content: string | null
+          created_at: string
+          current_attendees: number | null
+          description: string
+          end_date: string
+          id: string
+          image_url: string | null
+          is_online: boolean | null
+          location: string
+          max_attendees: number | null
+          organizer_id: string
+          price: number | null
+          start_date: string
+          status: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          content?: string | null
+          created_at?: string
+          current_attendees?: number | null
+          description: string
+          end_date: string
+          id?: string
+          image_url?: string | null
+          is_online?: boolean | null
+          location: string
+          max_attendees?: number | null
+          organizer_id: string
+          price?: number | null
+          start_date: string
+          status?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          content?: string | null
+          created_at?: string
+          current_attendees?: number | null
+          description?: string
+          end_date?: string
+          id?: string
+          image_url?: string | null
+          is_online?: boolean | null
+          location?: string
+          max_attendees?: number | null
+          organizer_id?: string
+          price?: number | null
+          start_date?: string
+          status?: string | null
+          tags?: string[] | null
+          title?: string
           updated_at?: string
         }
         Relationships: []
@@ -206,6 +376,86 @@ export type Database = {
         }
         Relationships: []
       }
+      post_comments: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+          is_hidden: boolean | null
+          likes_count: number | null
+          parent_id: string | null
+          post_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          id?: string
+          is_hidden?: boolean | null
+          likes_count?: number | null
+          parent_id?: string | null
+          post_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_hidden?: boolean | null
+          likes_count?: number | null
+          parent_id?: string | null
+          post_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "post_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_likes: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           category: string | null
@@ -320,6 +570,33 @@ export type Database = {
           },
         ]
       }
+      system_settings: {
+        Row: {
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       time_bank_transactions: {
         Row: {
           created_at: string
@@ -381,6 +658,39 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      universities: {
+        Row: {
+          city: string
+          country: string | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          name_ar: string
+          name_en: string | null
+          website: string | null
+        }
+        Insert: {
+          city: string
+          country?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          name_ar: string
+          name_en?: string | null
+          website?: string | null
+        }
+        Update: {
+          city?: string
+          country?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string
+          name_en?: string | null
+          website?: string | null
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
