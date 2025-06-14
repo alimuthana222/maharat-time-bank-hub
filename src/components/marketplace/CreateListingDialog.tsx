@@ -1,25 +1,16 @@
 
 import React, { useState } from "react";
-import { useAuth } from "@/components/auth/AuthProvider";
-import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
-
-const categories = [
-  "برمجة",
-  "تصميم",
-  "كتابة",
-  "تدريس",
-  "ترجمة",
-  "تسويق",
-  "استشارات",
-  "أخرى"
-];
+import { Plus, Coins, Timer } from "lucide-react";
 
 export function CreateListingDialog() {
   const { user } = useAuth();
@@ -29,11 +20,21 @@ export function CreateListingDialog() {
     title: "",
     description: "",
     category: "",
-    type: "service",
+    type: "service", // service or skill_exchange
     hourly_rate: "",
-    delivery_time: "1",
-    requirements: ""
+    delivery_time: "1"
   });
+
+  const categories = [
+    "برمجة",
+    "تصميم", 
+    "كتابة",
+    "تدريس",
+    "ترجمة",
+    "تسويق",
+    "استشارات",
+    "أخرى"
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,14 +45,14 @@ export function CreateListingDialog() {
       const { error } = await supabase
         .from("marketplace_listings")
         .insert({
-          user_id: user.id,
           title: formData.title,
           description: formData.description,
           category: formData.category,
           type: formData.type,
           hourly_rate: parseInt(formData.hourly_rate),
           delivery_time: parseInt(formData.delivery_time),
-          requirements: formData.requirements
+          user_id: user.id,
+          status: "active"
         });
 
       if (error) throw error;
@@ -64,10 +65,11 @@ export function CreateListingDialog() {
         category: "",
         type: "service",
         hourly_rate: "",
-        delivery_time: "1",
-        requirements: ""
+        delivery_time: "1"
       });
-      window.location.reload(); // Refresh to show new listing
+      
+      // Refresh the page to show the new listing
+      window.location.reload();
     } catch (error) {
       console.error("Error creating listing:", error);
       toast.error("خطأ في إنشاء الخدمة");
@@ -76,33 +78,49 @@ export function CreateListingDialog() {
     }
   };
 
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>
-          <Plus className="ml-2 h-4 w-4" />
+          <Plus className="mr-2 h-4 w-4" />
           إضافة خدمة جديدة
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>إضافة خدمة جديدة</DialogTitle>
+          <DialogTitle>إنشاء خدمة جديدة</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">عنوان الخدمة</label>
+          <div className="space-y-2">
+            <Label htmlFor="title">عنوان الخدمة</Label>
             <Input
+              id="title"
               value={formData.title}
-              onChange={(e) => setFormData({...formData, title: e.target.value})}
-              placeholder="مثال: تصميم شعار احترافي"
+              onChange={(e) => handleInputChange("title", e.target.value)}
+              placeholder="أدخل عنوان الخدمة"
               required
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">التصنيف</label>
-            <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
+          <div className="space-y-2">
+            <Label htmlFor="description">وصف الخدمة</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => handleInputChange("description", e.target.value)}
+              placeholder="اشرح تفاصيل الخدمة التي تقدمها"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="category">التصنيف</Label>
+            <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
               <SelectTrigger>
                 <SelectValue placeholder="اختر التصنيف" />
               </SelectTrigger>
@@ -116,52 +134,57 @@ export function CreateListingDialog() {
             </Select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">وصف الخدمة</label>
-            <Textarea
-              value={formData.description}
-              onChange={(e) => setFormData({...formData, description: e.target.value})}
-              placeholder="اكتب وصفاً مفصلاً عن خدمتك..."
-              rows={3}
+          <div className="space-y-3">
+            <Label>نوع الخدمة</Label>
+            <RadioGroup
+              value={formData.type}
+              onValueChange={(value) => handleInputChange("type", value)}
+              className="space-y-3"
+            >
+              <div className="flex items-center space-x-2 space-x-reverse">
+                <RadioGroupItem value="service" id="service" />
+                <Label htmlFor="service" className="flex items-center gap-2 cursor-pointer">
+                  <Coins className="h-4 w-4 text-green-600" />
+                  خدمة مدفوعة (بالدينار العراقي)
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2 space-x-reverse">
+                <RadioGroupItem value="skill_exchange" id="skill_exchange" />
+                <Label htmlFor="skill_exchange" className="flex items-center gap-2 cursor-pointer">
+                  <Timer className="h-4 w-4 text-blue-600" />
+                  تبادل مهارات (بساعات بنك الوقت)
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="hourly_rate">
+              {formData.type === "service" ? "السعر لكل ساعة (د.ع)" : "الساعات المطلوبة لكل ساعة"}
+            </Label>
+            <Input
+              id="hourly_rate"
+              type="number"
+              value={formData.hourly_rate}
+              onChange={(e) => handleInputChange("hourly_rate", e.target.value)}
+              placeholder={formData.type === "service" ? "مثال: 25000" : "مثال: 1"}
               required
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">السعر بالساعة (ألف دينار)</label>
-              <Input
-                type="number"
-                min="1"
-                value={formData.hourly_rate}
-                onChange={(e) => setFormData({...formData, hourly_rate: e.target.value})}
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">مدة التسليم (أيام)</label>
-              <Input
-                type="number"
-                min="1"
-                value={formData.delivery_time}
-                onChange={(e) => setFormData({...formData, delivery_time: e.target.value})}
-                required
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">متطلبات الخدمة</label>
-            <Textarea
-              value={formData.requirements}
-              onChange={(e) => setFormData({...formData, requirements: e.target.value})}
-              placeholder="ما تحتاجه من العميل لإتمام الخدمة..."
-              rows={2}
+          <div className="space-y-2">
+            <Label htmlFor="delivery_time">مدة التسليم (أيام)</Label>
+            <Input
+              id="delivery_time"
+              type="number"
+              value={formData.delivery_time}
+              onChange={(e) => handleInputChange("delivery_time", e.target.value)}
+              placeholder="مثال: 3"
+              required
             />
           </div>
 
-          <div className="flex gap-2 pt-4">
+          <div className="flex gap-3 pt-4">
             <Button type="submit" disabled={loading} className="flex-1">
               {loading ? "جاري الإنشاء..." : "إنشاء الخدمة"}
             </Button>

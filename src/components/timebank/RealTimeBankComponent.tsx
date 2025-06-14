@@ -1,281 +1,141 @@
 
-import React, { useState, useEffect } from "react";
-import { useAuth } from "@/components/auth/AuthProvider";
-import { supabase } from "@/integrations/supabase/client";
+import React, { useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Clock, Send, CheckCircle, XCircle, Plus, TrendingUp, TrendingDown } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useTimeBank } from "@/hooks/useTimeBank";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { supabase } from "@/integrations/supabase/client";
+import { TimeBankStats } from "./TimeBankStats";
+import { Clock, Send, CheckCircle, XCircle, AlertCircle, User, Plus } from "lucide-react";
 import { toast } from "sonner";
-
-interface TimeBankTransaction {
-  id: string;
-  provider_id: string;
-  recipient_id: string;
-  hours: number;
-  description: string;
-  status: string;
-  created_at: string;
-  provider?: {
-    username: string;
-    full_name?: string;
-  };
-  recipient?: {
-    username: string;
-    full_name?: string;
-  };
-}
-
-interface TimeBankBalance {
-  hours_earned: number;
-  hours_spent: number;
-  hours_pending: number;
-}
 
 export function RealTimeBankComponent() {
   const { user } = useAuth();
-  const [transactions, setTransactions] = useState<TimeBankTransaction[]>([]);
-  const [balance, setBalance] = useState<TimeBankBalance>({ hours_earned: 0, hours_spent: 0, hours_pending: 0 });
-  const [loading, setLoading] = useState(true);
-  const [showSendForm, setShowSendForm] = useState(false);
-  const [users, setUsers] = useState<any[]>([]);
-
-  // بيانات نموذج الإرسال
+  const { balance, transactions, loadingBalance, loadingTransactions, activeTab, handleTabChange } = useTimeBank();
+  const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [sendForm, setSendForm] = useState({
-    recipient_id: "",
+    recipient_username: "",
     hours: "",
     description: ""
   });
+  const [sendLoading, setSendLoading] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      fetchData();
-      fetchUsers();
-    }
-  }, [user]);
-
-  const fetchData = async () => {
-    try {
-      await Promise.all([fetchTransactions(), fetchBalance()]);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchTransactions = async () => {
+  const handleSendHours = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!user) return;
 
-    const { data, error } = await supabase
-      .from("time_bank_transactions")
-      .select("*")
-      .or(`provider_id.eq.${user.id},recipient_id.eq.${user.id}`)
-      .order("created_at", { ascending: false });
-
-    if (error) throw error;
-
-    if (data) {
-      // جلب معلومات المستخدمين
-      const userIds = new Set<string>();
-      data.forEach(transaction => {
-        userIds.add(transaction.provider_id);
-        userIds.add(transaction.recipient_id);
-      });
-
-      const { data: profilesData } = await supabase
+    setSendLoading(true);
+    try {
+      // First, find the recipient user
+      const { data: recipient, error: recipientError } = await supabase
         .from("profiles")
-        .select("id, username, full_name")
-        .in("id", Array.from(userIds));
+        .select("id, username")
+        .eq("username", sendForm.recipient_username)
+        .single();
 
-      const profilesMap = new Map();
-      if (profilesData) {
-        profilesData.forEach(profile => {
-          profilesMap.set(profile.id, profile);
-        });
+      if (recipientError || !recipient) {
+        toast.error("المستخدم غير موجود");
+        return;
       }
 
-      const transactionsWithProfiles = data.map(transaction => ({
-        ...transaction,
-        provider: profilesMap.get(transaction.provider_id),
-        recipient: profilesMap.get(transaction.recipient_id),
-      }));
+      if (recipient.id === user.id) {
+        toast.error("لا يمكنك إرسال ساعات لنفسك");
+        return;
+      }
 
-      setTransactions(transactionsWithProfiles);
-    }
-  };
+      // Check if user has enough balance
+      const userBalance = (balance?.hours_earned || 0) - (balance?.hours_spent || 0);
+      if (userBalance < parseInt(sendForm.hours)) {
+        toast.error("رصيدك غير كافي");
+        return;
+      }
 
-  const fetchBalance = async () => {
-    if (!user) return;
-
-    const { data, error } = await supabase
-      .from("time_bank_balances")
-      .select("hours_earned, hours_spent, hours_pending")
-      .eq("user_id", user.id)
-      .single();
-
-    if (error) {
-      console.error("Error fetching balance:", error);
-      return;
-    }
-
-    if (data) {
-      setBalance({
-        hours_earned: data.hours_earned || 0,
-        hours_spent: data.hours_spent || 0,
-        hours_pending: data.hours_pending || 0
-      });
-    }
-  };
-
-  const fetchUsers = async () => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("id, username, full_name")
-      .neq("id", user?.id || "");
-
-    setUsers(data || []);
-  };
-
-  const sendHours = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!user || !sendForm.recipient_id || !sendForm.hours || !sendForm.description) {
-      toast.error("يرجى ملء جميع الحقول");
-      return;
-    }
-
-    try {
-      const { error } = await supabase
+      // Create the transaction
+      const { error: transactionError } = await supabase
         .from("time_bank_transactions")
         .insert({
           provider_id: user.id,
-          recipient_id: sendForm.recipient_id,
+          recipient_id: recipient.id,
           hours: parseInt(sendForm.hours),
           description: sendForm.description,
           status: "pending"
         });
 
-      if (error) throw error;
+      if (transactionError) throw transactionError;
 
-      toast.success("تم إرسال الساعات بنجاح");
-      setShowSendForm(false);
-      setSendForm({ recipient_id: "", hours: "", description: "" });
-      await fetchData();
+      toast.success("تم إرسال الساعات بنجاح! في انتظار موافقة المستلم");
+      setSendDialogOpen(false);
+      setSendForm({ recipient_username: "", hours: "", description: "" });
+      
     } catch (error) {
       console.error("Error sending hours:", error);
-      toast.error("حدث خطأ أثناء إرسال الساعات");
+      toast.error("خطأ في إرسال الساعات");
+    } finally {
+      setSendLoading(false);
     }
   };
 
-  const updateTransactionStatus = async (transactionId: string, status: "approved" | "rejected") => {
+  const handleTransactionAction = async (transactionId: string, action: 'approved' | 'rejected') => {
     try {
       const { error } = await supabase
         .from("time_bank_transactions")
-        .update({ status })
+        .update({ status: action })
         .eq("id", transactionId);
 
       if (error) throw error;
 
-      toast.success(`تم ${status === "approved" ? "قبول" : "رفض"} المعاملة`);
-      await fetchData();
+      toast.success(`تم ${action === 'approved' ? 'قبول' : 'رفض'} المعاملة`);
     } catch (error) {
       console.error("Error updating transaction:", error);
-      toast.error("حدث خطأ أثناء تحديث المعاملة");
+      toast.error("خطأ في تحديث المعاملة");
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case "approved":
-        return "bg-green-100 text-green-800";
-      case "rejected":
-        return "bg-red-100 text-red-800";
+      case 'pending':
+        return <Badge variant="outline" className="text-yellow-600 border-yellow-600"><AlertCircle className="w-3 h-3 mr-1" />معلق</Badge>;
+      case 'approved':
+        return <Badge variant="outline" className="text-green-600 border-green-600"><CheckCircle className="w-3 h-3 mr-1" />مقبول</Badge>;
+      case 'rejected':
+        return <Badge variant="outline" className="text-red-600 border-red-600"><XCircle className="w-3 h-3 mr-1" />مرفوض</Badge>;
       default:
-        return "bg-yellow-100 text-yellow-800";
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "approved":
-        return "موافق عليها";
-      case "rejected":
-        return "مرفوضة";
-      default:
-        return "في الانتظار";
+  const getTransactionType = (transaction: any) => {
+    if (!user) return "";
+    
+    if (transaction.provider_id === user.id) {
+      return "sent";
+    } else if (transaction.recipient_id === user.id) {
+      return "received";
     }
+    return "";
   };
-
-  const currentBalance = balance.hours_earned - balance.hours_spent;
-
-  if (loading) {
-    return <div className="flex justify-center items-center h-64">جاري التحميل...</div>;
-  }
 
   return (
     <div className="space-y-6">
-      {/* إحصائيات الرصيد */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Clock className="h-8 w-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-2xl font-bold">{currentBalance}</p>
-                <p className="text-gray-600 text-sm">الرصيد الحالي</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <TrendingUp className="h-8 w-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-2xl font-bold">{balance.hours_earned}</p>
-                <p className="text-gray-600 text-sm">ساعات مكتسبة</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <TrendingDown className="h-8 w-8 text-red-600" />
-              <div className="ml-4">
-                <p className="text-2xl font-bold">{balance.hours_spent}</p>
-                <p className="text-gray-600 text-sm">ساعات مستخدمة</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Clock className="h-8 w-8 text-yellow-600" />
-              <div className="ml-4">
-                <p className="text-2xl font-bold">{balance.hours_pending}</p>
-                <p className="text-gray-600 text-sm">ساعات في الانتظار</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* رصيد بنك الوقت */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <TimeBankStats balance={balance} loading={loadingBalance} />
       </div>
 
-      {/* زر إرسال الساعات */}
-      <div className="flex justify-end">
-        <Dialog open={showSendForm} onOpenChange={setShowSendForm}>
+      {/* أزرار الإجراءات */}
+      <div className="flex gap-4">
+        <Dialog open={sendDialogOpen} onOpenChange={setSendDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="ml-2 h-4 w-4" />
+              <Send className="w-4 h-4 mr-2" />
               إرسال ساعات
             </Button>
           </DialogTrigger>
@@ -283,49 +143,47 @@ export function RealTimeBankComponent() {
             <DialogHeader>
               <DialogTitle>إرسال ساعات إلى مستخدم آخر</DialogTitle>
             </DialogHeader>
-            
-            <form onSubmit={sendHours} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">المستقبل</label>
-                <select
-                  value={sendForm.recipient_id}
-                  onChange={(e) => setSendForm({...sendForm, recipient_id: e.target.value})}
-                  className="w-full border rounded-md px-3 py-2"
-                  required
-                >
-                  <option value="">اختر المستخدم</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.full_name || user.username}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">عدد الساعات</label>
+            <form onSubmit={handleSendHours} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="recipient">اسم المستخدم المستلم</Label>
                 <Input
+                  id="recipient"
+                  value={sendForm.recipient_username}
+                  onChange={(e) => setSendForm(prev => ({...prev, recipient_username: e.target.value}))}
+                  placeholder="أدخل اسم المستخدم"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="hours">عدد الساعات</Label>
+                <Input
+                  id="hours"
                   type="number"
                   min="1"
                   value={sendForm.hours}
-                  onChange={(e) => setSendForm({...sendForm, hours: e.target.value})}
+                  onChange={(e) => setSendForm(prev => ({...prev, hours: e.target.value}))}
+                  placeholder="عدد الساعات"
                   required
                 />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">الوصف</label>
+              
+              <div className="space-y-2">
+                <Label htmlFor="description">الوصف</Label>
                 <Textarea
+                  id="description"
                   value={sendForm.description}
-                  onChange={(e) => setSendForm({...sendForm, description: e.target.value})}
-                  placeholder="اكتب وصفاً للخدمة أو العمل المؤدى..."
+                  onChange={(e) => setSendForm(prev => ({...prev, description: e.target.value}))}
+                  placeholder="اكتب وصف للمعاملة"
                   required
                 />
               </div>
-
-              <div className="flex gap-2">
-                <Button type="submit">إرسال</Button>
-                <Button type="button" variant="outline" onClick={() => setShowSendForm(false)}>
+              
+              <div className="flex gap-3">
+                <Button type="submit" disabled={sendLoading} className="flex-1">
+                  {sendLoading ? "جاري الإرسال..." : "إرسال"}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setSendDialogOpen(false)}>
                   إلغاء
                 </Button>
               </div>
@@ -335,104 +193,97 @@ export function RealTimeBankComponent() {
       </div>
 
       {/* المعاملات */}
-      <Tabs defaultValue="all" className="w-full">
-        <TabsList>
-          <TabsTrigger value="all">جميع المعاملات</TabsTrigger>
-          <TabsTrigger value="sent">المرسلة</TabsTrigger>
-          <TabsTrigger value="received">المستقبلة</TabsTrigger>
-          <TabsTrigger value="pending">في الانتظار</TabsTrigger>
-        </TabsList>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="w-5 h-5" />
+            معاملات بنك الوقت
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
+            <TabsList className="grid grid-cols-2 md:grid-cols-5 w-full">
+              <TabsTrigger value="all">جميع المعاملات</TabsTrigger>
+              <TabsTrigger value="sent">المرسلة</TabsTrigger>
+              <TabsTrigger value="received">المستلمة</TabsTrigger>
+              <TabsTrigger value="pending">معلقة</TabsTrigger>
+              <TabsTrigger value="approved">مقبولة</TabsTrigger>
+            </TabsList>
 
-        <TabsContent value="all" className="space-y-4">
-          {transactions.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              لا توجد معاملات
-            </div>
-          ) : (
-            transactions.map((transaction) => (
-              <Card key={transaction.id}>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        {transaction.provider_id === user?.id ? (
-                          <Send className="h-4 w-4 text-red-500" />
-                        ) : (
-                          <TrendingUp className="h-4 w-4 text-green-500" />
-                        )}
-                        <span className="font-medium">
-                          {transaction.provider_id === user?.id ? "إرسال" : "استقبال"} {transaction.hours} ساعة
-                        </span>
-                      </div>
-                      
-                      <p className="text-sm text-gray-600">
-                        {transaction.provider_id === user?.id
-                          ? `إلى: ${transaction.recipient?.full_name || transaction.recipient?.username}`
-                          : `من: ${transaction.provider?.full_name || transaction.provider?.username}`
-                        }
-                      </p>
-                      
-                      <p className="text-sm">{transaction.description}</p>
-                      
-                      <p className="text-xs text-gray-500">
-                        {new Date(transaction.created_at).toLocaleDateString("ar")}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Badge className={getStatusColor(transaction.status)}>
-                        {getStatusText(transaction.status)}
-                      </Badge>
-
-                      {transaction.recipient_id === user?.id && transaction.status === "pending" && (
-                        <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            onClick={() => updateTransactionStatus(transaction.id, "approved")}
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => updateTransactionStatus(transaction.id, "rejected")}
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </Button>
+            <TabsContent value={activeTab} className="mt-6">
+              {loadingTransactions ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : transactions.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  لا توجد معاملات
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {transactions.map((transaction) => {
+                    const transactionType = getTransactionType(transaction);
+                    const isReceived = transactionType === "received";
+                    const canApprove = isReceived && transaction.status === "pending";
+                    
+                    return (
+                      <div key={transaction.id} className="border rounded-lg p-4 space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarFallback>
+                                <User className="h-4 w-4" />
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">
+                                {isReceived ? `من: ${transaction.provider_name}` : `إلى: ${transaction.recipient_name}`}
+                              </p>
+                              <p className="text-sm text-gray-600">{transaction.description}</p>
+                              <p className="text-xs text-gray-500">
+                                {new Date(transaction.created_at).toLocaleDateString('ar-SA')}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="text-right space-y-2">
+                            <div className={`text-lg font-bold ${isReceived ? 'text-green-600' : 'text-red-600'}`}>
+                              {isReceived ? '+' : '-'}{transaction.hours} ساعة
+                            </div>
+                            {getStatusBadge(transaction.status)}
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </TabsContent>
-
-        <TabsContent value="sent">
-          {transactions.filter(t => t.provider_id === user?.id).map((transaction) => (
-            <Card key={transaction.id}>
-              {/* ... same card content */}
-            </Card>
-          ))}
-        </TabsContent>
-
-        <TabsContent value="received">
-          {transactions.filter(t => t.recipient_id === user?.id).map((transaction) => (
-            <Card key={transaction.id}>
-              {/* ... same card content */}
-            </Card>
-          ))}
-        </TabsContent>
-
-        <TabsContent value="pending">
-          {transactions.filter(t => t.status === "pending").map((transaction) => (
-            <Card key={transaction.id}>
-              {/* ... same card content */}
-            </Card>
-          ))}
-        </TabsContent>
-      </Tabs>
+                        
+                        {canApprove && (
+                          <div className="flex gap-2 pt-2 border-t">
+                            <Button
+                              size="sm"
+                              onClick={() => handleTransactionAction(transaction.id, 'approved')}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              قبول
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleTransactionAction(transaction.id, 'rejected')}
+                              className="border-red-600 text-red-600 hover:bg-red-50"
+                            >
+                              <XCircle className="w-4 h-4 mr-1" />
+                              رفض
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 }

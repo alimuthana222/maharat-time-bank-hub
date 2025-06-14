@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CreateListingDialog } from "./CreateListingDialog";
 import { ServiceBookingDialog } from "./ServiceBookingDialog";
-import { Search, Star, Clock, User } from "lucide-react";
+import { Search, Star, Clock, User, Coins, Timer } from "lucide-react";
 import { toast } from "sonner";
 
 interface Listing {
@@ -21,6 +21,7 @@ interface Listing {
   delivery_time: number;
   user_id: string;
   created_at: string;
+  type: string;
   provider?: {
     username: string;
     full_name?: string;
@@ -34,6 +35,7 @@ export function RealMarketplaceListings() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedType, setSelectedType] = useState("all");
 
   const categories = [
     { value: "all", label: "جميع التصنيفات" },
@@ -47,9 +49,15 @@ export function RealMarketplaceListings() {
     { value: "أخرى", label: "أخرى" }
   ];
 
+  const serviceTypes = [
+    { value: "all", label: "جميع الأنواع" },
+    { value: "service", label: "خدمة مدفوعة" },
+    { value: "skill_exchange", label: "تبادل مهارات" }
+  ];
+
   useEffect(() => {
     fetchListings();
-  }, [selectedCategory, searchQuery]);
+  }, [selectedCategory, searchQuery, selectedType]);
 
   const fetchListings = async () => {
     try {
@@ -63,6 +71,10 @@ export function RealMarketplaceListings() {
 
       if (selectedCategory !== "all") {
         query = query.eq("category", selectedCategory);
+      }
+
+      if (selectedType !== "all") {
+        query = query.eq("type", selectedType);
       }
 
       if (searchQuery) {
@@ -115,6 +127,30 @@ export function RealMarketplaceListings() {
     return <div className="flex justify-center items-center h-64">جاري التحميل...</div>;
   }
 
+  const getPriceDisplay = (listing: Listing) => {
+    if (listing.type === 'skill_exchange') {
+      return {
+        icon: Timer,
+        text: `${listing.hourly_rate} ساعة/ساعة`,
+        color: "text-blue-600"
+      };
+    } else {
+      return {
+        icon: Coins,
+        text: `${listing.hourly_rate.toLocaleString()} د.ع/ساعة`,
+        color: "text-green-600"
+      };
+    }
+  };
+
+  const getServiceTypeBadge = (type: string) => {
+    if (type === 'skill_exchange') {
+      return <Badge variant="secondary" className="bg-blue-100 text-blue-800">تبادل مهارات</Badge>;
+    } else {
+      return <Badge variant="secondary" className="bg-green-100 text-green-800">خدمة مدفوعة</Badge>;
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* شريط البحث والفلاتر */}
@@ -142,6 +178,19 @@ export function RealMarketplaceListings() {
               ))}
             </SelectContent>
           </Select>
+
+          <Select value={selectedType} onValueChange={setSelectedType}>
+            <SelectTrigger className="w-full md:w-48">
+              <SelectValue placeholder="نوع الخدمة" />
+            </SelectTrigger>
+            <SelectContent>
+              {serviceTypes.map((type) => (
+                <SelectItem key={type.value} value={type.value}>
+                  {type.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {user && <CreateListingDialog />}
@@ -154,57 +203,65 @@ export function RealMarketplaceListings() {
             لا توجد خدمات متاحة
           </div>
         ) : (
-          listings.map((listing) => (
-            <Card key={listing.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg line-clamp-2">{listing.title}</CardTitle>
-                    <Badge variant="secondary" className="mt-2">{listing.category}</Badge>
-                  </div>
-                </div>
-              </CardHeader>
-
-              <CardContent className="space-y-4">
-                <p className="text-gray-600 text-sm line-clamp-3">{listing.description}</p>
-
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={listing.provider?.avatar_url} />
-                    <AvatarFallback>
-                      <User className="h-4 w-4" />
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-sm font-medium">
-                      {listing.provider?.full_name || listing.provider?.username || "مقدم خدمة"}
-                    </p>
-                    <div className="flex items-center gap-1 text-xs text-gray-500">
-                      <Star className="h-3 w-3 fill-current text-yellow-400" />
-                      <span>4.8 (15 تقييم)</span>
+          listings.map((listing) => {
+            const priceInfo = getPriceDisplay(listing);
+            const PriceIcon = priceInfo.icon;
+            
+            return (
+              <Card key={listing.id} className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="text-lg line-clamp-2">{listing.title}</CardTitle>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge variant="secondary">{listing.category}</Badge>
+                        {getServiceTypeBadge(listing.type)}
+                      </div>
                     </div>
                   </div>
-                </div>
+                </CardHeader>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1 text-sm text-gray-500">
-                    <Clock className="h-4 w-4" />
-                    <span>التسليم خلال {listing.delivery_time} أيام</span>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-primary">
-                      {listing.hourly_rate.toLocaleString()} د.ع
-                    </p>
-                    <p className="text-xs text-gray-500">لكل ساعة</p>
-                  </div>
-                </div>
+                <CardContent className="space-y-4">
+                  <p className="text-gray-600 text-sm line-clamp-3">{listing.description}</p>
 
-                {user && user.id !== listing.user_id && (
-                  <ServiceBookingDialog listing={listing} />
-                )}
-              </CardContent>
-            </Card>
-          ))
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={listing.provider?.avatar_url} />
+                      <AvatarFallback>
+                        <User className="h-4 w-4" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-sm font-medium">
+                        {listing.provider?.full_name || listing.provider?.username || "مقدم خدمة"}
+                      </p>
+                      <div className="flex items-center gap-1 text-xs text-gray-500">
+                        <Star className="h-3 w-3 fill-current text-yellow-400" />
+                        <span>4.8 (15 تقييم)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1 text-sm text-gray-500">
+                      <Clock className="h-4 w-4" />
+                      <span>التسليم خلال {listing.delivery_time} أيام</span>
+                    </div>
+                    <div className="text-right">
+                      <div className={`flex items-center gap-1 text-lg font-bold ${priceInfo.color}`}>
+                        <PriceIcon className="h-4 w-4" />
+                        <span>{priceInfo.text}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {user && user.id !== listing.user_id && (
+                    <ServiceBookingDialog listing={listing} />
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })
         )}
       </div>
     </div>

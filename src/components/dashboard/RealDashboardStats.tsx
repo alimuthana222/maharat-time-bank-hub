@@ -111,16 +111,37 @@ export function RealDashboardStats() {
           .eq('client_id', user.id),
         supabase
           .from('bookings')
-          .select('*, marketplace_listings(hourly_rate)')
+          .select(`
+            id,
+            total_hours,
+            service_id,
+            created_at
+          `)
           .eq('provider_id', user.id)
           .eq('status', 'completed')
       ]);
 
       // Calculate total earnings
-      const totalEarnings = completedBookings?.reduce((sum, booking) => {
-        const rate = booking.marketplace_listings?.hourly_rate || 0;
-        return sum + (rate * booking.total_hours);
-      }, 0) || 0;
+      let totalEarnings = 0;
+      if (completedBookings && completedBookings.length > 0) {
+        const serviceIds = completedBookings.map(b => b.service_id).filter(Boolean);
+        if (serviceIds.length > 0) {
+          const { data: services } = await supabase
+            .from('marketplace_listings')
+            .select('id, hourly_rate')
+            .in('id', serviceIds);
+
+          if (services) {
+            totalEarnings = completedBookings.reduce((sum, booking) => {
+              const service = services.find(s => s.id === booking.service_id);
+              if (service && booking.total_hours) {
+                return sum + (service.hourly_rate * booking.total_hours);
+              }
+              return sum;
+            }, 0);
+          }
+        }
+      }
 
       // Fetch messages data
       const { data: unreadMessages } = await supabase
@@ -218,7 +239,11 @@ export function RealDashboardStats() {
       // Get recent bookings
       const { data: bookings } = await supabase
         .from('bookings')
-        .select('*, marketplace_listings(title)')
+        .select(`
+          id,
+          created_at,
+          service_id
+        `)
         .or(`provider_id.eq.${user.id},client_id.eq.${user.id}`)
         .order('created_at', { ascending: false })
         .limit(3);
@@ -237,14 +262,28 @@ export function RealDashboardStats() {
       });
 
       // Add bookings to activity
-      bookings?.forEach(booking => {
-        activity.push({
-          id: booking.id,
-          type: 'booking' as const,
-          description: `حجز: ${booking.marketplace_listings?.title || 'خدمة'}`,
-          date: booking.created_at
+      if (bookings && bookings.length > 0) {
+        const serviceIds = bookings.map(b => b.service_id).filter(Boolean);
+        let serviceData: any[] = [];
+        
+        if (serviceIds.length > 0) {
+          const { data: services } = await supabase
+            .from('marketplace_listings')
+            .select('id, title')
+            .in('id', serviceIds);
+          serviceData = services || [];
+        }
+
+        bookings.forEach(booking => {
+          const service = serviceData.find(s => s.id === booking.service_id);
+          activity.push({
+            id: booking.id,
+            type: 'booking' as const,
+            description: `حجز: ${service?.title || 'خدمة'}`,
+            date: booking.created_at
+          });
         });
-      });
+      }
 
       return activity
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
