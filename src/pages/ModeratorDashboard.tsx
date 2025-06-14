@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReportManagement } from "@/components/moderation/ReportManagement";
 import { UsersManagement } from "@/components/admin/UsersManagement";
 import { ContentManagement } from "@/components/admin/ContentManagement";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { Navigate } from "react-router-dom";
 
 export default function ModeratorDashboard() {

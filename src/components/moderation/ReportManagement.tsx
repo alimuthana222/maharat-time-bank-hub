@@ -28,7 +28,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 interface Report {
   id: string;
