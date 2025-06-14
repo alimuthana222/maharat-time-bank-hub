@@ -39,6 +39,89 @@ export type Database = {
         }
         Relationships: []
       }
+      bookings: {
+        Row: {
+          booking_date: string
+          client_id: string
+          created_at: string
+          duration: number
+          id: string
+          message: string | null
+          provider_id: string
+          service_id: string | null
+          status: string | null
+          total_hours: number
+          updated_at: string
+        }
+        Insert: {
+          booking_date: string
+          client_id: string
+          created_at?: string
+          duration: number
+          id?: string
+          message?: string | null
+          provider_id: string
+          service_id?: string | null
+          status?: string | null
+          total_hours: number
+          updated_at?: string
+        }
+        Update: {
+          booking_date?: string
+          client_id?: string
+          created_at?: string
+          duration?: number
+          id?: string
+          message?: string | null
+          provider_id?: string
+          service_id?: string | null
+          status?: string | null
+          total_hours?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name_ar: string
+          name_en: string | null
+          parent_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar: string
+          name_en?: string | null
+          parent_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string
+          name_en?: string | null
+          parent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           content: string
@@ -263,10 +346,14 @@ export type Database = {
         Row: {
           category: string
           created_at: string
+          delivery_time: number | null
           description: string
           hourly_rate: number
           id: string
+          image_url: string | null
+          requirements: string | null
           status: string
+          tags: string[] | null
           title: string
           type: string
           updated_at: string
@@ -275,10 +362,14 @@ export type Database = {
         Insert: {
           category: string
           created_at?: string
+          delivery_time?: number | null
           description: string
           hourly_rate: number
           id?: string
+          image_url?: string | null
+          requirements?: string | null
           status?: string
+          tags?: string[] | null
           title: string
           type: string
           updated_at?: string
@@ -287,10 +378,14 @@ export type Database = {
         Update: {
           category?: string
           created_at?: string
+          delivery_time?: number | null
           description?: string
           hourly_rate?: number
           id?: string
+          image_url?: string | null
+          requirements?: string | null
           status?: string
+          tags?: string[] | null
           title?: string
           type?: string
           updated_at?: string
@@ -375,6 +470,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          booking_id: string | null
+          created_at: string
+          currency: string | null
+          id: string
+          payer_id: string
+          payment_method: string
+          receiver_id: string
+          status: string | null
+          stripe_payment_intent_id: string | null
+        }
+        Insert: {
+          amount: number
+          booking_id?: string | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          payer_id: string
+          payment_method: string
+          receiver_id: string
+          status?: string | null
+          stripe_payment_intent_id?: string | null
+        }
+        Update: {
+          amount?: number
+          booking_id?: string | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          payer_id?: string
+          payment_method?: string
+          receiver_id?: string
+          status?: string | null
+          stripe_payment_intent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       post_comments: {
         Row: {
@@ -519,6 +661,42 @@ export type Database = {
           last_seen?: string | null
           university?: string | null
           username?: string
+        }
+        Relationships: []
+      }
+      reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          reviewed_user_id: string
+          reviewer_id: string
+          service_id: string | null
+          transaction_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          reviewed_user_id: string
+          reviewer_id: string
+          service_id?: string | null
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          reviewed_user_id?: string
+          reviewer_id?: string
+          service_id?: string | null
+          transaction_id?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -738,6 +916,10 @@ export type Database = {
       }
     }
     Functions: {
+      get_user_rating: {
+        Args: { user_id: string }
+        Returns: number
+      }
       has_role: {
         Args: {
           _user_id: string
