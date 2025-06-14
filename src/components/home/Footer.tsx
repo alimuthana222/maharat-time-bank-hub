@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
-import { Facebook, Twitter, Instagram, Linkedin, Github, Mail, MapPin, Phone } from "lucide-react";
+import { Facebook, Twitter, Instagram, Linkedin, Github } from "lucide-react";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -9,7 +9,7 @@ export function Footer() {
   return (
     <footer className="bg-muted/20 border-t">
       <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* Column 1 - About */}
           <div>
             <h3 className="text-lg font-bold mb-4">منصة مهارات</h3>
@@ -72,29 +72,6 @@ export function Footer() {
               </li>
               <li>
                 <Link to="/accessibility" className="text-muted-foreground hover:text-primary transition-colors">إمكانية الوصول</Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Column 4 - Contact */}
-          <div>
-            <h3 className="text-lg font-bold mb-4">اتصل بنا</h3>
-            <ul className="space-y-3">
-              <li className="flex items-center gap-2">
-                <MapPin className="h-5 w-5 text-primary" />
-                <span className="text-muted-foreground">الرياض، المملكة العربية السعودية</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Mail className="h-5 w-5 text-primary" />
-                <a href="mailto:info@maharat.sa" className="text-muted-foreground hover:text-primary transition-colors">
-                  info@maharat.sa
-                </a>
-              </li>
-              <li className="flex items-center gap-2">
-                <Phone className="h-5 w-5 text-primary" />
-                <a href="tel:+966512345678" className="text-muted-foreground hover:text-primary transition-colors">
-                  +966 51 234 5678
-                </a>
               </li>
             </ul>
           </div>

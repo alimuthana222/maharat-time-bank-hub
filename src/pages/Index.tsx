@@ -1,7 +1,6 @@
 
 import { Navbar } from "@/components/layout/Navbar";
 import { Hero } from "@/components/home/Hero";
-import { FeaturedSkills } from "@/components/home/FeaturedSkills";
 import { SkillCategories } from "@/components/home/SkillCategories";
 import { TimeBankPreview } from "@/components/home/TimeBankPreview";
 import { MarketplacePreview } from "@/components/home/MarketplacePreview";
@@ -15,7 +14,6 @@ export default function Index() {
       <main className="pt-16">
         <Hero />
         <SkillCategories />
-        <FeaturedSkills />
         <MarketplacePreview />
         <TimeBankPreview />
         <CTASection />
