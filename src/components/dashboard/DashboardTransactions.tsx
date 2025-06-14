@@ -1,10 +1,9 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Select,
   SelectContent,
@@ -12,68 +11,114 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download, Search, TrendingUp, TrendingDown, Clock } from "lucide-react";
+import { Download, Search, TrendingUp, TrendingDown, Clock, Wallet } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 interface Transaction {
   id: string;
-  type: "earned" | "spent";
+  type: "earned" | "spent" | "deposit";
   amount: number;
   description: string;
   category: string;
   status: "completed" | "pending" | "failed";
   createdAt: string;
   relatedUser?: string;
+  transaction_id?: string;
 }
 
 export function DashboardTransactions() {
-  const [transactions, setTransactions] = useState<Transaction[]>([
-    {
-      id: "1",
-      type: "earned",
-      amount: 3,
-      description: "جلسة تدريس رياضيات",
-      category: "تدريس",
-      status: "completed",
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-      relatedUser: "أحمد محمد"
-    },
-    {
-      id: "2",
-      type: "spent",
-      amount: 2,
-      description: "مساعدة في تصميم الشعار",
-      category: "تصميم",
-      status: "completed",
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-      relatedUser: "سارة أحمد"
-    },
-    {
-      id: "3",
-      type: "earned",
-      amount: 1,
-      description: "مراجعة مقال",
-      category: "كتابة",
-      status: "pending",
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
-      relatedUser: "محمد عبدالله"
-    },
-    {
-      id: "4",
-      type: "spent",
-      amount: 4,
-      description: "كورس برمجة متقدم",
-      category: "برمجة",
-      status: "completed",
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-      relatedUser: "خالد العمري"
-    }
-  ]);
-
+  const { user } = useAuth();
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+
+  useEffect(() => {
+    if (user) {
+      fetchTransactions();
+    }
+  }, [user]);
+
+  const fetchTransactions = async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+
+      // جلب معاملات زين كاش
+      const { data: zainCashData, error: zainError } = await supabase
+        .from('zain_cash_transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      // جلب معاملات التبادل في بنك الوقت
+      const { data: timeBankData, error: timeBankError } = await supabase
+        .from('time_bank_transactions')
+        .select(`
+          *,
+          provider:profiles!time_bank_transactions_provider_id_fkey(username, full_name),
+          recipient:profiles!time_bank_transactions_recipient_id_fkey(username, full_name)
+        `)
+        .or(`provider_id.eq.${user.id},recipient_id.eq.${user.id}`)
+        .order('created_at', { ascending: false });
+
+      if (zainError) console.error('Error fetching zain cash transactions:', zainError);
+      if (timeBankError) console.error('Error fetching time bank transactions:', timeBankError);
+
+      const allTransactions: Transaction[] = [];
+
+      // معالجة معاملات زين كاش
+      if (zainCashData) {
+        zainCashData.forEach(transaction => {
+          allTransactions.push({
+            id: transaction.id,
+            type: transaction.transaction_type === 'deposit' ? 'deposit' : 'spent',
+            amount: transaction.amount,
+            description: transaction.description || 'معاملة زين كاش',
+            category: 'مالية',
+            status: transaction.status as "completed" | "pending" | "failed",
+            createdAt: transaction.created_at,
+            transaction_id: transaction.transaction_id
+          });
+        });
+      }
+
+      // معالجة معاملات بنك الوقت
+      if (timeBankData) {
+        timeBankData.forEach(transaction => {
+          const isProvider = transaction.provider_id === user.id;
+          const relatedUser = isProvider 
+            ? (transaction.recipient as any)?.full_name || (transaction.recipient as any)?.username
+            : (transaction.provider as any)?.full_name || (transaction.provider as any)?.username;
+
+          allTransactions.push({
+            id: transaction.id,
+            type: isProvider ? 'earned' : 'spent',
+            amount: transaction.hours,
+            description: transaction.description,
+            category: 'بنك الوقت',
+            status: transaction.status as "completed" | "pending" | "failed",
+            createdAt: transaction.created_at,
+            relatedUser
+          });
+        });
+      }
+
+      // ترتيب المعاملات حسب التاريخ
+      allTransactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
+      setTransactions(allTransactions);
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredTransactions = transactions.filter(transaction => {
     const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -125,12 +170,25 @@ export function DashboardTransactions() {
     }
   };
 
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case "earned":
+        return <TrendingUp className="h-4 w-4 text-green-600" />;
+      case "spent":
+        return <TrendingDown className="h-4 w-4 text-red-600" />;
+      case "deposit":
+        return <Wallet className="h-4 w-4 text-blue-600" />;
+      default:
+        return <Clock className="h-4 w-4" />;
+    }
+  };
+
   const totalEarned = transactions
     .filter(t => t.type === "earned" && t.status === "completed")
     .reduce((sum, t) => sum + t.amount, 0);
 
   const totalSpent = transactions
-    .filter(t => t.type === "spent" && t.status === "completed")
+    .filter(t => (t.type === "spent" || t.type === "deposit") && t.status === "completed")
     .reduce((sum, t) => sum + t.amount, 0);
 
   const pendingAmount = transactions
@@ -143,13 +201,10 @@ export function DashboardTransactions() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`p-2 rounded-lg ${
-              transaction.type === "earned" ? "bg-green-500/10" : "bg-red-500/10"
+              transaction.type === "earned" ? "bg-green-500/10" : 
+              transaction.type === "deposit" ? "bg-blue-500/10" : "bg-red-500/10"
             }`}>
-              {transaction.type === "earned" ? (
-                <TrendingUp className="h-4 w-4 text-green-600" />
-              ) : (
-                <TrendingDown className="h-4 w-4 text-red-600" />
-              )}
+              {getTypeIcon(transaction.type)}
             </div>
             
             <div>
@@ -162,6 +217,12 @@ export function DashboardTransactions() {
                     <span>{transaction.relatedUser}</span>
                   </>
                 )}
+                {transaction.transaction_id && (
+                  <>
+                    <span>•</span>
+                    <span>#{transaction.transaction_id}</span>
+                  </>
+                )}
                 <span>•</span>
                 <span>{formatDistanceToNow(new Date(transaction.createdAt), { addSuffix: true, locale: ar })}</span>
               </div>
@@ -170,9 +231,11 @@ export function DashboardTransactions() {
           
           <div className="text-left">
             <div className={`text-lg font-bold ${
-              transaction.type === "earned" ? "text-green-600" : "text-red-600"
+              transaction.type === "earned" ? "text-green-600" : 
+              transaction.type === "deposit" ? "text-blue-600" : "text-red-600"
             }`}>
-              {transaction.type === "earned" ? "+" : "-"}{transaction.amount} ساعة
+              {transaction.type === "earned" ? "+" : transaction.type === "deposit" ? "+" : "-"}
+              {transaction.amount.toLocaleString()} {transaction.category === 'بنك الوقت' ? 'ساعة' : 'د.ع'}
             </div>
             <Badge variant="outline" className={getStatusColor(transaction.status)}>
               {getStatusIcon(transaction.status)}
@@ -184,12 +247,31 @@ export function DashboardTransactions() {
     </Card>
   );
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-6">
+                <div className="animate-pulse">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">المعاملات المالية</h2>
-          <p className="text-muted-foreground">تتبع تاريخ معاملاتك في بنك الوقت</p>
+          <p className="text-muted-foreground">تتبع تاريخ معاملاتك</p>
         </div>
         <Button variant="outline">
           <Download className="h-4 w-4 mr-2" />
@@ -206,7 +288,7 @@ export function DashboardTransactions() {
                 <TrendingUp className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-green-600">{totalEarned}</div>
+                <div className="text-2xl font-bold text-green-600">{totalEarned.toLocaleString()}</div>
                 <p className="text-sm text-muted-foreground">إجمالي المكتسب</p>
               </div>
             </div>
@@ -220,7 +302,7 @@ export function DashboardTransactions() {
                 <TrendingDown className="h-5 w-5 text-red-600" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-red-600">{totalSpent}</div>
+                <div className="text-2xl font-bold text-red-600">{totalSpent.toLocaleString()}</div>
                 <p className="text-sm text-muted-foreground">إجمالي المصروف</p>
               </div>
             </div>
@@ -234,7 +316,7 @@ export function DashboardTransactions() {
                 <Clock className="h-5 w-5 text-yellow-600" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-yellow-600">{pendingAmount}</div>
+                <div className="text-2xl font-bold text-yellow-600">{pendingAmount.toLocaleString()}</div>
                 <p className="text-sm text-muted-foreground">قيد الانتظار</p>
               </div>
             </div>
@@ -264,6 +346,7 @@ export function DashboardTransactions() {
                 <SelectItem value="all">جميع الأنواع</SelectItem>
                 <SelectItem value="earned">مكتسب</SelectItem>
                 <SelectItem value="spent">مصروف</SelectItem>
+                <SelectItem value="deposit">إيداع</SelectItem>
               </SelectContent>
             </Select>
 

@@ -548,9 +548,10 @@ export type Database = {
           id: string
           payer_id: string
           payment_method: string
+          phone_number: string | null
           receiver_id: string
           status: string | null
-          stripe_payment_intent_id: string | null
+          zain_cash_transaction_id: string | null
         }
         Insert: {
           amount: number
@@ -560,9 +561,10 @@ export type Database = {
           id?: string
           payer_id: string
           payment_method: string
+          phone_number?: string | null
           receiver_id: string
           status?: string | null
-          stripe_payment_intent_id?: string | null
+          zain_cash_transaction_id?: string | null
         }
         Update: {
           amount?: number
@@ -572,9 +574,10 @@ export type Database = {
           id?: string
           payer_id?: string
           payment_method?: string
+          phone_number?: string | null
           receiver_id?: string
           status?: string | null
-          stripe_payment_intent_id?: string | null
+          zain_cash_transaction_id?: string | null
         }
         Relationships: [
           {
@@ -956,6 +959,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_balances: {
+        Row: {
+          balance: number
+          id: string
+          reserved_balance: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          id?: string
+          reserved_balance?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          id?: string
+          reserved_balance?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -970,6 +997,45 @@ export type Database = {
         Update: {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      zain_cash_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          phone_number: string
+          status: string | null
+          transaction_id: string
+          transaction_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          phone_number: string
+          status?: string | null
+          transaction_id: string
+          transaction_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          phone_number?: string
+          status?: string | null
+          transaction_id?: string
+          transaction_type?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -1023,6 +1089,10 @@ export type Database = {
           _related_type?: string
         }
         Returns: string
+      }
+      update_user_balance: {
+        Args: { _user_id: string; _amount: number; _transaction_type: string }
+        Returns: boolean
       }
     }
     Enums: {
