@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -120,6 +119,17 @@ export function UsersManagement() {
   const handleAssignRole = async () => {
     if (!selectedUser || !selectedRole) return;
     
+    // التحقق من الصلاحيات المحددة
+    if (selectedRole === "admin" && !isOwner()) {
+      toast.error("فقط المالك يمكنه تعيين دور المدير");
+      return;
+    }
+
+    if (selectedRole === "moderator" && !isAdmin() && !isOwner()) {
+      toast.error("فقط الإدارة والمالك يمكنهم تعيين دور المشرف");
+      return;
+    }
+    
     try {
       setIsProcessing(true);
       
@@ -167,8 +177,14 @@ export function UsersManagement() {
   const handleRemoveRole = async (roleToRemove: Role) => {
     if (!selectedUser) return;
     
-    if (!isAdmin() && !isOwner()) {
-      toast.error("ليس لديك صلاحية لتنفيذ هذا الإجراء");
+    // التحقق من الصلاحيات المحددة
+    if (roleToRemove === "admin" && !isOwner()) {
+      toast.error("فقط المالك يمكنه إزالة دور المدير");
+      return;
+    }
+
+    if (roleToRemove === "moderator" && !isAdmin() && !isOwner()) {
+      toast.error("فقط الإدارة والمالك يمكنهم إزالة دور المشرف");
       return;
     }
     
@@ -238,6 +254,44 @@ export function UsersManagement() {
         return "outline";
     }
   };
+
+  const getAvailableRoles = () => {
+    const roles: Role[] = [];
+    
+    if (!selectedUser) return roles;
+    
+    // المالك يمكنه إضافة دور المدير والمشرف
+    if (isOwner()) {
+      if (!selectedUser.roles.includes("admin")) roles.push("admin");
+      if (!selectedUser.roles.includes("moderator")) roles.push("moderator");
+    }
+    // الإدارة يمكنها إضافة دور المشرف فقط
+    else if (isAdmin()) {
+      if (!selectedUser.roles.includes("moderator")) roles.push("moderator");
+    }
+    
+    return roles;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!isAdmin() && !isOwner()) {
+    return (
+      <div className="text-center py-12">
+        <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+        <h3 className="text-lg font-medium mb-2">ليس لديك صلاحية الوصول</h3>
+        <p className="text-muted-foreground">
+          هذه الصفحة مخصصة للمشرفين والمدراء فقط.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -412,7 +466,7 @@ export function UsersManagement() {
                 </div>
               </div>
 
-              {(isAdmin() || isOwner()) && (
+              {(isAdmin() || isOwner()) && getAvailableRoles().length > 0 && (
                 <div className="border-t pt-4">
                   <div className="font-medium mb-2">تعيين دور جديد:</div>
                   <div className="flex gap-2">
@@ -421,8 +475,12 @@ export function UsersManagement() {
                         <SelectValue placeholder="اختر دور" />
                       </SelectTrigger>
                       <SelectContent>
-                        {isOwner() && <SelectItem value="admin">مشرف</SelectItem>}
-                        {(isAdmin() || isOwner()) && <SelectItem value="moderator">مشرف محتوى</SelectItem>}
+                        {getAvailableRoles().map((role) => (
+                          <SelectItem key={role} value={role}>
+                            {role === "admin" && "مشرف"}
+                            {role === "moderator" && "مشرف محتوى"}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <Button 
@@ -440,12 +498,13 @@ export function UsersManagement() {
                       )}
                     </Button>
                   </div>
-                  {!isOwner() && (
-                    <div className="mt-2 text-xs flex items-center text-muted-foreground">
-                      <AlertCircle className="h-3 w-3 mr-1" />
-                      فقط المالك يمكنه تعيين دور مشرف
-                    </div>
-                  )}
+                  <div className="mt-2 text-xs flex items-center text-muted-foreground">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    {isOwner() 
+                      ? "كمالك، يمكنك تعيين جميع الأدوار"
+                      : "كمدير، يمكنك تعيين دور المشرف فقط"
+                    }
+                  </div>
                 </div>
               )}
               

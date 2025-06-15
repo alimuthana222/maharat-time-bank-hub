@@ -4,7 +4,6 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ReportManagement } from "@/components/moderation/ReportManagement";
-import { UsersManagement } from "@/components/admin/UsersManagement";
 import { ContentManagement } from "@/components/admin/ContentManagement";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Navigate } from "react-router-dom";
@@ -27,16 +26,11 @@ export default function ModeratorDashboard() {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-8">
             <TabsTrigger value="reports">إدارة البلاغات</TabsTrigger>
-            <TabsTrigger value="users">إدارة المستخدمين</TabsTrigger>
             <TabsTrigger value="content">إدارة المحتوى</TabsTrigger>
           </TabsList>
           
           <TabsContent value="reports">
             <ReportManagement />
-          </TabsContent>
-          
-          <TabsContent value="users">
-            <UsersManagement />
           </TabsContent>
           
           <TabsContent value="content">

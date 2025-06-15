@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Shield, Plus, X, Loader2 } from "lucide-react";
+import { Shield, Plus, X, Loader2, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Role } from "@/types/auth";
@@ -27,11 +27,21 @@ export function RoleManagement({ userId, currentRoles, onRolesUpdate }: RoleMana
   const [selectedRole, setSelectedRole] = useState<Role | "">("");
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const availableRoles: Role[] = ["user", "moderator", "admin"];
-  const canAssignRole = isAdmin() || isOwner();
+  const canManageRoles = isAdmin() || isOwner();
 
   const handleAssignRole = async () => {
-    if (!selectedRole || !canAssignRole) return;
+    if (!selectedRole || !canManageRoles) return;
+
+    // التحقق من الصلاحيات المحددة
+    if (selectedRole === "admin" && !isOwner()) {
+      toast.error("فقط المالك يمكنه تعيين دور المدير");
+      return;
+    }
+
+    if (selectedRole === "moderator" && !isAdmin() && !isOwner()) {
+      toast.error("فقط الإدارة والمالك يمكنهم تعيين دور المشرف");
+      return;
+    }
 
     setIsProcessing(true);
     try {
@@ -62,7 +72,18 @@ export function RoleManagement({ userId, currentRoles, onRolesUpdate }: RoleMana
   };
 
   const handleRemoveRole = async (roleToRemove: Role) => {
-    if (!canAssignRole) return;
+    if (!canManageRoles) return;
+
+    // التحقق من الصلاحيات المحددة
+    if (roleToRemove === "admin" && !isOwner()) {
+      toast.error("فقط المالك يمكنه إزالة دور المدير");
+      return;
+    }
+
+    if (roleToRemove === "moderator" && !isAdmin() && !isOwner()) {
+      toast.error("فقط الإدارة والمالك يمكنهم إزالة دور المشرف");
+      return;
+    }
 
     setIsProcessing(true);
     try {
@@ -103,7 +124,23 @@ export function RoleManagement({ userId, currentRoles, onRolesUpdate }: RoleMana
     }
   };
 
-  if (!canAssignRole) {
+  const getAvailableRoles = () => {
+    const roles: Role[] = [];
+    
+    // المالك يمكنه إضافة دور المدير والمشرف
+    if (isOwner()) {
+      if (!currentRoles.includes("admin")) roles.push("admin");
+      if (!currentRoles.includes("moderator")) roles.push("moderator");
+    }
+    // الإدارة يمكنها إضافة دور المشرف فقط
+    else if (isAdmin()) {
+      if (!currentRoles.includes("moderator")) roles.push("moderator");
+    }
+    
+    return roles;
+  };
+
+  if (!canManageRoles) {
     return (
       <Card>
         <CardHeader>
@@ -127,6 +164,8 @@ export function RoleManagement({ userId, currentRoles, onRolesUpdate }: RoleMana
       </Card>
     );
   }
+
+  const availableRoles = getAvailableRoles();
 
   return (
     <Card>
@@ -166,36 +205,51 @@ export function RoleManagement({ userId, currentRoles, onRolesUpdate }: RoleMana
           </div>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium">تعيين دور جديد:</label>
-          <div className="flex gap-2">
-            <Select value={selectedRole} onValueChange={(value) => setSelectedRole(value as Role)}>
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="اختر دور" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableRoles
-                  .filter(role => !currentRoles.includes(role))
-                  .map((role) => (
+        {availableRoles.length > 0 && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium">تعيين دور جديد:</label>
+            <div className="flex gap-2">
+              <Select value={selectedRole} onValueChange={(value) => setSelectedRole(value as Role)}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="اختر دور" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableRoles.map((role) => (
                     <SelectItem key={role} value={role}>
                       {getRoleLabel(role)}
                     </SelectItem>
                   ))}
-              </SelectContent>
-            </Select>
-            <Button 
-              onClick={handleAssignRole} 
-              disabled={!selectedRole || isProcessing}
-              size="sm"
-            >
-              {isProcessing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Plus className="h-4 w-4" />
-              )}
-            </Button>
+                </SelectContent>
+              </Select>
+              <Button 
+                onClick={handleAssignRole} 
+                disabled={!selectedRole || isProcessing}
+                size="sm"
+              >
+                {isProcessing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            
+            <div className="text-xs text-muted-foreground flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" />
+              {isOwner() 
+                ? "كمالك، يمكنك تعيين جميع الأدوار"
+                : "كمدير، يمكنك تعيين دور المشرف فقط"
+              }
+            </div>
           </div>
-        </div>
+        )}
+
+        {availableRoles.length === 0 && (
+          <div className="text-sm text-muted-foreground flex items-center gap-1">
+            <AlertCircle className="h-4 w-4" />
+            لا توجد أدوار إضافية متاحة للتعيين
+          </div>
+        )}
       </CardContent>
     </Card>
   );
