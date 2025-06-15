@@ -1166,6 +1166,48 @@ export type Database = {
         }
         Relationships: []
       }
+      withdrawal_requests: {
+        Row: {
+          admin_id: string | null
+          admin_notes: string | null
+          amount: number
+          created_at: string
+          id: string
+          notes: string | null
+          processed_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          zaincash_phone: string
+        }
+        Insert: {
+          admin_id?: string | null
+          admin_notes?: string | null
+          amount: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          processed_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          zaincash_phone: string
+        }
+        Update: {
+          admin_id?: string | null
+          admin_notes?: string | null
+          amount?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          processed_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          zaincash_phone?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       time_bank_balances: {

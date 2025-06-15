@@ -34,7 +34,7 @@ export function WithdrawDialog({ open, onOpenChange, onSuccess }: WithdrawDialog
       // التحقق من الرصيد
       const { data: balance, error: balanceError } = await supabase
         .from('user_balances')
-        .select('balance')
+        .select('balance, reserved_balance')
         .eq('user_id', user.id)
         .single();
 
