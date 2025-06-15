@@ -1,13 +1,13 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, DollarSign, Activity, Clock, TrendingUp, AlertCircle } from "lucide-react";
+import { Users, DollarSign, Activity, Clock, TrendingUp, AlertCircle, UserCog } from "lucide-react";
 import { WithdrawalRequestsPanel } from "./WithdrawalRequestsPanel";
 import { PaymentVerificationPanel } from "./PaymentVerificationPanel";
+import { OwnerUserManagement } from "./OwnerUserManagement";
 
 interface QuickStats {
   totalUsers: number;
@@ -185,7 +185,7 @@ export function FastOwnerDashboard() {
 
       {/* تبويبات الإدارة */}
       <Tabs defaultValue="withdrawals" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="withdrawals" className="relative">
             طلبات السحب
             {stats.pendingWithdrawals > 0 && (
@@ -202,6 +202,10 @@ export function FastOwnerDashboard() {
               </Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="users" className="relative">
+            <UserCog className="h-4 w-4 mr-2" />
+            إدارة المستخدمين
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="withdrawals">
@@ -210,6 +214,10 @@ export function FastOwnerDashboard() {
 
         <TabsContent value="payments">
           <PaymentVerificationPanel />
+        </TabsContent>
+
+        <TabsContent value="users">
+          <OwnerUserManagement />
         </TabsContent>
       </Tabs>
     </div>
