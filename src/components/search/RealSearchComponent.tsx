@@ -1,278 +1,361 @@
 
 import React, { useState, useEffect } from "react";
-import { useAuth } from "@/components/auth/AuthProvider";
-import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, User, Star, Clock, Coins, Timer } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { 
+  Search, 
+  Filter, 
+  Star, 
+  MapPin, 
+  Clock, 
+  DollarSign,
+  User,
+  Briefcase,
+  Calendar,
+  MessageSquare,
+  Loader2
+} from "lucide-react";
 
 interface SearchResult {
   id: string;
+  type: 'user' | 'service' | 'post' | 'event';
   title: string;
   description: string;
-  category: string;
-  type: string;
-  hourly_rate?: number;
-  delivery_time?: number;
-  provider?: {
-    username: string;
-    full_name?: string;
-    avatar_url?: string;
+  author?: {
+    name: string;
+    avatar?: string;
+  };
+  metadata?: {
+    rating?: number;
+    price?: number;
+    location?: string;
+    date?: string;
+    category?: string;
   };
 }
 
-interface UserResult {
-  id: string;
-  username: string;
-  full_name?: string;
-  bio?: string;
-  skills?: string[];
-  avatar_url?: string;
-  university?: string;
-}
-
 export function RealSearchComponent() {
-  const { user } = useAuth();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [serviceResults, setServiceResults] = useState<SearchResult[]>([]);
-  const [userResults, setUserResults] = useState<UserResult[]>([]);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("services");
+  const [searchType, setSearchType] = useState("all");
+  const [sortBy, setSortBy] = useState("relevance");
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) {
-      toast.error("يرجى إدخال كلمة البحث");
-      return;
+  useEffect(() => {
+    if (query.trim().length >= 2) {
+      performSearch();
+    } else {
+      setResults([]);
     }
+  }, [query, searchType, sortBy]);
 
+  const performSearch = async () => {
     setLoading(true);
     try {
-      // البحث في الخدمات
-      const { data: servicesData, error: servicesError } = await supabase
-        .from("marketplace_listings")
-        .select("*")
-        .eq("status", "active")
-        .or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`);
-
-      if (servicesError) throw servicesError;
+      let results: SearchResult[] = [];
 
       // البحث في المستخدمين
-      const { data: usersData, error: usersError } = await supabase
-        .from("profiles")
-        .select("*")
-        .or(`username.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%,bio.ilike.%${searchQuery}%,university.ilike.%${searchQuery}%`);
-
-      if (usersError) throw usersError;
-
-      // إضافة بيانات المزودين للخدمات
-      if (servicesData && servicesData.length > 0) {
-        const userIds = [...new Set(servicesData.map(service => service.user_id))];
-        const { data: profilesData } = await supabase
+      if (searchType === "all" || searchType === "users") {
+        const { data: profiles } = await supabase
           .from("profiles")
-          .select("id, username, full_name, avatar_url")
-          .in("id", userIds);
+          .select("*")
+          .or(`full_name.ilike.%${query}%,username.ilike.%${query}%,bio.ilike.%${query}%`)
+          .limit(10);
 
-        const profilesMap = new Map();
-        if (profilesData) {
-          profilesData.forEach(profile => {
-            profilesMap.set(profile.id, profile);
-          });
+        if (profiles) {
+          const userResults = profiles.map(profile => ({
+            id: profile.id,
+            type: 'user' as const,
+            title: profile.full_name || profile.username,
+            description: profile.bio || "لا يوجد وصف",
+            author: {
+              name: profile.full_name || profile.username,
+              avatar: profile.avatar_url
+            },
+            metadata: {
+              location: profile.location
+            }
+          }));
+          results.push(...userResults);
         }
-
-        const servicesWithProviders = servicesData.map(service => ({
-          ...service,
-          provider: profilesMap.get(service.user_id) || null,
-        }));
-
-        setServiceResults(servicesWithProviders);
-      } else {
-        setServiceResults([]);
       }
 
-      setUserResults(usersData || []);
+      // البحث في الخدمات
+      if (searchType === "all" || searchType === "services") {
+        const { data: listings } = await supabase
+          .from("marketplace_listings")
+          .select(`
+            *,
+            user:profiles!marketplace_listings_user_id_fkey(username, full_name, avatar_url)
+          `)
+          .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
+          .eq("status", "active")
+          .limit(10);
 
+        if (listings) {
+          const serviceResults = listings.map(listing => ({
+            id: listing.id,
+            type: 'service' as const,
+            title: listing.title,
+            description: listing.description,
+            author: {
+              name: listing.user?.full_name || listing.user?.username || "مستخدم",
+              avatar: listing.user?.avatar_url
+            },
+            metadata: {
+              price: listing.hourly_rate,
+              category: listing.category
+            }
+          }));
+          results.push(...serviceResults);
+        }
+      }
+
+      // البحث في المنشورات
+      if (searchType === "all" || searchType === "posts") {
+        const { data: posts } = await supabase
+          .from("community_posts")
+          .select(`
+            *,
+            author:profiles!community_posts_author_id_fkey(username, full_name, avatar_url)
+          `)
+          .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
+          .eq("is_hidden", false)
+          .limit(10);
+
+        if (posts) {
+          const postResults = posts.map(post => ({
+            id: post.id,
+            type: 'post' as const,
+            title: post.title,
+            description: post.content.substring(0, 150) + "...",
+            author: {
+              name: post.author?.full_name || post.author?.username || "مستخدم",
+              avatar: post.author?.avatar_url
+            },
+            metadata: {
+              category: post.category
+            }
+          }));
+          results.push(...postResults);
+        }
+      }
+
+      // البحث في الأحداث
+      if (searchType === "all" || searchType === "events") {
+        const { data: events } = await supabase
+          .from("events")
+          .select(`
+            *,
+            organizer:profiles!events_organizer_id_fkey(username, full_name, avatar_url)
+          `)
+          .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
+          .eq("status", "upcoming")
+          .limit(10);
+
+        if (events) {
+          const eventResults = events.map(event => ({
+            id: event.id,
+            type: 'event' as const,
+            title: event.title,
+            description: event.description,
+            author: {
+              name: event.organizer?.full_name || event.organizer?.username || "منظم",
+              avatar: event.organizer?.avatar_url
+            },
+            metadata: {
+              date: event.start_date,
+              location: event.location,
+              price: event.price
+            }
+          }));
+          results.push(...eventResults);
+        }
+      }
+
+      // ترتيب النتائج
+      if (sortBy === "date") {
+        results.sort((a, b) => new Date(b.metadata?.date || 0).getTime() - new Date(a.metadata?.date || 0).getTime());
+      } else if (sortBy === "price") {
+        results.sort((a, b) => (a.metadata?.price || 0) - (b.metadata?.price || 0));
+      }
+
+      setResults(results);
     } catch (error) {
-      console.error("Error searching:", error);
-      toast.error("خطأ في البحث");
+      console.error("Search error:", error);
+      toast.error("حدث خطأ أثناء البحث");
     } finally {
       setLoading(false);
     }
   };
 
-  const getPriceDisplay = (service: SearchResult) => {
-    if (service.type === 'skill_exchange') {
-      return {
-        icon: Timer,
-        text: `${service.hourly_rate} ساعة/ساعة`,
-        color: "text-blue-600"
-      };
-    } else {
-      return {
-        icon: Coins,
-        text: `${service.hourly_rate?.toLocaleString()} د.ع/ساعة`,
-        color: "text-green-600"
-      };
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'user': return <User className="h-4 w-4" />;
+      case 'service': return <Briefcase className="h-4 w-4" />;
+      case 'post': return <MessageSquare className="h-4 w-4" />;
+      case 'event': return <Calendar className="h-4 w-4" />;
+      default: return <Search className="h-4 w-4" />;
     }
   };
 
-  const getServiceTypeBadge = (type: string) => {
-    if (type === 'skill_exchange') {
-      return <Badge variant="secondary" className="bg-blue-100 text-blue-800">تبادل مهارات</Badge>;
-    } else {
-      return <Badge variant="secondary" className="bg-green-100 text-green-800">خدمة مدفوعة</Badge>;
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'user': return "مستخدم";
+      case 'service': return "خدمة";
+      case 'post': return "منشور";
+      case 'event': return "حدث";
+      default: return type;
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'user': return "bg-blue-500";
+      case 'service': return "bg-green-500";
+      case 'post': return "bg-purple-500";
+      case 'event': return "bg-orange-500";
+      default: return "bg-gray-500";
     }
   };
 
   return (
     <div className="space-y-6">
       {/* شريط البحث */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="ابحث عن الخدمات أو المستخدمين..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-            className="pl-10"
-          />
-        </div>
-        <Button onClick={handleSearch} disabled={loading}>
-          {loading ? "جاري البحث..." : "بحث"}
-        </Button>
-      </div>
+      <Card>
+        <CardContent className="p-6">
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                placeholder="ابحث عن المستخدمين والخدمات والمنشورات..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="pl-12 text-lg h-12"
+              />
+            </div>
+            
+            <div className="flex flex-col md:flex-row gap-4">
+              <Select value={searchType} onValueChange={setSearchType}>
+                <SelectTrigger className="w-full md:w-48">
+                  <SelectValue placeholder="نوع البحث" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع النتائج</SelectItem>
+                  <SelectItem value="users">المستخدمين</SelectItem>
+                  <SelectItem value="services">الخدمات</SelectItem>
+                  <SelectItem value="posts">المنشورات</SelectItem>
+                  <SelectItem value="events">الأحداث</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-full md:w-48">
+                  <SelectValue placeholder="ترتيب حسب" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="relevance">الصلة</SelectItem>
+                  <SelectItem value="date">التاريخ</SelectItem>
+                  <SelectItem value="price">السعر</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* نتائج البحث */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="services">الخدمات ({serviceResults.length})</TabsTrigger>
-          <TabsTrigger value="users">المستخدمين ({userResults.length})</TabsTrigger>
-        </TabsList>
+      {loading ? (
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      ) : results.length === 0 && query.trim().length >= 2 ? (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <h3 className="text-lg font-semibold mb-2">لا توجد نتائج</h3>
+            <p className="text-muted-foreground">
+              لم يتم العثور على نتائج مطابقة لبحثك. جرب استخدام كلمات مختلفة.
+            </p>
+          </CardContent>
+        </Card>
+      ) : results.length > 0 ? (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Search className="h-5 w-5" />
+                نتائج البحث ({results.length})
+              </CardTitle>
+            </CardHeader>
+          </Card>
 
-        <TabsContent value="services" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {serviceResults.length === 0 ? (
-              <div className="col-span-full text-center py-12 text-gray-500">
-                لا توجد خدمات
-              </div>
-            ) : (
-              serviceResults.map((service) => {
-                const priceInfo = getPriceDisplay(service);
-                const PriceIcon = priceInfo.icon;
-                
-                return (
-                  <Card key={service.id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg line-clamp-2">{service.title}</CardTitle>
-                          <div className="flex items-center gap-2 mt-2">
-                            <Badge variant="secondary">{service.category}</Badge>
-                            {getServiceTypeBadge(service.type)}
-                          </div>
+          {results.map((result) => (
+            <Card key={`${result.type}-${result.id}`} className="hover:shadow-md transition-shadow cursor-pointer">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={result.author?.avatar} />
+                    <AvatarFallback>
+                      {result.author?.name?.charAt(0) || "؟"}
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-semibold text-lg">{result.title}</h3>
+                      <Badge className={`${getTypeColor(result.type)} text-white`}>
+                        <div className="flex items-center gap-1">
+                          {getTypeIcon(result.type)}
+                          {getTypeLabel(result.type)}
                         </div>
-                      </div>
-                    </CardHeader>
-
-                    <CardContent className="space-y-4">
-                      <p className="text-gray-600 text-sm line-clamp-3">{service.description}</p>
-
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={service.provider?.avatar_url} />
-                          <AvatarFallback>
-                            <User className="h-4 w-4" />
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="text-sm font-medium">
-                            {service.provider?.full_name || service.provider?.username || "مقدم خدمة"}
-                          </p>
-                          <div className="flex items-center gap-1 text-xs text-gray-500">
-                            <Star className="h-3 w-3 fill-current text-yellow-400" />
-                            <span>4.8 (15 تقييم)</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1 text-sm text-gray-500">
-                          <Clock className="h-4 w-4" />
-                          <span>التسليم خلال {service.delivery_time} أيام</span>
-                        </div>
-                        <div className="text-right">
-                          <div className={`flex items-center gap-1 text-lg font-bold ${priceInfo.color}`}>
-                            <PriceIcon className="h-4 w-4" />
-                            <span>{priceInfo.text}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="users" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {userResults.length === 0 ? (
-              <div className="col-span-full text-center py-12 text-gray-500">
-                لا توجد مستخدمين
-              </div>
-            ) : (
-              userResults.map((userResult) => (
-                <Card key={userResult.id} className="hover:shadow-lg transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-4 mb-4">
-                      <Avatar className="h-16 w-16">
-                        <AvatarImage src={userResult.avatar_url} />
-                        <AvatarFallback>
-                          <User className="h-8 w-8" />
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg">
-                          {userResult.full_name || userResult.username}
-                        </h3>
-                        <p className="text-sm text-gray-600">@{userResult.username}</p>
-                        {userResult.university && (
-                          <p className="text-sm text-blue-600">{userResult.university}</p>
-                        )}
-                      </div>
+                      </Badge>
                     </div>
-
-                    {userResult.bio && (
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-3">{userResult.bio}</p>
-                    )}
-
-                    {userResult.skills && userResult.skills.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {userResult.skills.slice(0, 3).map((skill, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {skill}
-                          </Badge>
-                        ))}
-                        {userResult.skills.length > 3 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{userResult.skills.length - 3}
-                          </Badge>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
-        </TabsContent>
-      </Tabs>
+                    
+                    <p className="text-muted-foreground mb-3 line-clamp-2">
+                      {result.description}
+                    </p>
+                    
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <User className="h-3 w-3" />
+                        {result.author?.name}
+                      </span>
+                      
+                      {result.metadata?.price && (
+                        <span className="flex items-center gap-1">
+                          <DollarSign className="h-3 w-3" />
+                          {result.metadata.price} USD
+                        </span>
+                      )}
+                      
+                      {result.metadata?.location && (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {result.metadata.location}
+                        </span>
+                      )}
+                      
+                      {result.metadata?.category && (
+                        <Badge variant="outline" className="text-xs">
+                          {result.metadata.category}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

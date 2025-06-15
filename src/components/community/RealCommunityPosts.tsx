@@ -20,7 +20,9 @@ import {
   Plus,
   Send,
   Loader2,
-  Pin
+  Pin,
+  Edit,
+  Trash2
 } from "lucide-react";
 
 interface Post {
@@ -115,11 +117,11 @@ export function RealCommunityPosts() {
         return;
       }
 
-      // Get author profiles separately
+      // جلب معلومات المؤلفين
       const authorIds = postsData.map(post => post.author_id);
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, username, avatar_url")
+        .select("id, username, full_name, avatar_url")
         .in("id", authorIds);
 
       const profilesMap = profiles?.reduce((acc, profile) => {
@@ -127,7 +129,7 @@ export function RealCommunityPosts() {
         return acc;
       }, {} as Record<string, any>) || {};
 
-      // Check user likes
+      // فحص الإعجابات
       let likedPostIds = new Set<string>();
       if (user && postsData.length > 0) {
         const postIds = postsData.map(post => post.id);
@@ -142,7 +144,7 @@ export function RealCommunityPosts() {
 
       const postsWithDetails = postsData.map(post => ({
         ...post,
-        author_name: profilesMap[post.author_id]?.username || "مستخدم",
+        author_name: profilesMap[post.author_id]?.full_name || profilesMap[post.author_id]?.username || "مستخدم",
         author_avatar: profilesMap[post.author_id]?.avatar_url,
         user_liked: likedPostIds.has(post.id)
       }));
@@ -361,6 +363,26 @@ export function RealCommunityPosts() {
     setExpandedComments(newExpanded);
   };
 
+  const handleDeletePost = async (postId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from("community_posts")
+        .update({ is_hidden: true })
+        .eq("id", postId)
+        .eq("author_id", user.id);
+
+      if (error) throw error;
+
+      toast.success("تم حذف المنشور بنجاح");
+      fetchPosts();
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      toast.error("حدث خطأ أثناء حذف المنشور");
+    }
+  };
+
   const getCategoryLabel = (category?: string) => {
     return categories.find(c => c.value === category)?.label || category || "عام";
   };
@@ -391,7 +413,7 @@ export function RealCommunityPosts() {
 
   return (
     <div className="space-y-6">
-      {/* Search and Filter */}
+      {/* البحث والتصفية */}
       <Card>
         <CardContent className="p-4">
           <div className="flex flex-col md:flex-row gap-4">
@@ -426,7 +448,7 @@ export function RealCommunityPosts() {
         </CardContent>
       </Card>
 
-      {/* Create Post Form */}
+      {/* نموذج إنشاء منشور */}
       {showCreatePost && (
         <Card>
           <CardHeader>
@@ -483,7 +505,7 @@ export function RealCommunityPosts() {
         </Card>
       )}
 
-      {/* Posts List */}
+      {/* قائمة المنشورات */}
       {posts.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center">
@@ -523,9 +545,21 @@ export function RealCommunityPosts() {
                       </p>
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
+                  
+                  <div className="flex items-center gap-2">
+                    {user && user.id === post.author_id && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleDeletePost(post.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="sm">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               
@@ -566,10 +600,10 @@ export function RealCommunityPosts() {
                   </div>
                 </div>
 
-                {/* Comments Section */}
+                {/* قسم التعليقات */}
                 {expandedComments.has(post.id) && (
                   <div className="mt-4 space-y-4 border-t pt-4">
-                    {/* Add Comment */}
+                    {/* إضافة تعليق */}
                     {user && (
                       <div className="flex gap-3">
                         <Avatar className="h-8 w-8">
@@ -604,7 +638,7 @@ export function RealCommunityPosts() {
                       </div>
                     )}
 
-                    {/* Comments List */}
+                    {/* قائمة التعليقات */}
                     {comments[post.id]?.map((comment) => (
                       <div key={comment.id} className="flex gap-3">
                         <Avatar className="h-8 w-8">

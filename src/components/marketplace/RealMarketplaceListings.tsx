@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -318,20 +317,18 @@ export function RealMarketplaceListings() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+          ))
         </div>
       )}
 
       {/* Dialogs */}
-      {showCreateDialog && (
-        <CreateListingDialog
-          open={showCreateDialog}
-          onOpenChange={setShowCreateDialog}
-          onSuccess={fetchListings}
-        />
-      )}
+      <CreateListingDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        onSuccess={fetchListings}
+      />
 
-      {selectedListing && showBookingDialog && (
+      {selectedListing && (
         <CreateBookingDialog
           open={showBookingDialog}
           onOpenChange={setShowBookingDialog}
