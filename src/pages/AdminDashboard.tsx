@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import {
@@ -22,6 +21,7 @@ import {
   Shield,
   User,
   Users,
+  UserCog,
 } from "lucide-react";
 import {
   Table,
@@ -44,6 +44,9 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import { AdminUserManagement } from "@/components/admin/AdminUserManagement";
+import { WithdrawalRequestsPanel } from "@/components/admin/WithdrawalRequestsPanel";
+import { PaymentVerificationPanel } from "@/components/admin/PaymentVerificationPanel";
 
 // Mock users data
 const USERS_DATA = [
@@ -280,13 +283,34 @@ export default function AdminDashboard() {
           </Card>
         </div>
         
-        <Tabs defaultValue="users" className="mt-8">
+        <Tabs defaultValue="moderators" className="mt-8">
           <TabsList className="mb-6">
+            <TabsTrigger value="moderators">
+              <UserCog className="h-4 w-4 mr-2" />
+              إدارة المشرفين
+            </TabsTrigger>
+            <TabsTrigger value="withdrawals">طلبات السحب</TabsTrigger>
+            <TabsTrigger value="payments">طلبات الشحن</TabsTrigger>
             <TabsTrigger value="dashboard">لوحة البيانات</TabsTrigger>
             <TabsTrigger value="users">المستخدمون</TabsTrigger>
             <TabsTrigger value="transactions">المعاملات</TabsTrigger>
             <TabsTrigger value="reports">البلاغات</TabsTrigger>
           </TabsList>
+          
+          {/* Moderators Management Tab */}
+          <TabsContent value="moderators">
+            <AdminUserManagement />
+          </TabsContent>
+
+          {/* Withdrawal Requests Tab */}
+          <TabsContent value="withdrawals">
+            <WithdrawalRequestsPanel />
+          </TabsContent>
+
+          {/* Payment Verification Tab */}
+          <TabsContent value="payments">
+            <PaymentVerificationPanel />
+          </TabsContent>
           
           {/* Dashboard Tab */}
           <TabsContent value="dashboard">
