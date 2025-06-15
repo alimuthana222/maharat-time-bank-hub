@@ -7,10 +7,11 @@ import {
   Minus, 
   Send, 
   Receipt, 
-  CreditCard,
-  Smartphone
+  CreditCard
 } from "lucide-react";
 import { DepositDialog } from "@/components/payment/DepositDialog";
+import { SendMoneyDialog } from "./SendMoneyDialog";
+import { WithdrawDialog } from "./WithdrawDialog";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 interface QuickActionsProps {
@@ -19,6 +20,8 @@ interface QuickActionsProps {
 
 export function QuickActions({ onActionComplete }: QuickActionsProps) {
   const [showDepositDialog, setShowDepositDialog] = useState(false);
+  const [showSendMoneyDialog, setShowSendMoneyDialog] = useState(false);
+  const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
   const { user } = useAuth();
 
   const quickActions = [
@@ -34,15 +37,15 @@ export function QuickActions({ onActionComplete }: QuickActionsProps) {
       title: "إرسال أموال",
       description: "تحويل للمستخدمين",
       icon: Send,
-      action: () => console.log("Send money"),
+      action: () => setShowSendMoneyDialog(true),
       color: "bg-blue-500 hover:bg-blue-600",
       iconColor: "text-white"
     },
     {
-      title: "سحب الرصيد",
-      description: "سحب إلى البنك",
+      title: "طلب سحب",
+      description: "سحب إلى ZainCash",
       icon: Minus,
-      action: () => console.log("Withdraw"),
+      action: () => setShowWithdrawDialog(true),
       color: "bg-orange-500 hover:bg-orange-600",
       iconColor: "text-white"
     },
@@ -58,6 +61,10 @@ export function QuickActions({ onActionComplete }: QuickActionsProps) {
 
   const handleDepositSuccess = (transactionId: string) => {
     setShowDepositDialog(false);
+    onActionComplete?.();
+  };
+
+  const handleActionComplete = () => {
     onActionComplete?.();
   };
 
@@ -98,6 +105,18 @@ export function QuickActions({ onActionComplete }: QuickActionsProps) {
       </Card>
 
       <DepositDialog onSuccess={handleDepositSuccess} />
+      
+      <SendMoneyDialog
+        open={showSendMoneyDialog}
+        onOpenChange={setShowSendMoneyDialog}
+        onSuccess={handleActionComplete}
+      />
+      
+      <WithdrawDialog
+        open={showWithdrawDialog}
+        onOpenChange={setShowWithdrawDialog}
+        onSuccess={handleActionComplete}
+      />
     </>
   );
 }
