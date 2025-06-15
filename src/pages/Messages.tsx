@@ -1,25 +1,35 @@
 
 import React from "react";
 import { Navbar } from "@/components/layout/Navbar";
-import { RealMessageSystem } from "@/components/messaging/RealMessageSystem";
+import { Footer } from "@/components/home/Footer";
+import { MessageSystem } from "@/components/messaging/MessageSystem";
+import { ResponsiveContainer } from "@/components/ui/mobile-responsive";
 import { MessageCircle } from "lucide-react";
 
 export default function Messages() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center gap-3 mb-8">
-          <MessageCircle className="h-8 w-8 text-blue-600" />
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">الرسائل</h1>
-            <p className="text-gray-600">تواصل مع الطلاب ومقدمي الخدمات</p>
+      <main className="flex-1">
+        <ResponsiveContainer className="pt-20 pb-8">
+          <div className="mb-8">
+            <div className="flex items-center gap-3">
+              <MessageCircle className="h-8 w-8 text-blue-600" />
+              <div>
+                <h1 className="text-3xl font-bold">الرسائل</h1>
+                <p className="text-muted-foreground">
+                  تواصل مع زملائك الطلاب ومقدمي الخدمات
+                </p>
+              </div>
+            </div>
           </div>
-        </div>
-        
-        <RealMessageSystem />
-      </div>
+
+          <MessageSystem />
+        </ResponsiveContainer>
+      </main>
+
+      <Footer />
     </div>
   );
 }
