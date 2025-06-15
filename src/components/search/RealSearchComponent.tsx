@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -122,23 +121,32 @@ export function RealSearchComponent() {
       if (searchType === "all" || searchType === "posts") {
         const { data: posts } = await supabase
           .from("community_posts")
-          .select(`
-            *,
-            author:profiles!community_posts_author_id_fkey(username, full_name, avatar_url)
-          `)
+          .select("*")
           .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
           .eq("is_hidden", false)
           .limit(10);
 
         if (posts) {
+          // جلب معلومات المؤلفين بشكل منفصل
+          const authorIds = posts.map(post => post.author_id);
+          const { data: authors } = await supabase
+            .from("profiles")
+            .select("id, username, full_name, avatar_url")
+            .in("id", authorIds);
+
+          const authorsMap = authors?.reduce((acc, author) => {
+            acc[author.id] = author;
+            return acc;
+          }, {} as Record<string, any>) || {};
+
           const postResults = posts.map(post => ({
             id: post.id,
             type: 'post' as const,
             title: post.title,
             description: post.content.substring(0, 150) + "...",
             author: {
-              name: post.author?.full_name || post.author?.username || "مستخدم",
-              avatar: post.author?.avatar_url
+              name: authorsMap[post.author_id]?.full_name || authorsMap[post.author_id]?.username || "مستخدم",
+              avatar: authorsMap[post.author_id]?.avatar_url
             },
             metadata: {
               category: post.category
@@ -152,23 +160,32 @@ export function RealSearchComponent() {
       if (searchType === "all" || searchType === "events") {
         const { data: events } = await supabase
           .from("events")
-          .select(`
-            *,
-            organizer:profiles!events_organizer_id_fkey(username, full_name, avatar_url)
-          `)
+          .select("*")
           .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
           .eq("status", "upcoming")
           .limit(10);
 
         if (events) {
+          // جلب معلومات المنظمين بشكل منفصل
+          const organizerIds = events.map(event => event.organizer_id);
+          const { data: organizers } = await supabase
+            .from("profiles")
+            .select("id, username, full_name, avatar_url")
+            .in("id", organizerIds);
+
+          const organizersMap = organizers?.reduce((acc, organizer) => {
+            acc[organizer.id] = organizer;
+            return acc;
+          }, {} as Record<string, any>) || {};
+
           const eventResults = events.map(event => ({
             id: event.id,
             type: 'event' as const,
             title: event.title,
             description: event.description,
             author: {
-              name: event.organizer?.full_name || event.organizer?.username || "منظم",
-              avatar: event.organizer?.avatar_url
+              name: organizersMap[event.organizer_id]?.full_name || organizersMap[event.organizer_id]?.username || "منظم",
+              avatar: organizersMap[event.organizer_id]?.avatar_url
             },
             metadata: {
               date: event.start_date,

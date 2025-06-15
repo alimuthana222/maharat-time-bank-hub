@@ -1,225 +1,327 @@
 
 import React, { useState, useEffect } from "react";
-import { Bell } from "lucide-react";
-import { 
-  Popover, 
-  PopoverContent, 
-  PopoverTrigger 
-} from "@/components/ui/popover";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/utils";
+import { Separator } from "@/components/ui/separator";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
-import { useAuth } from "@/context/AuthContext";
+import { formatDistanceToNow } from "date-fns";
+import { ar } from "date-fns/locale";
+import { 
+  Bell, 
+  Check, 
+  CheckCheck, 
+  Trash2, 
+  Settings,
+  MessageSquare,
+  Calendar,
+  DollarSign,
+  User,
+  AlertCircle,
+  Loader2
+} from "lucide-react";
 
-export type Notification = {
+interface Notification {
   id: string;
+  user_id: string;
   title: string;
-  message: string;
-  type: 'message' | 'system' | 'timebank' | 'marketplace' | 'forum';
-  read: boolean;
-  createdAt: string;
+  body: string;
+  type: string;
+  related_id?: string;
+  related_type?: string;
+  is_read: boolean;
+  created_at: string;
 }
 
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: '1',
-    title: 'رسالة جديدة',
-    message: 'لديك رسالة جديدة من أحمد محمد',
-    type: 'message',
-    read: false,
-    createdAt: '2025-04-19T12:30:00Z'
-  },
-  {
-    id: '2',
-    title: 'معاملة ناجحة',
-    message: 'تم إضافة 3 ساعات إلى رصيدك',
-    type: 'timebank',
-    read: false,
-    createdAt: '2025-04-19T10:15:00Z'
-  },
-  {
-    id: '3',
-    title: 'عرض جديد',
-    message: 'تم نشر عرض جديد في المهارة التي تتابعها',
-    type: 'marketplace',
-    read: true,
-    createdAt: '2025-04-18T15:45:00Z'
-  },
-  {
-    id: '4',
-    title: 'تنبيه من النظام',
-    message: 'تم تحديث شروط الاستخدام، يرجى مراجعتها',
-    type: 'system',
-    read: true,
-    createdAt: '2025-04-18T09:00:00Z'
-  },
-  {
-    id: '5',
-    title: 'منشور جديد في المجتمع',
-    message: 'تمت الإجابة على استفسارك في منتدى المجتمع',
-    type: 'forum',
-    read: false,
-    createdAt: '2025-04-19T14:20:00Z'
-  },
-];
-
 export function NotificationCenter() {
-  const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
-  const [open, setOpen] = useState(false);
   const { user } = useAuth();
-  
-  const unreadCount = notifications.filter(notification => !notification.read).length;
-  
-  // Listen for real-time notifications when user is logged in
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [markingAsRead, setMarkingAsRead] = useState<Set<string>>(new Set());
+
   useEffect(() => {
-    if (!user) return;
-    
-    // Simulate real-time notifications
-    const interval = setInterval(() => {
-      // Small chance to add a new notification
-      if (Math.random() > 0.9) {
-        const types: Notification['type'][] = ['message', 'system', 'timebank', 'marketplace', 'forum'];
-        const randomType = types[Math.floor(Math.random() * types.length)];
-        const titles: Record<Notification['type'], string> = {
-          message: 'رسالة جديدة',
-          system: 'إشعار من النظام',
-          timebank: 'تحديث في بنك الوقت',
-          marketplace: 'تحديث في السوق',
-          forum: 'نشاط في المنتدى'
-        };
-        const messages: Record<Notification['type'], string> = {
-          message: 'لديك رسالة جديدة من مستخدم',
-          system: 'تم تحديث إعدادات النظام',
-          timebank: 'تم تحديث رصيد الساعات الخاص بك',
-          marketplace: 'هناك عرض جديد قد يهمك',
-          forum: 'هناك منشور جديد في موضوع تتابعه'
-        };
-        
-        const newNotification: Notification = {
-          id: `notification-${Date.now()}`,
-          title: titles[randomType],
-          message: messages[randomType],
-          type: randomType,
-          read: false,
-          createdAt: new Date().toISOString()
-        };
-        
-        setNotifications(prev => [newNotification, ...prev]);
-        toast(newNotification.title, {
-          description: newNotification.message,
-        });
-      }
-    }, 60000); // Check every minute
-    
-    return () => {
-      clearInterval(interval);
-    };
+    if (user) {
+      fetchNotifications();
+      setupRealTimeUpdates();
+    }
   }, [user]);
-  
-  const markAsRead = async (id: string) => {
-    // Update locally for responsive UI
-    setNotifications(notifications.map(notification => 
-      notification.id === id ? { ...notification, read: true } : notification
-    ));
-  };
-  
-  const markAllAsRead = async () => {
-    // Update locally
-    setNotifications(notifications.map(notification => ({ ...notification, read: true })));
-  };
-  
-  const getNotificationIcon = (type: Notification['type']) => {
-    switch (type) {
-      case 'message':
-        return <div className="h-2 w-2 rounded-full bg-blue-500"></div>;
-      case 'timebank':
-        return <div className="h-2 w-2 rounded-full bg-green-500"></div>;
-      case 'marketplace':
-        return <div className="h-2 w-2 rounded-full bg-orange-500"></div>;
-      case 'system':
-        return <div className="h-2 w-2 rounded-full bg-red-500"></div>;
-      case 'forum':
-        return <div className="h-2 w-2 rounded-full bg-purple-500"></div>;
-      default:
-        return <div className="h-2 w-2 rounded-full bg-gray-500"></div>;
+
+  const fetchNotifications = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+
+      setNotifications(data || []);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      toast.error("حدث خطأ أثناء تحميل الإشعارات");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('ar', { 
-      day: 'numeric', 
-      month: 'short', 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    }).format(date);
+  const setupRealTimeUpdates = () => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel("notifications-updates")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          fetchNotifications();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   };
-  
+
+  const markAsRead = async (notificationId: string) => {
+    if (!user || markingAsRead.has(notificationId)) return;
+
+    setMarkingAsRead(prev => new Set(prev).add(notificationId));
+    try {
+      const { error } = await supabase
+        .from("notifications")
+        .update({ is_read: true })
+        .eq("id", notificationId)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      setNotifications(prev => 
+        prev.map(notif => 
+          notif.id === notificationId 
+            ? { ...notif, is_read: true }
+            : notif
+        )
+      );
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      toast.error("حدث خطأ أثناء تحديث الإشعار");
+    } finally {
+      setMarkingAsRead(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(notificationId);
+        return newSet;
+      });
+    }
+  };
+
+  const markAllAsRead = async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from("notifications")
+        .update({ is_read: true })
+        .eq("user_id", user.id)
+        .eq("is_read", false);
+
+      if (error) throw error;
+
+      setNotifications(prev => 
+        prev.map(notif => ({ ...notif, is_read: true }))
+      );
+      toast.success("تم وضع علامة قراءة على جميع الإشعارات");
+    } catch (error) {
+      console.error("Error marking all as read:", error);
+      toast.error("حدث خطأ أثناء تحديث الإشعارات");
+    }
+  };
+
+  const deleteNotification = async (notificationId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from("notifications")
+        .delete()
+        .eq("id", notificationId)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      setNotifications(prev => 
+        prev.filter(notif => notif.id !== notificationId)
+      );
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+      toast.error("حدث خطأ أثناء حذف الإشعار");
+    }
+  };
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case "message":
+        return <MessageSquare className="h-4 w-4 text-blue-500" />;
+      case "booking":
+        return <Calendar className="h-4 w-4 text-green-500" />;
+      case "payment":
+        return <DollarSign className="h-4 w-4 text-yellow-500" />;
+      case "user":
+        return <User className="h-4 w-4 text-purple-500" />;
+      case "system":
+        return <AlertCircle className="h-4 w-4 text-red-500" />;
+      default:
+        return <Bell className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  const getNotificationTypeLabel = (type: string) => {
+    switch (type) {
+      case "message": return "رسالة";
+      case "booking": return "حجز";
+      case "payment": return "دفع";
+      case "user": return "مستخدم";
+      case "system": return "نظام";
+      default: return "إشعار";
+    }
+  };
+
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="p-8">
+          <div className="flex justify-center items-center">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
-            <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
-              {unreadCount}
-            </span>
-          )}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
-        <div className="flex items-center justify-between border-b p-3">
-          <h3 className="font-medium">الإشعارات</h3>
-          {unreadCount > 0 && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={markAllAsRead}
-              className="text-xs"
-            >
-              تعيين الكل كمقروء
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5" />
+              الإشعارات
+            </CardTitle>
+            {unreadCount > 0 && (
+              <Badge variant="destructive" className="text-xs">
+                {unreadCount}
+              </Badge>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {unreadCount > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={markAllAsRead}
+              >
+                <CheckCheck className="h-4 w-4 mr-1" />
+                قراءة الكل
+              </Button>
+            )}
+            <Button variant="ghost" size="sm">
+              <Settings className="h-4 w-4" />
             </Button>
-          )}
+          </div>
         </div>
-        <ScrollArea className="max-h-[300px]">
-          {notifications.length > 0 ? (
-            <div className="divide-y">
-              {notifications.map(notification => (
-                <div 
-                  key={notification.id}
-                  className={cn(
-                    "p-3 hover:bg-muted/50 cursor-pointer transition-colors", 
-                    !notification.read && "bg-muted/20"
-                  )}
-                  onClick={() => markAsRead(notification.id)}
-                >
-                  <div className="flex items-center gap-2">
-                    {getNotificationIcon(notification.type)}
-                    <div className="font-medium text-sm">{notification.title}</div>
+      </CardHeader>
+
+      <CardContent className="p-0">
+        {notifications.length === 0 ? (
+          <div className="p-8 text-center text-muted-foreground">
+            <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>لا توجد إشعارات</p>
+          </div>
+        ) : (
+          <ScrollArea className="h-[400px]">
+            <div className="p-4 space-y-4">
+              {notifications.map((notification, index) => (
+                <div key={notification.id}>
+                  <div className={`flex items-start gap-3 p-3 rounded-lg transition-colors hover:bg-muted/50 ${
+                    !notification.is_read ? "bg-primary/5 border-l-4 border-l-primary" : ""
+                  }`}>
+                    <div className="flex-shrink-0 mt-1">
+                      {getNotificationIcon(notification.type)}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-sm mb-1">
+                            {notification.title}
+                          </h4>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {notification.body}
+                          </p>
+                          
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <Badge variant="outline" className="text-xs">
+                              {getNotificationTypeLabel(notification.type)}
+                            </Badge>
+                            <span>
+                              {formatDistanceToNow(new Date(notification.created_at), {
+                                addSuffix: true,
+                                locale: ar,
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-1">
+                          {!notification.is_read && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => markAsRead(notification.id)}
+                              disabled={markingAsRead.has(notification.id)}
+                            >
+                              {markingAsRead.has(notification.id) ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Check className="h-3 w-3" />
+                              )}
+                            </Button>
+                          )}
+                          
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteNotification(notification.id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="mt-1 text-sm text-muted-foreground">{notification.message}</div>
-                  <div className="mt-1 text-xs text-muted-foreground">{formatDate(notification.createdAt)}</div>
+                  
+                  {index < notifications.length - 1 && <Separator className="my-2" />}
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center p-6 text-center">
-              <p className="mb-2 text-muted-foreground">لا توجد إشعارات</p>
-            </div>
-          )}
-        </ScrollArea>
-        <div className="border-t p-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full text-center text-xs"
-            onClick={() => setOpen(false)}
-          >
-            عرض جميع الإشعارات
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
+          </ScrollArea>
+        )}
+      </CardContent>
+    </Card>
   );
 }
