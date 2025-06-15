@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -49,14 +48,21 @@ export function DashboardTransactions() {
     try {
       setLoading(true);
 
-      // جلب معاملات زين كاش
-      const { data: zainCashData, error: zainError } = await supabase
-        .from('zain_cash_transactions')
+      // جلب معاملات الشحن فقط
+      const { data: chargeData, error: chargeError } = await supabase
+        .from('charge_transactions')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      // جلب معاملات التبادل في بنك الوقت
+      // جلب معاملات الدفع
+      const { data: paymentData, error: paymentError } = await supabase
+        .from('payments')
+        .select('*')
+        .or(`payer_id.eq.${user.id},receiver_id.eq.${user.id}`)
+        .order('created_at', { ascending: false });
+
+      // جلب معاملات بنك الوقت
       const { data: timeBankData, error: timeBankError } = await supabase
         .from('time_bank_transactions')
         .select(`
@@ -67,23 +73,40 @@ export function DashboardTransactions() {
         .or(`provider_id.eq.${user.id},recipient_id.eq.${user.id}`)
         .order('created_at', { ascending: false });
 
-      if (zainError) console.error('Error fetching zain cash transactions:', zainError);
+      if (chargeError) console.error('Error fetching charge transactions:', chargeError);
+      if (paymentError) console.error('Error fetching payment transactions:', paymentError);
       if (timeBankError) console.error('Error fetching time bank transactions:', timeBankError);
 
       const allTransactions: Transaction[] = [];
 
-      // معالجة معاملات زين كاش
-      if (zainCashData) {
-        zainCashData.forEach(transaction => {
+      // معالجة معاملات الشحن
+      if (chargeData) {
+        chargeData.forEach(transaction => {
           allTransactions.push({
             id: transaction.id,
-            type: transaction.transaction_type === 'deposit' ? 'deposit' : 'spent',
+            type: 'deposit',
             amount: transaction.amount,
-            description: transaction.description || 'معاملة زين كاش',
+            description: transaction.notes || 'شحن رصيد',
             category: 'مالية',
             status: transaction.status as "completed" | "pending" | "failed",
             createdAt: transaction.created_at,
             transaction_id: transaction.transaction_id
+          });
+        });
+      }
+
+      // معالجة معاملات الدفع
+      if (paymentData) {
+        paymentData.forEach(payment => {
+          const isReceiver = payment.receiver_id === user.id;
+          allTransactions.push({
+            id: payment.id,
+            type: isReceiver ? 'earned' : 'spent',
+            amount: payment.amount,
+            description: `معاملة دفع - ${payment.payment_method}`,
+            category: 'مالية',
+            status: payment.status as "completed" | "pending" | "failed",
+            createdAt: payment.created_at
           });
         });
       }
