@@ -1,10 +1,10 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
+import { ReviewForm } from "@/components/reviews/ReviewForm";
 import { 
   Calendar, 
   Clock, 
@@ -38,17 +38,17 @@ interface Booking {
     username: string;
     full_name: string;
     avatar_url?: string;
-  };
+  } | null;
   provider?: {
     username: string;
     full_name: string;
     avatar_url?: string;
-  };
+  } | null;
   service?: {
     title: string;
     hourly_rate: number;
     category: string;
-  };
+  } | null;
 }
 
 interface BookingCardProps {
@@ -62,6 +62,7 @@ export function BookingCard({ booking, onStatusChange, viewType }: BookingCardPr
   const [isUpdating, setIsUpdating] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
 
   const getStatusVariant = (status: string) => {
     switch (status) {
@@ -148,6 +149,7 @@ export function BookingCard({ booking, onStatusChange, viewType }: BookingCardPr
   const otherUser = viewType === 'client' ? booking.provider : booking.client;
   const isProvider = viewType === 'provider';
   const canManage = isProvider && booking.status === 'pending';
+  const canReview = booking.status === 'completed' && !showReviewForm;
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -309,6 +311,35 @@ export function BookingCard({ booking, onStatusChange, viewType }: BookingCardPr
                 رفض الحجز
               </Button>
             </div>
+          </div>
+        )}
+
+        {/* إضافة تقييم للحجوزات المكتملة */}
+        {canReview && (
+          <div className="border-t pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowReviewForm(true)}
+              className="w-full"
+            >
+              <Star className="h-4 w-4 mr-2" />
+              إضافة تقييم
+            </Button>
+          </div>
+        )}
+
+        {/* نموذج التقييم */}
+        {showReviewForm && otherUser && (
+          <div className="border-t pt-4">
+            <ReviewForm
+              reviewedUserId={viewType === 'client' ? booking.provider_id : booking.client_id}
+              serviceId={booking.service_id}
+              transactionId={booking.id}
+              onReviewSubmitted={() => {
+                setShowReviewForm(false);
+                toast.success("تم إضافة التقييم بنجاح");
+              }}
+            />
           </div>
         )}
 

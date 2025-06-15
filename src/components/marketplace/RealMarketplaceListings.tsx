@@ -323,13 +323,15 @@ export function RealMarketplaceListings() {
       )}
 
       {/* Dialogs */}
-      <CreateListingDialog
-        open={showCreateDialog}
-        onOpenChange={setShowCreateDialog}
-        onSuccess={fetchListings}
-      />
+      {showCreateDialog && (
+        <CreateListingDialog
+          open={showCreateDialog}
+          onOpenChange={setShowCreateDialog}
+          onSuccess={fetchListings}
+        />
+      )}
 
-      {selectedListing && (
+      {selectedListing && showBookingDialog && (
         <CreateBookingDialog
           open={showBookingDialog}
           onOpenChange={setShowBookingDialog}
