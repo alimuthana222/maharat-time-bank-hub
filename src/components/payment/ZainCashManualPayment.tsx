@@ -114,7 +114,9 @@ export function ZainCashManualPayment({
 
   const notifyAdmins = async (transactionId: string) => {
     try {
-      // جلب جميع المشرفين والإداريين
+      console.log('Starting admin notification process...');
+      
+      // جلب جميع المشرفين والإداريين والمالكين
       const { data: adminUsers, error } = await supabase
         .from('user_roles')
         .select('user_id')
@@ -125,21 +127,49 @@ export function ZainCashManualPayment({
         return;
       }
 
-      // إرسال إشعار لكل مشرف
-      for (const admin of adminUsers || []) {
-        await supabase.rpc('send_notification', {
-          _user_id: admin.user_id,
-          _title: 'طلب شحن جديد',
-          _body: `تم استلام طلب شحن جديد بقيمة ${amount.toLocaleString()} دينار عراقي عبر ZainCash يتطلب المراجعة`,
-          _type: 'transaction',
-          _related_id: transactionId,
-          _related_type: 'charge_transaction'
-        });
+      console.log('Found admin users:', adminUsers);
+
+      if (!adminUsers || adminUsers.length === 0) {
+        console.warn('No admin users found');
+        return;
       }
 
-      console.log('Admin notifications sent successfully');
+      // إرسال إشعار لكل مشرف
+      const notificationPromises = adminUsers.map(async (admin) => {
+        try {
+          const { data, error } = await supabase.rpc('send_notification', {
+            _user_id: admin.user_id,
+            _title: 'طلب شحن جديد يتطلب المراجعة',
+            _body: `تم استلام طلب شحن جديد بقيمة ${amount.toLocaleString()} دينار عراقي عبر ZainCash. يرجى مراجعة الطلب في لوحة التحكم.`,
+            _type: 'transaction',
+            _related_id: transactionId,
+            _related_type: 'charge_transaction'
+          });
+
+          if (error) {
+            console.error(`Error sending notification to admin ${admin.user_id}:`, error);
+          } else {
+            console.log(`Notification sent successfully to admin ${admin.user_id}`);
+          }
+
+          return { success: !error, adminId: admin.user_id };
+        } catch (error) {
+          console.error(`Failed to send notification to admin ${admin.user_id}:`, error);
+          return { success: false, adminId: admin.user_id };
+        }
+      });
+
+      const results = await Promise.all(notificationPromises);
+      const successCount = results.filter(r => r.success).length;
+      
+      console.log(`Admin notifications sent: ${successCount}/${adminUsers.length} successful`);
+
+      if (successCount === 0) {
+        console.error('Failed to send notifications to any admin');
+      }
+
     } catch (error) {
-      console.error('Error sending admin notifications:', error);
+      console.error('Error in notifyAdmins function:', error);
     }
   };
 
@@ -198,6 +228,7 @@ export function ZainCashManualPayment({
       console.log('Transaction created successfully:', transaction);
 
       // إرسال إشعارات للمشرفين
+      console.log('Sending notifications to admins...');
       await notifyAdmins(transaction.transaction_id);
 
       toast.success("تم إرسال طلب الشحن بنجاح! سيتم مراجعته قريباً وتم إشعار الإدارة");
