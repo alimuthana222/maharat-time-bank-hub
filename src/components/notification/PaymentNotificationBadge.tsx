@@ -15,17 +15,17 @@ import { useNavigate } from "react-router-dom";
 
 export function PaymentNotificationBadge() {
   const [pendingCount, setPendingCount] = useState(0);
-  const { user, isAdmin, isModerator } = useAuth();
+  const { user, isAdmin, isOwner } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user && (isAdmin() || isModerator())) {
+    if (user && (isAdmin() || isOwner())) {
       fetchPendingCount();
       // تحديث العدد كل 30 ثانية
       const interval = setInterval(fetchPendingCount, 30000);
       return () => clearInterval(interval);
     }
-  }, [user, isAdmin, isModerator]);
+  }, [user, isAdmin, isOwner]);
 
   const fetchPendingCount = async () => {
     try {
@@ -43,14 +43,12 @@ export function PaymentNotificationBadge() {
   };
 
   const handleNavigateToPayments = () => {
-    if (isAdmin()) {
+    if (isAdmin() || isOwner()) {
       navigate('/admin');
-    } else if (isModerator()) {
-      navigate('/moderator');
     }
   };
 
-  if (!user || (!isAdmin() && !isModerator()) || pendingCount === 0) {
+  if (!user || (!isAdmin() && !isOwner()) || pendingCount === 0) {
     return null;
   }
 

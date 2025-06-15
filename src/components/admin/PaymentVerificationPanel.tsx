@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,14 +30,14 @@ interface PendingPayment {
   payment_proof_url?: string;
   notes?: string;
   created_at: string;
-  user_profiles?: {
+  profiles?: {
     username: string;
     full_name: string;
   };
 }
 
 export function PaymentVerificationPanel() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isOwner } = useAuth();
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPayment, setSelectedPayment] = useState<PendingPayment | null>(null);
@@ -45,37 +46,50 @@ export function PaymentVerificationPanel() {
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    if (isAdmin()) {
+    if (isAdmin() || isOwner()) {
       fetchPendingPayments();
       // إعداد تحديث تلقائي كل 30 ثانية
       const interval = setInterval(fetchPendingPayments, 30000);
       return () => clearInterval(interval);
     }
-  }, [isAdmin]);
+  }, [isAdmin, isOwner]);
 
   const fetchPendingPayments = async () => {
     try {
       setRefreshing(true);
-      const { data, error } = await supabase
+      
+      // جلب المعاملات أولاً
+      const { data: transactions, error: transactionsError } = await supabase
         .from('charge_transactions')
-        .select(`
-          *,
-          user_profiles:profiles(username, full_name)
-        `)
+        .select('*')
         .eq('payment_method', 'zaincash_manual')
         .eq('manual_verification_status', 'pending')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      
-      // تنظيف البيانات لضمان التوافق مع النوع
-      const cleanedData = (data || []).map(item => ({
-        ...item,
-        user_profiles: Array.isArray(item.user_profiles) ? item.user_profiles[0] : item.user_profiles
-      })).filter(item => item.user_profiles && typeof item.user_profiles === 'object');
+      if (transactionsError) throw transactionsError;
 
-      setPendingPayments(cleanedData);
-      console.log(`Fetched ${cleanedData.length} pending payments`);
+      // جلب بيانات المستخدمين بشكل منفصل
+      const userIds = transactions?.map(t => t.user_id) || [];
+      if (userIds.length === 0) {
+        setPendingPayments([]);
+        return;
+      }
+
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, full_name')
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      // دمج البيانات يدوياً
+      const paymentsWithProfiles = transactions?.map(transaction => ({
+        ...transaction,
+        profiles: profiles?.find(profile => profile.id === transaction.user_id)
+      })) || [];
+
+      setPendingPayments(paymentsWithProfiles);
+      console.log(`Fetched ${paymentsWithProfiles.length} pending payments`);
     } catch (error: any) {
       console.error('Error fetching pending payments:', error);
       toast.error(`خطأ في جلب المدفوعات: ${error.message}`);
@@ -150,7 +164,7 @@ export function PaymentVerificationPanel() {
     }
   };
 
-  if (!isAdmin()) {
+  if (!isAdmin() && !isOwner()) {
     return (
       <Card>
         <CardContent className="p-6 text-center">
@@ -216,7 +230,7 @@ export function PaymentVerificationPanel() {
                         <div className="flex items-center gap-2">
                           <Phone className="h-4 w-4 text-blue-600" />
                           <span className="font-medium">
-                            {payment.user_profiles?.username || 'مستخدم غير معروف'}
+                            {payment.profiles?.username || 'مستخدم غير معروف'}
                           </span>
                           <Badge variant="outline">ZainCash</Badge>
                           <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
@@ -262,7 +276,7 @@ export function PaymentVerificationPanel() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="font-medium">المستخدم:</span>
-                  <p>{selectedPayment.user_profiles?.full_name || selectedPayment.user_profiles?.username}</p>
+                  <p>{selectedPayment.profiles?.full_name || selectedPayment.profiles?.username}</p>
                 </div>
                 <div>
                   <span className="font-medium">المبلغ:</span>
