@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReportManagement } from "@/components/moderation/ReportManagement";
 import { UsersManagement } from "@/components/admin/UsersManagement";
 import { ContentManagement } from "@/components/admin/ContentManagement";
+import { PaymentVerificationPanel } from "@/components/admin/PaymentVerificationPanel";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Navigate } from "react-router-dom";
 
@@ -28,6 +29,7 @@ export default function ModeratorDashboard() {
             <TabsTrigger value="reports">إدارة البلاغات</TabsTrigger>
             <TabsTrigger value="users">إدارة المستخدمين</TabsTrigger>
             <TabsTrigger value="content">إدارة المحتوى</TabsTrigger>
+            <TabsTrigger value="payments">التحقق من المدفوعات</TabsTrigger>
           </TabsList>
           
           <TabsContent value="reports">
@@ -40,6 +42,10 @@ export default function ModeratorDashboard() {
           
           <TabsContent value="content">
             <ContentManagement />
+          </TabsContent>
+          
+          <TabsContent value="payments">
+            <PaymentVerificationPanel />
           </TabsContent>
         </Tabs>
       </div>

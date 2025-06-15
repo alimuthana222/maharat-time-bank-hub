@@ -62,7 +62,14 @@ export function PaymentVerificationPanel() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPendingPayments(data || []);
+      
+      // تنظيف البيانات لضمان التوافق مع النوع
+      const cleanedData = (data || []).map(item => ({
+        ...item,
+        user_profiles: Array.isArray(item.user_profiles) ? item.user_profiles[0] : item.user_profiles
+      })).filter(item => item.user_profiles && typeof item.user_profiles === 'object');
+
+      setPendingPayments(cleanedData);
     } catch (error: any) {
       console.error('Error fetching pending payments:', error);
       toast.error(`خطأ في جلب المدفوعات: ${error.message}`);

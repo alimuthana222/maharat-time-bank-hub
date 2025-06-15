@@ -15,7 +15,8 @@ import {
   CreditCard, 
   Wallet,
   Filter,
-  Download
+  Download,
+  Phone
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -37,6 +38,7 @@ interface ChargeTransaction {
   status: string;
   notes: string;
   created_at: string;
+  manual_verification_status?: string;
 }
 
 export function DashboardTransactions() {
@@ -92,6 +94,8 @@ export function DashboardTransactions() {
         return Wallet;
       case 'mastercard':
         return CreditCard;
+      case 'zaincash_manual':
+        return Phone;
       default:
         return ArrowDownRight;
     }
@@ -103,11 +107,29 @@ export function DashboardTransactions() {
         return 'المحفظة';
       case 'mastercard':
         return 'ماستر كارد';
+      case 'zaincash_manual':
+        return 'ZainCash يدوي';
       case 'admin_credit':
         return 'شحن من الإدارة';
       default:
         return method;
     }
+  };
+
+  const getTransactionStatus = (transaction: ChargeTransaction) => {
+    if (transaction.payment_method === 'zaincash_manual') {
+      switch (transaction.manual_verification_status) {
+        case 'pending':
+          return { text: 'قيد المراجعة', color: 'orange' };
+        case 'verified':
+          return { text: 'مقبول', color: 'green' };
+        case 'rejected':
+          return { text: 'مرفوض', color: 'red' };
+        default:
+          return { text: transaction.status, color: 'gray' };
+      }
+    }
+    return { text: transaction.status, color: 'gray' };
   };
 
   const formatAmount = (amount: number, currency: string = 'IQD') => {
@@ -165,6 +187,7 @@ export function DashboardTransactions() {
                   {/* عرض معاملات الشحن */}
                   {charges.map((charge) => {
                     const PaymentIcon = getPaymentMethodIcon(charge.payment_method);
+                    const statusInfo = getTransactionStatus(charge);
                     return (
                       <div key={`charge-${charge.id}`} className="flex items-center justify-between p-3 border rounded-lg">
                         <div className="flex items-center gap-3">
@@ -185,7 +208,9 @@ export function DashboardTransactions() {
                           <div className="font-bold text-green-600">
                             +{formatAmount(charge.amount)}
                           </div>
-                          <PaymentStatusIndicator status={charge.status} size="sm" />
+                          <Badge variant="outline" className={`text-${statusInfo.color}-600`}>
+                            {statusInfo.text}
+                          </Badge>
                         </div>
                       </div>
                     );
@@ -280,6 +305,7 @@ export function DashboardTransactions() {
                 <div className="space-y-3">
                   {charges.map((charge) => {
                     const PaymentIcon = getPaymentMethodIcon(charge.payment_method);
+                    const statusInfo = getTransactionStatus(charge);
                     
                     return (
                       <div key={charge.id} className="flex items-center justify-between p-3 border rounded-lg">
@@ -301,7 +327,9 @@ export function DashboardTransactions() {
                           <div className="font-bold text-green-600">
                             +{formatAmount(charge.amount)}
                           </div>
-                          <PaymentStatusIndicator status={charge.status} size="sm" />
+                          <Badge variant="outline" className={`text-${statusInfo.color}-600`}>
+                            {statusInfo.text}
+                          </Badge>
                         </div>
                       </div>
                     );
