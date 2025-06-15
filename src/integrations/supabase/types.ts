@@ -128,39 +128,60 @@ export type Database = {
           amount: number
           created_at: string
           id: string
+          manual_verification_status: string | null
           notes: string | null
           payment_method: string
+          payment_proof_url: string | null
           status: string | null
           stripe_session_id: string | null
           transaction_id: string
           updated_at: string
           user_id: string
+          verification_notes: string | null
+          verified_at: string | null
+          verified_by: string | null
+          zaincash_phone: string | null
+          zaincash_transaction_id: string | null
         }
         Insert: {
           admin_id?: string | null
           amount: number
           created_at?: string
           id?: string
+          manual_verification_status?: string | null
           notes?: string | null
           payment_method: string
+          payment_proof_url?: string | null
           status?: string | null
           stripe_session_id?: string | null
           transaction_id: string
           updated_at?: string
           user_id: string
+          verification_notes?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          zaincash_phone?: string | null
+          zaincash_transaction_id?: string | null
         }
         Update: {
           admin_id?: string | null
           amount?: number
           created_at?: string
           id?: string
+          manual_verification_status?: string | null
           notes?: string | null
           payment_method?: string
+          payment_proof_url?: string | null
           status?: string | null
           stripe_session_id?: string | null
           transaction_id?: string
           updated_at?: string
           user_id?: string
+          verification_notes?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          zaincash_phone?: string | null
+          zaincash_transaction_id?: string | null
         }
         Relationships: []
       }
@@ -477,6 +498,39 @@ export type Database = {
           },
         ]
       }
+      merchant_zaincash_info: {
+        Row: {
+          created_at: string
+          id: string
+          instructions: string | null
+          is_active: boolean | null
+          merchant_name: string
+          updated_at: string
+          zaincash_name: string
+          zaincash_phone: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          instructions?: string | null
+          is_active?: boolean | null
+          merchant_name: string
+          updated_at?: string
+          zaincash_name: string
+          zaincash_phone: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          instructions?: string | null
+          is_active?: boolean | null
+          merchant_name?: string
+          updated_at?: string
+          zaincash_name?: string
+          zaincash_phone?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -588,12 +642,19 @@ export type Database = {
           created_at: string
           currency: string | null
           id: string
+          manual_verification_status: string | null
           payer_id: string
           payment_method: string
+          payment_proof_url: string | null
           payoneer_payer_id: string | null
           payoneer_transaction_id: string | null
           receiver_id: string
           status: string | null
+          verification_notes: string | null
+          verified_at: string | null
+          verified_by: string | null
+          zaincash_phone: string | null
+          zaincash_transaction_id: string | null
         }
         Insert: {
           amount: number
@@ -601,12 +662,19 @@ export type Database = {
           created_at?: string
           currency?: string | null
           id?: string
+          manual_verification_status?: string | null
           payer_id: string
           payment_method: string
+          payment_proof_url?: string | null
           payoneer_payer_id?: string | null
           payoneer_transaction_id?: string | null
           receiver_id: string
           status?: string | null
+          verification_notes?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          zaincash_phone?: string | null
+          zaincash_transaction_id?: string | null
         }
         Update: {
           amount?: number
@@ -614,12 +682,19 @@ export type Database = {
           created_at?: string
           currency?: string | null
           id?: string
+          manual_verification_status?: string | null
           payer_id?: string
           payment_method?: string
+          payment_proof_url?: string | null
           payoneer_payer_id?: string | null
           payoneer_transaction_id?: string | null
           receiver_id?: string
           status?: string | null
+          verification_notes?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+          zaincash_phone?: string | null
+          zaincash_transaction_id?: string | null
         }
         Relationships: [
           {
