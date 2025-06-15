@@ -56,6 +56,11 @@ export function QuickActions({ onActionComplete }: QuickActionsProps) {
     }
   ];
 
+  const handleDepositSuccess = (transactionId: string) => {
+    setShowDepositDialog(false);
+    onActionComplete?.();
+  };
+
   return (
     <>
       <Card>
@@ -92,14 +97,7 @@ export function QuickActions({ onActionComplete }: QuickActionsProps) {
         </CardContent>
       </Card>
 
-      <DepositDialog
-        open={showDepositDialog}
-        onOpenChange={setShowDepositDialog}
-        onSuccess={() => {
-          setShowDepositDialog(false);
-          onActionComplete?.();
-        }}
-      />
+      <DepositDialog onSuccess={handleDepositSuccess} />
     </>
   );
 }

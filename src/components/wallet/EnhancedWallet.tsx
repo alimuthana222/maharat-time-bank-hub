@@ -29,6 +29,27 @@ interface UserBalance {
   reserved_balance: number;
 }
 
+interface ChargeTransaction {
+  id: string;
+  user_id: string;
+  amount: number;
+  transaction_id: string;
+  payment_method: string;
+  status: string;
+  created_at: string;
+  notes?: string;
+  admin_id?: string;
+  verified_by?: string;
+  verified_at?: string;
+  stripe_session_id?: string;
+  zaincash_phone?: string;
+  zaincash_transaction_id?: string;
+  payment_proof_url?: string;
+  manual_verification_status?: string;
+  verification_notes?: string;
+  updated_at: string;
+}
+
 interface Transaction {
   id: string;
   type: string;
@@ -89,7 +110,18 @@ export function EnhancedWallet() {
 
       if (error) throw error;
 
-      setTransactions(data || []);
+      // تحويل البيانات من قاعدة البيانات إلى نوع Transaction
+      const formattedTransactions: Transaction[] = (data || []).map((tx: ChargeTransaction) => ({
+        id: tx.id,
+        type: 'deposit', // جميع المعاملات في charge_transactions هي إيداعات
+        amount: tx.amount,
+        status: tx.status,
+        created_at: tx.created_at,
+        payment_method: tx.payment_method,
+        description: tx.notes || 'شحن رصيد'
+      }));
+
+      setTransactions(formattedTransactions);
     } catch (error: any) {
       console.error("Error fetching transactions:", error);
       toast.error("خطأ في تحميل المعاملات");
@@ -105,9 +137,9 @@ export function EnhancedWallet() {
 
   const filteredTransactions = transactions.filter((transaction) => {
     const matchesStatus = statusFilter === "all" || transaction.status === statusFilter;
-    const matchesType = typeFilter === "all" || transaction.transaction_type === typeFilter;
+    const matchesType = typeFilter === "all" || transaction.type === typeFilter;
     const matchesSearch = searchQuery === "" || 
-      transaction.transaction_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      transaction.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       transaction.payment_method?.toLowerCase().includes(searchQuery.toLowerCase());
 
     return matchesStatus && matchesType && matchesSearch;
@@ -211,10 +243,7 @@ export function EnhancedWallet() {
               filteredTransactions.map((transaction) => (
                 <TransactionItem
                   key={transaction.id}
-                  transaction={{
-                    ...transaction,
-                    type: transaction.transaction_type || transaction.type
-                  }}
+                  transaction={transaction}
                 />
               ))
             )}
