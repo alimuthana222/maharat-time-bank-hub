@@ -590,6 +590,8 @@ export type Database = {
           id: string
           payer_id: string
           payment_method: string
+          payoneer_payer_id: string | null
+          payoneer_transaction_id: string | null
           receiver_id: string
           status: string | null
         }
@@ -601,6 +603,8 @@ export type Database = {
           id?: string
           payer_id: string
           payment_method: string
+          payoneer_payer_id?: string | null
+          payoneer_transaction_id?: string | null
           receiver_id: string
           status?: string | null
         }
@@ -612,6 +616,8 @@ export type Database = {
           id?: string
           payer_id?: string
           payment_method?: string
+          payoneer_payer_id?: string | null
+          payoneer_transaction_id?: string | null
           receiver_id?: string
           status?: string | null
         }
@@ -624,6 +630,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      payoneer_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string | null
+          description: string | null
+          id: string
+          payer_id: string | null
+          payoneer_response: Json | null
+          recipient_id: string | null
+          status: string | null
+          transaction_id: string
+          transaction_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          id?: string
+          payer_id?: string | null
+          payoneer_response?: Json | null
+          recipient_id?: string | null
+          status?: string | null
+          transaction_id: string
+          transaction_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          id?: string
+          payer_id?: string | null
+          payoneer_response?: Json | null
+          recipient_id?: string | null
+          status?: string | null
+          transaction_id?: string
+          transaction_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       post_comments: {
         Row: {
