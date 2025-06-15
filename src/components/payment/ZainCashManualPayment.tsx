@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -113,6 +112,37 @@ export function ZainCashManualPayment({
     return publicData.publicUrl;
   };
 
+  const notifyAdmins = async (transactionId: string) => {
+    try {
+      // جلب جميع المشرفين والإداريين
+      const { data: adminUsers, error } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .in('role', ['admin', 'owner', 'moderator']);
+
+      if (error) {
+        console.error('Error fetching admin users:', error);
+        return;
+      }
+
+      // إرسال إشعار لكل مشرف
+      for (const admin of adminUsers || []) {
+        await supabase.rpc('send_notification', {
+          _user_id: admin.user_id,
+          _title: 'طلب شحن جديد',
+          _body: `تم استلام طلب شحن جديد بقيمة ${amount.toLocaleString()} دينار عراقي عبر ZainCash يتطلب المراجعة`,
+          _type: 'transaction',
+          _related_id: transactionId,
+          _related_type: 'charge_transaction'
+        });
+      }
+
+      console.log('Admin notifications sent successfully');
+    } catch (error) {
+      console.error('Error sending admin notifications:', error);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!user) {
       toast.error("يجب تسجيل الدخول أولاً");
@@ -167,7 +197,10 @@ export function ZainCashManualPayment({
 
       console.log('Transaction created successfully:', transaction);
 
-      toast.success("تم إرسال طلب الشحن بنجاح! سيتم مراجعته قريباً");
+      // إرسال إشعارات للمشرفين
+      await notifyAdmins(transaction.transaction_id);
+
+      toast.success("تم إرسال طلب الشحن بنجاح! سيتم مراجعته قريباً وتم إشعار الإدارة");
       onSuccess(transaction.transaction_id);
 
     } catch (error: any) {

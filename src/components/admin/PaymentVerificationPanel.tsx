@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +14,9 @@ import {
   Clock, 
   Phone, 
   CreditCard,
-  ExternalLink 
+  ExternalLink,
+  RefreshCw,
+  AlertCircle
 } from "lucide-react";
 
 interface PendingPayment {
@@ -41,16 +42,20 @@ export function PaymentVerificationPanel() {
   const [selectedPayment, setSelectedPayment] = useState<PendingPayment | null>(null);
   const [verificationNotes, setVerificationNotes] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (isAdmin()) {
       fetchPendingPayments();
+      // إعداد تحديث تلقائي كل 30 ثانية
+      const interval = setInterval(fetchPendingPayments, 30000);
+      return () => clearInterval(interval);
     }
   }, [isAdmin]);
 
   const fetchPendingPayments = async () => {
     try {
-      setLoading(true);
+      setRefreshing(true);
       const { data, error } = await supabase
         .from('charge_transactions')
         .select(`
@@ -70,11 +75,13 @@ export function PaymentVerificationPanel() {
       })).filter(item => item.user_profiles && typeof item.user_profiles === 'object');
 
       setPendingPayments(cleanedData);
+      console.log(`Fetched ${cleanedData.length} pending payments`);
     } catch (error: any) {
       console.error('Error fetching pending payments:', error);
       toast.error(`خطأ في جلب المدفوعات: ${error.message}`);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -115,6 +122,18 @@ export function PaymentVerificationPanel() {
           });
 
           if (balanceError) throw balanceError;
+
+          // إرسال إشعار للمستخدم
+          await supabase.rpc('send_notification', {
+            _user_id: payment.user_id,
+            _title: status === 'verified' ? 'تم قبول طلب الشحن' : 'تم رفض طلب الشحن',
+            _body: status === 'verified' 
+              ? `تم قبول طلب شحن رصيدك بقيمة ${payment.amount.toLocaleString()} دينار عراقي وإضافته إلى حسابك`
+              : `تم رفض طلب شحن رصيدك بقيمة ${payment.amount.toLocaleString()} دينار عراقي. ${verificationNotes || 'يرجى التواصل مع الإدارة لمزيد من التفاصيل'}`,
+            _type: 'transaction',
+            _related_id: payment.id,
+            _related_type: 'charge_transaction'
+          });
         }
       }
 
@@ -145,10 +164,32 @@ export function PaymentVerificationPanel() {
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-orange-500" />
-            المدفوعات المعلقة للتحقق ({pendingPayments.length})
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-orange-500" />
+              المدفوعات المعلقة للتحقق 
+              {pendingPayments.length > 0 && (
+                <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                  {pendingPayments.length}
+                </Badge>
+              )}
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchPendingPayments}
+              disabled={refreshing}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              تحديث
+            </Button>
+          </div>
+          {pendingPayments.length > 0 && (
+            <div className="flex items-center gap-2 text-sm text-orange-600">
+              <AlertCircle className="h-4 w-4" />
+              يوجد {pendingPayments.length} طلب شحن في انتظار المراجعة
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -163,6 +204,7 @@ export function PaymentVerificationPanel() {
             <div className="text-center py-8 text-muted-foreground">
               <CheckCircle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
               <p>لا توجد مدفوعات معلقة للتحقق</p>
+              <p className="text-sm mt-2">سيتم عرض طلبات الشحن الجديدة هنا تلقائياً</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -177,13 +219,16 @@ export function PaymentVerificationPanel() {
                             {payment.user_profiles?.username || 'مستخدم غير معروف'}
                           </span>
                           <Badge variant="outline">ZainCash</Badge>
+                          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                            جديد
+                          </Badge>
                         </div>
                         
                         <div className="text-sm text-muted-foreground space-y-1">
                           <div>المبلغ: <span className="font-medium text-green-600">{payment.amount.toLocaleString()} د.ع</span></div>
                           <div>رقم المرسل: <span className="font-mono">{payment.zaincash_phone}</span></div>
                           <div>رقم العملية: <span className="font-mono">{payment.zaincash_transaction_id}</span></div>
-                          <div>التاريخ: {new Date(payment.created_at).toLocaleDateString('ar-SA')}</div>
+                          <div>التاريخ: {new Date(payment.created_at).toLocaleDateString('ar-SA')} - {new Date(payment.created_at).toLocaleTimeString('ar-SA')}</div>
                         </div>
                       </div>
                       
