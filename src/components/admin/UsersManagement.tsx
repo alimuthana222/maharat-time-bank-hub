@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -260,13 +261,13 @@ export function UsersManagement() {
     
     if (!selectedUser) return roles;
     
-    // المالك يمكنه إضافة دور المدير والمشرف
+    // المالك فقط يمكنه إضافة دور المدير
     if (isOwner()) {
       if (!selectedUser.roles.includes("admin")) roles.push("admin");
-      if (!selectedUser.roles.includes("moderator")) roles.push("moderator");
     }
-    // الإدارة يمكنها إضافة دور المشرف فقط
-    else if (isAdmin()) {
+    
+    // الإدارة والمالك يمكنهم إضافة دور المشرف
+    if (isAdmin() || isOwner()) {
       if (!selectedUser.roles.includes("moderator")) roles.push("moderator");
     }
     
@@ -287,7 +288,7 @@ export function UsersManagement() {
         <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
         <h3 className="text-lg font-medium mb-2">ليس لديك صلاحية الوصول</h3>
         <p className="text-muted-foreground">
-          هذه الصفحة مخصصة للمشرفين والمدراء فقط.
+          هذه الصفحة مخصصة للمدراء والمالك فقط.
         </p>
       </div>
     );
@@ -368,8 +369,8 @@ export function UsersManagement() {
                       user.roles.map((role) => (
                         <Badge key={role} variant={getRoleBadgeVariant(role)}>
                           {role === "owner" && "مالك"}
-                          {role === "admin" && "مشرف"}
-                          {role === "moderator" && "مشرف محتوى"}
+                          {role === "admin" && "مدير"}
+                          {role === "moderator" && "مشرف"}
                           {role === "user" && "مستخدم"}
                         </Badge>
                       ))
@@ -442,21 +443,24 @@ export function UsersManagement() {
                     selectedUser.roles.map((role) => (
                       <Badge key={role} variant={getRoleBadgeVariant(role)} className="flex items-center gap-1">
                         {role === "owner" && "مالك"}
-                        {role === "admin" && "مشرف"}
-                        {role === "moderator" && "مشرف محتوى"}
+                        {role === "admin" && "مدير"}
+                        {role === "moderator" && "مشرف"}
                         {role === "user" && "مستخدم"}
                         
                         {(isAdmin() || isOwner()) && role !== "owner" && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-4 w-4 p-0 hover:bg-transparent"
-                            onClick={() => handleRemoveRole(role)}
-                            disabled={isProcessing}
-                          >
-                            <UserX className="h-3 w-3" />
-                            <span className="sr-only">إزالة الدور</span>
-                          </Button>
+                          // Only allow removal based on permissions
+                          (role === "admin" && isOwner()) || (role === "moderator" && (isAdmin() || isOwner())) ? (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-4 w-4 p-0 hover:bg-transparent"
+                              onClick={() => handleRemoveRole(role)}
+                              disabled={isProcessing}
+                            >
+                              <UserX className="h-3 w-3" />
+                              <span className="sr-only">إزالة الدور</span>
+                            </Button>
+                          ) : null
                         )}
                       </Badge>
                     ))
@@ -477,8 +481,8 @@ export function UsersManagement() {
                       <SelectContent>
                         {getAvailableRoles().map((role) => (
                           <SelectItem key={role} value={role}>
-                            {role === "admin" && "مشرف"}
-                            {role === "moderator" && "مشرف محتوى"}
+                            {role === "admin" && "مدير"}
+                            {role === "moderator" && "مشرف"}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -501,7 +505,7 @@ export function UsersManagement() {
                   <div className="mt-2 text-xs flex items-center text-muted-foreground">
                     <AlertCircle className="h-3 w-3 mr-1" />
                     {isOwner() 
-                      ? "كمالك، يمكنك تعيين جميع الأدوار"
+                      ? "كمالك، يمكنك تعيين دور المدير والمشرف"
                       : "كمدير، يمكنك تعيين دور المشرف فقط"
                     }
                   </div>

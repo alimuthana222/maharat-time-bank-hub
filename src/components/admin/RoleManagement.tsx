@@ -107,8 +107,8 @@ export function RoleManagement({ userId, currentRoles, onRolesUpdate }: RoleMana
 
   const getRoleLabel = (role: Role) => {
     switch (role) {
-      case "admin": return "مشرف";
-      case "moderator": return "مشرف محتوى";
+      case "admin": return "مدير";
+      case "moderator": return "مشرف";
       case "user": return "مستخدم";
       case "owner": return "مالك";
       default: return role;
@@ -127,13 +127,13 @@ export function RoleManagement({ userId, currentRoles, onRolesUpdate }: RoleMana
   const getAvailableRoles = () => {
     const roles: Role[] = [];
     
-    // المالك يمكنه إضافة دور المدير والمشرف
+    // المالك فقط يمكنه إضافة دور المدير
     if (isOwner()) {
       if (!currentRoles.includes("admin")) roles.push("admin");
-      if (!currentRoles.includes("moderator")) roles.push("moderator");
     }
-    // الإدارة يمكنها إضافة دور المشرف فقط
-    else if (isAdmin()) {
+    
+    // الإدارة والمالك يمكنهم إضافة دور المشرف
+    if (isAdmin() || isOwner()) {
       if (!currentRoles.includes("moderator")) roles.push("moderator");
     }
     
@@ -237,7 +237,7 @@ export function RoleManagement({ userId, currentRoles, onRolesUpdate }: RoleMana
             <div className="text-xs text-muted-foreground flex items-center gap-1">
               <AlertCircle className="h-3 w-3" />
               {isOwner() 
-                ? "كمالك، يمكنك تعيين جميع الأدوار"
+                ? "كمالك، يمكنك تعيين دور المدير والمشرف"
                 : "كمدير، يمكنك تعيين دور المشرف فقط"
               }
             </div>
