@@ -84,13 +84,27 @@ export function ZainCashManualPayment({
   };
 
   const uploadProofImage = async (file: File): Promise<string> => {
-    const fileName = `payment-proof-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${file.name.split('.').pop()}`;
+    // إنشاء اسم ملف فريد مع معرف المستخدم
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user!.id}/payment-proof-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+    
+    console.log('Uploading file:', fileName);
+    console.log('File size:', file.size);
+    console.log('File type:', file.type);
     
     const { data, error } = await supabase.storage
       .from('payment-proofs')
-      .upload(fileName, file);
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Upload error:', error);
+      throw new Error(`فشل في رفع الصورة: ${error.message}`);
+    }
+
+    console.log('Upload successful:', data);
 
     const { data: publicData } = supabase.storage
       .from('payment-proofs')
@@ -113,28 +127,45 @@ export function ZainCashManualPayment({
     setLoading(true);
     
     try {
+      console.log('Starting payment submission...');
+      console.log('User ID:', user.id);
+      console.log('Amount:', amount);
+      console.log('Phone:', zaincashPhone);
+      console.log('Transaction ID:', transactionId);
+
       // رفع إثبات الدفع
+      console.log('Uploading proof image...');
       const proofUrl = await uploadProofImage(proofFile);
+      console.log('Proof uploaded successfully:', proofUrl);
 
       // إنشاء معاملة الشحن
+      const transactionData = {
+        user_id: user.id,
+        amount,
+        payment_method: 'zaincash_manual',
+        status: 'pending',
+        notes: description,
+        zaincash_phone: zaincashPhone,
+        zaincash_transaction_id: transactionId,
+        payment_proof_url: proofUrl,
+        manual_verification_status: 'pending',
+        transaction_id: `ZAINCASH_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      };
+
+      console.log('Creating transaction with data:', transactionData);
+
       const { data: transaction, error } = await supabase
         .from('charge_transactions')
-        .insert({
-          user_id: user.id,
-          amount,
-          payment_method: 'zaincash_manual',
-          status: 'pending',
-          notes: description,
-          zaincash_phone: zaincashPhone,
-          zaincash_transaction_id: transactionId,
-          payment_proof_url: proofUrl,
-          manual_verification_status: 'pending',
-          transaction_id: `ZAINCASH_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-        })
+        .insert(transactionData)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Transaction creation error:', error);
+        throw new Error(`فشل في إنشاء المعاملة: ${error.message}`);
+      }
+
+      console.log('Transaction created successfully:', transaction);
 
       toast.success("تم إرسال طلب الشحن بنجاح! سيتم مراجعته قريباً");
       onSuccess(transaction.transaction_id);
