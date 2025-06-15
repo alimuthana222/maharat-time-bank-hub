@@ -7,7 +7,9 @@ import {
   Clock, 
   CheckCircle, 
   XCircle,
-  Receipt
+  CreditCard,
+  Phone,
+  DollarSign
 } from "lucide-react";
 
 interface Transaction {
@@ -30,6 +32,19 @@ export function TransactionItem({ transaction }: TransactionItemProps) {
       return <ArrowDownLeft className="h-4 w-4 text-green-600" />;
     }
     return <ArrowUpRight className="h-4 w-4 text-red-600" />;
+  };
+
+  const getPaymentMethodIcon = () => {
+    switch (transaction.payment_method) {
+      case 'mastercard':
+        return <CreditCard className="h-3 w-3" />;
+      case 'zaincash_manual':
+        return <Phone className="h-3 w-3" />;
+      case 'wallet':
+        return <DollarSign className="h-3 w-3" />;
+      default:
+        return <DollarSign className="h-3 w-3" />;
+    }
   };
 
   const getStatusIcon = () => {
@@ -94,6 +109,21 @@ export function TransactionItem({ transaction }: TransactionItemProps) {
     }
   };
 
+  const getPaymentMethodText = () => {
+    switch (transaction.payment_method) {
+      case 'mastercard':
+        return 'ماستر كارد';
+      case 'zaincash_manual':
+        return 'ZainCash';
+      case 'wallet':
+        return 'المحفظة';
+      case 'admin_credit':
+        return 'شحن من الإدارة';
+      default:
+        return transaction.payment_method || 'غير محدد';
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('ar-SA', {
@@ -110,31 +140,35 @@ export function TransactionItem({ transaction }: TransactionItemProps) {
   return (
     <div className="flex items-center justify-between p-4 border-b last:border-b-0 hover:bg-gray-50 transition-colors">
       <div className="flex items-center gap-3">
-        <div className="p-2 rounded-full bg-gray-100">
+        <div className={`p-2 rounded-full ${isPositive ? 'bg-green-100' : 'bg-red-100'}`}>
           {getTransactionIcon()}
         </div>
         
         <div>
-          <div className="font-medium text-sm">
+          <div className="font-medium text-sm flex items-center gap-2">
             {getTypeText()}
+            <div className="flex items-center gap-1 text-muted-foreground">
+              {getPaymentMethodIcon()}
+              <span className="text-xs">{getPaymentMethodText()}</span>
+            </div>
           </div>
           <div className="text-xs text-muted-foreground">
             {formatDate(transaction.created_at)}
           </div>
-          {transaction.payment_method && (
+          {transaction.description && (
             <div className="text-xs text-muted-foreground">
-              {transaction.payment_method}
+              {transaction.description}
             </div>
           )}
         </div>
       </div>
 
       <div className="text-left">
-        <div className={`font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-          {isPositive ? '+' : '-'}{Math.abs(transaction.amount).toFixed(2)} USD
+        <div className={`font-bold text-lg ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+          {isPositive ? '+' : '-'}{Math.abs(transaction.amount).toLocaleString()} د.ع
         </div>
         
-        <div className="flex items-center gap-1 justify-end">
+        <div className="flex items-center gap-1 justify-end mt-1">
           {getStatusIcon()}
           <Badge variant={getStatusVariant()} className="text-xs">
             {getStatusText()}

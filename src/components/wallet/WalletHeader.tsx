@@ -34,46 +34,46 @@ export function WalletHeader({ balance, reservedBalance, currency, loading }: Wa
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-      <Card>
+      <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">الرصيد المتاح</CardTitle>
-          <Wallet className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-medium text-green-800">الرصيد المتاح</CardTitle>
+          <Wallet className="h-4 w-4 text-green-600" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-green-600">
-            {balance.toFixed(2)} {currency}
+            {balance.toLocaleString()} د.ع
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-green-700">
             متاح للاستخدام والسحب
           </p>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">الرصيد المحجوز</CardTitle>
-          <Clock className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-medium text-orange-800">الرصيد المحجوز</CardTitle>
+          <Clock className="h-4 w-4 text-orange-600" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-orange-600">
-            {reservedBalance.toFixed(2)} {currency}
+            {reservedBalance.toLocaleString()} د.ع
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-orange-700">
             محجوز للمعاملات المعلقة
           </p>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">إجمالي الرصيد</CardTitle>
-          <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-medium text-blue-800">إجمالي الرصيد</CardTitle>
+          <TrendingUp className="h-4 w-4 text-blue-600" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-blue-600">
-            {totalBalance.toFixed(2)} {currency}
+            {totalBalance.toLocaleString()} د.ع
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-blue-700">
             الرصيد الإجمالي بالحساب
           </p>
         </CardContent>

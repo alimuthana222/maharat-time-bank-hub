@@ -20,7 +20,9 @@ import {
   Filter, 
   Download,
   Search,
-  RefreshCw
+  RefreshCw,
+  TrendingUp,
+  Calendar
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -115,7 +117,7 @@ export function EnhancedWallet() {
         id: tx.id,
         type: 'deposit', // جميع المعاملات في charge_transactions هي إيداعات
         amount: tx.amount,
-        status: tx.status,
+        status: tx.manual_verification_status === 'verified' ? 'verified' : tx.status,
         created_at: tx.created_at,
         payment_method: tx.payment_method,
         description: tx.notes || 'شحن رصيد'
@@ -140,7 +142,8 @@ export function EnhancedWallet() {
     const matchesType = typeFilter === "all" || transaction.type === typeFilter;
     const matchesSearch = searchQuery === "" || 
       transaction.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      transaction.payment_method?.toLowerCase().includes(searchQuery.toLowerCase());
+      transaction.payment_method?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      transaction.description?.toLowerCase().includes(searchQuery.toLowerCase());
 
     return matchesStatus && matchesType && matchesSearch;
   });
@@ -156,7 +159,13 @@ export function EnhancedWallet() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">المحفظة المالية</h1>
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <TrendingUp className="h-8 w-8 text-green-600" />
+            المحفظة المالية
+          </h1>
+          <p className="text-muted-foreground mt-1">إدارة رصيدك ومعاملاتك المالية</p>
+        </div>
         <Button 
           variant="outline" 
           onClick={refreshData}
@@ -171,7 +180,7 @@ export function EnhancedWallet() {
       <WalletHeader
         balance={balance?.balance || 0}
         reservedBalance={balance?.reserved_balance || 0}
-        currency="USD"
+        currency="IQD"
         loading={loading}
       />
 
@@ -183,11 +192,20 @@ export function EnhancedWallet() {
             <CardTitle className="flex items-center gap-2">
               <History className="h-5 w-5" />
               سجل المعاملات
+              <span className="text-sm font-normal text-muted-foreground">
+                ({filteredTransactions.length} معاملة)
+              </span>
             </CardTitle>
-            <Button variant="outline" size="sm" className="gap-2">
-              <Download className="h-4 w-4" />
-              تصدير
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="gap-2">
+                <Calendar className="h-4 w-4" />
+                فترة زمنية
+              </Button>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Download className="h-4 w-4" />
+                تصدير
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -237,7 +255,13 @@ export function EnhancedWallet() {
             ) : filteredTransactions.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground">
                 <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>لا توجد معاملات مطابقة للمعايير المحددة</p>
+                <p className="text-lg font-medium mb-2">لا توجد معاملات</p>
+                <p className="text-sm">
+                  {searchQuery || statusFilter !== 'all' || typeFilter !== 'all' 
+                    ? 'لا توجد معاملات مطابقة للمعايير المحددة' 
+                    : 'لم تقم بأي معاملات بعد'
+                  }
+                </p>
               </div>
             ) : (
               filteredTransactions.map((transaction) => (
