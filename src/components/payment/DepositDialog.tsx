@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
-import { MastercardPayment } from "./MastercardPayment";
 import { ZainCashManualPayment } from "./ZainCashManualPayment";
 
 interface DepositDialogProps {
@@ -15,7 +14,6 @@ interface DepositDialogProps {
 export function DepositDialog({ onSuccess }: DepositDialogProps) {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState(10000);
-  const [paymentMethod, setPaymentMethod] = useState<'mastercard' | 'zaincash_manual'>('zaincash_manual');
   const [showPayment, setShowPayment] = useState(false);
 
   const presetAmounts = [5000, 10000, 25000, 50000, 100000];
@@ -81,29 +79,9 @@ export function DepositDialog({ onSuccess }: DepositDialogProps) {
               </div>
             </div>
 
-            <div>
-              <Label>طريقة الدفع</Label>
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                <Button
-                  variant={paymentMethod === 'zaincash_manual' ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setPaymentMethod('zaincash_manual')}
-                >
-                  ZainCash
-                </Button>
-                <Button
-                  variant={paymentMethod === 'mastercard' ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setPaymentMethod('mastercard')}
-                >
-                  ماستر كارد
-                </Button>
-              </div>
-            </div>
-
             <div className="bg-blue-50 p-3 rounded-lg">
               <p className="text-sm text-blue-800">
-                سيتم إضافة <span className="font-bold">{amount.toLocaleString()}</span> دينار عراقي إلى رصيدك
+                سيتم إضافة <span className="font-bold">{amount.toLocaleString()}</span> دينار عراقي إلى رصيدك عبر ZainCash
               </p>
             </div>
 
@@ -116,23 +94,12 @@ export function DepositDialog({ onSuccess }: DepositDialogProps) {
             </Button>
           </div>
         ) : (
-          <>
-            {paymentMethod === 'zaincash_manual' ? (
-              <ZainCashManualPayment
-                amount={amount}
-                description="شحن رصيد في المحفظة"
-                onSuccess={handleDepositSuccess}
-                onCancel={() => setShowPayment(false)}
-              />
-            ) : (
-              <MastercardPayment
-                amount={amount}
-                description="شحن رصيد في المحفظة"
-                onSuccess={handleDepositSuccess}
-                onCancel={() => setShowPayment(false)}
-              />
-            )}
-          </>
+          <ZainCashManualPayment
+            amount={amount}
+            description="شحن رصيد في المحفظة"
+            onSuccess={handleDepositSuccess}
+            onCancel={() => setShowPayment(false)}
+          />
         )}
       </DialogContent>
     </Dialog>

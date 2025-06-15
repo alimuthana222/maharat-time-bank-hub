@@ -26,8 +26,8 @@ export function PaymentSummary({
     switch (method) {
       case 'wallet':
         return 'المحفظة الداخلية';
-      case 'mastercard':
-        return 'ماستر كارد';
+      case 'zaincash_manual':
+        return 'ZainCash';
       default:
         return method;
     }
@@ -79,12 +79,12 @@ export function PaymentSummary({
           </Badge>
         </div>
 
-        {paymentMethod === 'mastercard' && (
-          <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg">
-            <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5" />
-            <div className="text-sm text-amber-800">
+        {paymentMethod === 'zaincash_manual' && (
+          <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg">
+            <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5" />
+            <div className="text-sm text-blue-800">
               <p className="font-medium">ملاحظة مهمة</p>
-              <p>سيتم معالجة الدفع بشكل آمن عبر نظام ماستر كارد</p>
+              <p>سيتم معالجة الدفع عبر ZainCash وسيتطلب التحقق اليدوي من قبل الإدارة</p>
             </div>
           </div>
         )}

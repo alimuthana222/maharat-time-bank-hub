@@ -4,10 +4,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MastercardPayment } from "@/components/payment/MastercardPayment";
 import { ZainCashManualPayment } from "@/components/payment/ZainCashManualPayment";
 import { usePayment } from "@/hooks/usePayment";
-import { Wallet, CreditCard, Phone } from "lucide-react";
+import { Wallet, Phone } from "lucide-react";
 
 interface PaymentDialogProps {
   open: boolean;
@@ -29,7 +28,7 @@ export function PaymentDialog({
   onSuccess
 }: PaymentDialogProps) {
   const { processPayment, loading } = usePayment();
-  const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'mastercard' | 'zaincash_manual'>('wallet');
+  const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'zaincash_manual'>('wallet');
 
   const handleWalletPayment = async () => {
     const success = await processPayment({
@@ -57,8 +56,8 @@ export function PaymentDialog({
           <DialogTitle>اختر طريقة الدفع</DialogTitle>
         </DialogHeader>
 
-        <Tabs value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as 'wallet' | 'mastercard' | 'zaincash_manual')}>
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as 'wallet' | 'zaincash_manual')}>
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="wallet" className="flex items-center gap-2">
               <Wallet className="h-4 w-4" />
               المحفظة
@@ -66,10 +65,6 @@ export function PaymentDialog({
             <TabsTrigger value="zaincash_manual" className="flex items-center gap-2">
               <Phone className="h-4 w-4" />
               ZainCash
-            </TabsTrigger>
-            <TabsTrigger value="mastercard" className="flex items-center gap-2">
-              <CreditCard className="h-4 w-4" />
-              ماستر كارد
             </TabsTrigger>
           </TabsList>
 
@@ -94,15 +89,6 @@ export function PaymentDialog({
 
           <TabsContent value="zaincash_manual" className="mt-4">
             <ZainCashManualPayment
-              amount={amount}
-              description={description}
-              onSuccess={handlePaymentSuccess}
-              onCancel={() => onOpenChange(false)}
-            />
-          </TabsContent>
-
-          <TabsContent value="mastercard" className="mt-4">
-            <MastercardPayment
               amount={amount}
               description={description}
               onSuccess={handlePaymentSuccess}

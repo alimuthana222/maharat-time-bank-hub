@@ -2,7 +2,7 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, CreditCard, CheckCircle, Phone } from "lucide-react";
+import { Wallet, CheckCircle, Phone } from "lucide-react";
 
 interface PaymentMethod {
   id: string;
@@ -33,13 +33,6 @@ export function PaymentMethodSelector({ selectedMethod, onMethodChange }: Paymen
       name: "ZainCash",
       icon: <Phone className="h-5 w-5" />,
       description: "الدفع عبر ZainCash مع التحقق اليدوي",
-      isEnabled: true
-    },
-    {
-      id: "mastercard", 
-      name: "ماستر كارد",
-      icon: <CreditCard className="h-5 w-5" />,
-      description: "ادفع باستخدام بطاقة ماستر كارد",
       isEnabled: true
     }
   ];
