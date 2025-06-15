@@ -35,17 +35,17 @@ interface Booking {
     username: string;
     full_name: string;
     avatar_url?: string;
-  };
+  } | null;
   provider?: {
     username: string;
     full_name: string;
     avatar_url?: string;
-  };
+  } | null;
   service?: {
     title: string;
     hourly_rate: number;
     category: string;
-  };
+  } | null;
 }
 
 export function RealBookingsList() {
@@ -88,7 +88,15 @@ export function RealBookingsList() {
 
       if (error) throw error;
 
-      setBookings(data || []);
+      // تنظيف البيانات وإصلاح الأنواع
+      const cleanedData: Booking[] = (data || []).map((booking: any) => ({
+        ...booking,
+        client: booking.client && !booking.client.error ? booking.client : null,
+        provider: booking.provider && !booking.provider.error ? booking.provider : null,
+        service: booking.service && !booking.service.error ? booking.service : null,
+      }));
+
+      setBookings(cleanedData);
     } catch (error: any) {
       console.error("Error fetching bookings:", error);
       toast.error("حدث خطأ أثناء تحميل الحجوزات");

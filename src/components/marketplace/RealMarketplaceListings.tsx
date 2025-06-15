@@ -329,15 +329,14 @@ export function RealMarketplaceListings() {
         onSuccess={fetchListings}
       />
 
-      <CreateBookingDialog
-        open={showBookingDialog}
-        onOpenChange={setShowBookingDialog}
-        listing={selectedListing}
-        onSuccess={() => {
-          fetchListings();
-          toast.success("تم إرسال طلب الحجز بنجاح");
-        }}
-      />
+      {selectedListing && (
+        <CreateBookingDialog
+          open={showBookingDialog}
+          onOpenChange={setShowBookingDialog}
+          listing={selectedListing}
+          onSuccess={fetchListings}
+        />
+      )}
     </div>
   );
 }
