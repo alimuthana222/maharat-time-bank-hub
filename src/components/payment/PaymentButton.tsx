@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ZainCashPayment } from "./ZainCashPayment";
+import { MastercardPayment } from "./MastercardPayment";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { CreditCard, Wallet } from "lucide-react";
 
@@ -48,7 +48,7 @@ export function PaymentButton({
             إكمال الدفع
           </DialogTitle>
         </DialogHeader>
-        <ZainCashPayment
+        <MastercardPayment
           amount={amount}
           description={description}
           onSuccess={handlePaymentSuccess}

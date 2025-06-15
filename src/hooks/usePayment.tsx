@@ -48,7 +48,7 @@ export function usePayment() {
           receiver_id: paymentData.receiverId,
           booking_id: paymentData.bookingId,
           amount: paymentData.amount,
-          payment_method: 'zain_cash',
+          payment_method: 'wallet',
           status: 'completed',
           currency: 'IQD'
         })
@@ -60,28 +60,16 @@ export function usePayment() {
       }
 
       // تحديث الرصيد
-      const { error: updateError } = await supabase.rpc('update_user_balance', {
+      const { error: updateError } = await supabase.rpc('update_user_balance_with_source', {
         _user_id: user.id,
         _amount: paymentData.amount,
-        _transaction_type: 'payment'
+        _transaction_type: 'payment',
+        _source: 'wallet'
       });
 
       if (updateError) {
         throw updateError;
       }
-
-      // إنشاء سجل في معاملات زين كاش
-      await supabase
-        .from('zain_cash_transactions')
-        .insert({
-          user_id: user.id,
-          transaction_id: `PAY_${payment.id.slice(0, 8)}`,
-          phone_number: 'wallet_payment',
-          amount: paymentData.amount,
-          transaction_type: 'payment',
-          status: 'completed',
-          description: paymentData.description
-        });
 
       toast.success("تم الدفع بنجاح!");
       return true;

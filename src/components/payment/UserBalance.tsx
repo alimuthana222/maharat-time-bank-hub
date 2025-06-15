@@ -16,10 +16,11 @@ interface UserBalance {
 interface Transaction {
   id: string;
   amount: number;
-  transaction_type: string;
+  payment_method: string;
   status: string;
-  description: string;
+  notes: string;
   created_at: string;
+  admin_id?: string;
 }
 
 export function UserBalance() {
@@ -65,7 +66,7 @@ export function UserBalance() {
     try {
       setTransactionsLoading(true);
       const { data, error } = await supabase
-        .from('zain_cash_transactions')
+        .from('charge_transactions')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
@@ -85,7 +86,7 @@ export function UserBalance() {
   };
 
   const handleDepositSuccess = async (transactionId: string) => {
-    toast.success("تم إيداع الرصيد بنجاح!");
+    toast.success("تم شحن الرصيد بنجاح!");
     await fetchBalance();
     await fetchTransactions();
   };

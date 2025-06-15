@@ -3,15 +3,16 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { History, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { History, ArrowUpRight, ArrowDownRight, CreditCard, UserCheck } from "lucide-react";
 
 interface Transaction {
   id: string;
   amount: number;
-  transaction_type: string;
+  payment_method: string;
   status: string;
-  description: string;
+  notes: string;
   created_at: string;
+  admin_id?: string;
 }
 
 interface TransactionHistoryProps {
@@ -48,8 +49,26 @@ export function TransactionHistory({ transactions, loading }: TransactionHistory
     }
   };
 
-  const getTransactionIcon = (type: string) => {
-    return type === 'deposit' ? ArrowDownRight : ArrowUpRight;
+  const getPaymentMethodIcon = (method: string) => {
+    switch (method) {
+      case 'mastercard':
+        return CreditCard;
+      case 'admin_credit':
+        return UserCheck;
+      default:
+        return ArrowDownRight;
+    }
+  };
+
+  const getPaymentMethodText = (method: string) => {
+    switch (method) {
+      case 'mastercard':
+        return 'ماستر كارد';
+      case 'admin_credit':
+        return 'شحن من الإدارة';
+      default:
+        return method;
+    }
   };
 
   if (loading) {
@@ -84,22 +103,23 @@ export function TransactionHistory({ transactions, loading }: TransactionHistory
           <ScrollArea className="h-64">
             <div className="space-y-3">
               {transactions.map((transaction) => {
-                const TransactionIcon = getTransactionIcon(transaction.transaction_type);
+                const PaymentIcon = getPaymentMethodIcon(transaction.payment_method);
                 return (
                   <div 
                     key={transaction.id} 
                     className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-full ${
-                        transaction.transaction_type === 'deposit' 
-                          ? 'bg-green-100 text-green-600' 
-                          : 'bg-red-100 text-red-600'
-                      }`}>
-                        <TransactionIcon className="h-4 w-4" />
+                      <div className="p-2 rounded-full bg-green-100 text-green-600">
+                        <PaymentIcon className="h-4 w-4" />
                       </div>
                       <div>
-                        <div className="font-medium">{transaction.description}</div>
+                        <div className="font-medium">
+                          {getPaymentMethodText(transaction.payment_method)}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {transaction.notes}
+                        </div>
                         <div className="text-sm text-muted-foreground">
                           {new Date(transaction.created_at).toLocaleDateString('ar-SA', {
                             year: 'numeric',
@@ -112,11 +132,8 @@ export function TransactionHistory({ transactions, loading }: TransactionHistory
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className={`font-bold ${
-                        transaction.transaction_type === 'deposit' ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {transaction.transaction_type === 'deposit' ? '+' : '-'}
-                        {transaction.amount.toLocaleString()} د.ع
+                      <div className="font-bold text-green-600">
+                        +{transaction.amount.toLocaleString()} د.ع
                       </div>
                       <Badge className={getStatusColor(transaction.status)}>
                         {getStatusText(transaction.status)}

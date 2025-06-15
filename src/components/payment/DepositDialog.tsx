@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
-import { ZainCashPayment } from "./ZainCashPayment";
+import { MastercardPayment } from "./MastercardPayment";
 
 interface DepositDialogProps {
   onSuccess?: (transactionId: string) => void;
@@ -36,12 +36,12 @@ export function DepositDialog({ onSuccess }: DepositDialogProps) {
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-2" />
-          إيداع رصيد
+          شحن رصيد
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>إيداع رصيد جديد</DialogTitle>
+          <DialogTitle>شحن رصيد جديد</DialogTitle>
         </DialogHeader>
         
         {!showPayment ? (
@@ -94,9 +94,9 @@ export function DepositDialog({ onSuccess }: DepositDialogProps) {
             </Button>
           </div>
         ) : (
-          <ZainCashPayment
+          <MastercardPayment
             amount={amount}
-            description="إيداع رصيد في المحفظة"
+            description="شحن رصيد في المحفظة"
             onSuccess={handleDepositSuccess}
             onCancel={() => setShowPayment(false)}
           />

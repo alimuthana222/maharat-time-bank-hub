@@ -122,6 +122,48 @@ export type Database = {
           },
         ]
       }
+      charge_transactions: {
+        Row: {
+          admin_id: string | null
+          amount: number
+          created_at: string
+          id: string
+          notes: string | null
+          payment_method: string
+          status: string | null
+          stripe_session_id: string | null
+          transaction_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_id?: string | null
+          amount: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payment_method: string
+          status?: string | null
+          stripe_session_id?: string | null
+          transaction_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_id?: string | null
+          amount?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payment_method?: string
+          status?: string | null
+          stripe_session_id?: string | null
+          transaction_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       comments: {
         Row: {
           content: string
@@ -548,10 +590,8 @@ export type Database = {
           id: string
           payer_id: string
           payment_method: string
-          phone_number: string | null
           receiver_id: string
           status: string | null
-          zain_cash_transaction_id: string | null
         }
         Insert: {
           amount: number
@@ -561,10 +601,8 @@ export type Database = {
           id?: string
           payer_id: string
           payment_method: string
-          phone_number?: string | null
           receiver_id: string
           status?: string | null
-          zain_cash_transaction_id?: string | null
         }
         Update: {
           amount?: number
@@ -574,10 +612,8 @@ export type Database = {
           id?: string
           payer_id?: string
           payment_method?: string
-          phone_number?: string | null
           receiver_id?: string
           status?: string | null
-          zain_cash_transaction_id?: string | null
         }
         Relationships: [
           {
@@ -1001,45 +1037,6 @@ export type Database = {
         }
         Relationships: []
       }
-      zain_cash_transactions: {
-        Row: {
-          amount: number
-          created_at: string
-          description: string | null
-          id: string
-          phone_number: string
-          status: string | null
-          transaction_id: string
-          transaction_type: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          amount: number
-          created_at?: string
-          description?: string | null
-          id?: string
-          phone_number: string
-          status?: string | null
-          transaction_id: string
-          transaction_type: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          description?: string | null
-          id?: string
-          phone_number?: string
-          status?: string | null
-          transaction_id?: string
-          transaction_type?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       time_bank_balances: {
@@ -1092,6 +1089,15 @@ export type Database = {
       }
       update_user_balance: {
         Args: { _user_id: string; _amount: number; _transaction_type: string }
+        Returns: boolean
+      }
+      update_user_balance_with_source: {
+        Args: {
+          _user_id: string
+          _amount: number
+          _transaction_type: string
+          _source?: string
+        }
         Returns: boolean
       }
     }
