@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,6 +40,8 @@ export function RealMarketplaceListings() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedType, setSelectedType] = useState("all");
+  const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
+  const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
 
   const categories = [
     { value: "all", label: "جميع التصنيفات" },
@@ -114,7 +115,6 @@ export function RealMarketplaceListings() {
           provider: profilesMap.get(listing.user_id) || null,
         }));
 
-        // فصل الخدمات المقدمة عن طلبات الخدمات
         const serviceOffers = listingsWithProviders.filter(item => !item.listing_type || item.listing_type === "offer");
         const serviceRequests = listingsWithProviders.filter(item => item.listing_type === "request");
 
@@ -140,7 +140,6 @@ export function RealMarketplaceListings() {
       return;
     }
 
-    // إنشاء محادثة مع طالب الخدمة
     try {
       const { error } = await supabase
         .from("conversations")
@@ -158,6 +157,11 @@ export function RealMarketplaceListings() {
       console.error("Error creating conversation:", error);
       toast.error("خطأ في إنشاء المحادثة");
     }
+  };
+
+  const handleBookService = (listing: Listing) => {
+    setSelectedListing(listing);
+    setBookingDialogOpen(true);
   };
 
   if (loading) {
@@ -248,7 +252,9 @@ export function RealMarketplaceListings() {
                 تقديم عرض
               </Button>
             ) : (
-              <ServiceBookingDialog listing={listing} />
+              <Button onClick={() => handleBookService(listing)} className="w-full">
+                حجز الخدمة
+              </Button>
             )
           )}
         </CardContent>
@@ -306,7 +312,6 @@ export function RealMarketplaceListings() {
         )}
       </div>
 
-      {/* علامات التبويب للخدمات والطلبات */}
       <Tabs defaultValue="services" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="services">الخدمات المتاحة ({listings.length})</TabsTrigger>
@@ -337,6 +342,23 @@ export function RealMarketplaceListings() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* حوار حجز الخدمة */}
+      {selectedListing && (
+        <ServiceBookingDialog
+          open={bookingDialogOpen}
+          onOpenChange={setBookingDialogOpen}
+          providerId={selectedListing.user_id}
+          serviceId={selectedListing.id}
+          serviceName={selectedListing.title}
+          hourlyRate={selectedListing.hourly_rate}
+          onBookingCreated={() => {
+            setBookingDialogOpen(false);
+            setSelectedListing(null);
+            fetchData();
+          }}
+        />
+      )}
     </div>
   );
 }
