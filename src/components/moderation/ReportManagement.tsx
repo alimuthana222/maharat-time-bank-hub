@@ -130,7 +130,50 @@ export function ReportManagement() {
     setViewReportDetails(true);
   };
 
-  const handleResolveReport = async (id: string, action: "resolve" | "reject") => {
+  const handleDeleteContent = async (id: string) => {
+    if (!isModerator()) {
+      toast.error("ليس لديك صلاحية لتنفيذ هذا الإجراء");
+      return;
+    }
+
+    try {
+      if (!selectedReport) return;
+
+      // Delete the reported content based on type
+      if (selectedReport.content_type === "post") {
+        const { error: deleteError } = await supabase
+          .from("posts")
+          .delete()
+          .eq("id", selectedReport.content_id);
+
+        if (deleteError) throw deleteError;
+      } else if (selectedReport.content_type === "comment") {
+        const { error: deleteError } = await supabase
+          .from("comments")
+          .delete()
+          .eq("id", selectedReport.content_id);
+
+        if (deleteError) throw deleteError;
+      }
+
+      // Update report status to resolved
+      const { error } = await supabase
+        .from("content_reports")
+        .update({ status: "resolved" })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast.success("تم حذف المحتوى المخالف بنجاح");
+      setViewReportDetails(false);
+      fetchReports();
+    } catch (error) {
+      console.error("Error deleting content:", error);
+      toast.error("حدث خطأ أثناء حذف المحتوى");
+    }
+  };
+
+  const handleRejectReport = async (id: string) => {
     if (!isModerator()) {
       toast.error("ليس لديك صلاحية لتنفيذ هذا الإجراء");
       return;
@@ -139,33 +182,16 @@ export function ReportManagement() {
     try {
       const { error } = await supabase
         .from("content_reports")
-        .update({ status: action === "resolve" ? "resolved" : "rejected" })
+        .update({ status: "rejected" })
         .eq("id", id);
 
       if (error) throw error;
 
-      // If we're resolving a report and it's about content (not a profile), we might also want to hide/delete the reported content
-      if (action === "resolve" && selectedReport) {
-        // This is where we would add additional logic to hide/delete content if needed
-        if (selectedReport.content_type === "post" || selectedReport.content_type === "comment") {
-          await supabase
-            .from(selectedReport.content_type === "post" ? "posts" : "comments")
-            .update({ is_hidden: true })
-            .eq("id", selectedReport.content_id);
-        }
-      }
-
-      toast.success(
-        action === "resolve"
-          ? "تم تأكيد البلاغ وإخفاء المحتوى المخالف"
-          : "تم رفض البلاغ"
-      );
-
-      // Close dialog and refresh reports
+      toast.success("تم رفض البلاغ");
       setViewReportDetails(false);
       fetchReports();
     } catch (error) {
-      console.error("Error handling report:", error);
+      console.error("Error rejecting report:", error);
       toast.error("حدث خطأ أثناء معالجة البلاغ");
     }
   };
@@ -227,7 +253,7 @@ export function ReportManagement() {
           <AlertCircle className="h-5 w-5 text-amber-500" />
           <span>إدارة البلاغات</span>
         </CardTitle>
-        <CardDescription>مراجعة بلاغات المستخدمين واتخاذ الإجراءات المناسبة</CardDescription>
+        <CardDescription>مراجعة بلاغات المستخدمين وحذف المحتوى المخالف</CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -291,18 +317,18 @@ export function ReportManagement() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-green-600"
-                              onClick={() => handleResolveReport(report.id, "resolve")}
+                              className="text-red-600"
+                              onClick={() => handleDeleteContent(report.id)}
                             >
-                              <CheckCircle className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-red-600"
-                              onClick={() => handleResolveReport(report.id, "reject")}
+                              className="text-green-600"
+                              onClick={() => handleRejectReport(report.id)}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <CheckCircle className="h-4 w-4" />
                             </Button>
                           </>
                         )}
@@ -363,16 +389,16 @@ export function ReportManagement() {
                   <DialogFooter className="flex justify-between">
                     <Button
                       variant="destructive"
-                      onClick={() => handleResolveReport(selectedReport.id, "resolve")}
+                      onClick={() => handleDeleteContent(selectedReport.id)}
                     >
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                      تأكيد البلاغ وإخفاء المحتوى
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      حذف المحتوى
                     </Button>
                     <Button
                       variant="outline"
-                      onClick={() => handleResolveReport(selectedReport.id, "reject")}
+                      onClick={() => handleRejectReport(selectedReport.id)}
                     >
-                      <Trash2 className="mr-2 h-4 w-4" />
+                      <CheckCircle className="mr-2 h-4 w-4" />
                       رفض البلاغ
                     </Button>
                   </DialogFooter>
