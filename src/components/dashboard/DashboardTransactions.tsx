@@ -1,40 +1,50 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Download, Search, TrendingUp, TrendingDown, Clock, Wallet } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { ar } from "date-fns/locale";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { PaymentStatusIndicator } from "@/components/payment/PaymentStatusIndicator";
+import { 
+  History, 
+  ArrowUpRight, 
+  ArrowDownRight, 
+  CreditCard, 
+  Wallet,
+  Filter,
+  Download
+} from "lucide-react";
+import { toast } from "sonner";
 
-interface Transaction {
+interface Payment {
   id: string;
-  type: "earned" | "spent" | "deposit";
   amount: number;
-  description: string;
-  category: string;
-  status: "completed" | "pending" | "failed";
-  createdAt: string;
-  relatedUser?: string;
-  transaction_id?: string;
+  payment_method: string;
+  status: string;
+  currency: string;
+  created_at: string;
+  payer_id: string;
+  receiver_id: string;
+}
+
+interface ChargeTransaction {
+  id: string;
+  amount: number;
+  payment_method: string;
+  status: string;
+  notes: string;
+  created_at: string;
 }
 
 export function DashboardTransactions() {
   const { user } = useAuth();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [charges, setCharges] = useState<ChargeTransaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [typeFilter, setTypeFilter] = useState("all");
+  const [activeTab, setActiveTab] = useState("all");
 
   useEffect(() => {
     if (user) {
@@ -43,247 +53,73 @@ export function DashboardTransactions() {
   }, [user]);
 
   const fetchTransactions = async () => {
-    if (!user) return;
-
     try {
       setLoading(true);
-
-      // جلب معاملات الشحن فقط
-      const { data: chargeData, error: chargeError } = await supabase
-        .from('charge_transactions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      // جلب معاملات الدفع
-      const { data: paymentData, error: paymentError } = await supabase
+      
+      // جلب المدفوعات
+      const { data: paymentsData, error: paymentsError } = await supabase
         .from('payments')
         .select('*')
-        .or(`payer_id.eq.${user.id},receiver_id.eq.${user.id}`)
-        .order('created_at', { ascending: false });
+        .or(`payer_id.eq.${user?.id},receiver_id.eq.${user?.id}`)
+        .order('created_at', { ascending: false })
+        .limit(50);
 
-      // جلب معاملات بنك الوقت
-      const { data: timeBankData, error: timeBankError } = await supabase
-        .from('time_bank_transactions')
-        .select(`
-          *,
-          provider:profiles!time_bank_transactions_provider_id_fkey(username, full_name),
-          recipient:profiles!time_bank_transactions_recipient_id_fkey(username, full_name)
-        `)
-        .or(`provider_id.eq.${user.id},recipient_id.eq.${user.id}`)
-        .order('created_at', { ascending: false });
+      if (paymentsError) throw paymentsError;
 
-      if (chargeError) console.error('Error fetching charge transactions:', chargeError);
-      if (paymentError) console.error('Error fetching payment transactions:', paymentError);
-      if (timeBankError) console.error('Error fetching time bank transactions:', timeBankError);
+      // جلب معاملات الشحن
+      const { data: chargesData, error: chargesError } = await supabase
+        .from('charge_transactions')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
 
-      const allTransactions: Transaction[] = [];
+      if (chargesError) throw chargesError;
 
-      // معالجة معاملات الشحن
-      if (chargeData) {
-        chargeData.forEach(transaction => {
-          allTransactions.push({
-            id: transaction.id,
-            type: 'deposit',
-            amount: transaction.amount,
-            description: transaction.notes || 'شحن رصيد',
-            category: 'مالية',
-            status: transaction.status as "completed" | "pending" | "failed",
-            createdAt: transaction.created_at,
-            transaction_id: transaction.transaction_id
-          });
-        });
-      }
-
-      // معالجة معاملات الدفع
-      if (paymentData) {
-        paymentData.forEach(payment => {
-          const isReceiver = payment.receiver_id === user.id;
-          allTransactions.push({
-            id: payment.id,
-            type: isReceiver ? 'earned' : 'spent',
-            amount: payment.amount,
-            description: `معاملة دفع - ${payment.payment_method}`,
-            category: 'مالية',
-            status: payment.status as "completed" | "pending" | "failed",
-            createdAt: payment.created_at
-          });
-        });
-      }
-
-      // معالجة معاملات بنك الوقت
-      if (timeBankData) {
-        timeBankData.forEach(transaction => {
-          const isProvider = transaction.provider_id === user.id;
-          const relatedUser = isProvider 
-            ? (transaction.recipient as any)?.full_name || (transaction.recipient as any)?.username
-            : (transaction.provider as any)?.full_name || (transaction.provider as any)?.username;
-
-          allTransactions.push({
-            id: transaction.id,
-            type: isProvider ? 'earned' : 'spent',
-            amount: transaction.hours,
-            description: transaction.description,
-            category: 'بنك الوقت',
-            status: transaction.status as "completed" | "pending" | "failed",
-            createdAt: transaction.created_at,
-            relatedUser
-          });
-        });
-      }
-
-      // ترتيب المعاملات حسب التاريخ
-      allTransactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      
-      setTransactions(allTransactions);
+      setPayments(paymentsData || []);
+      setCharges(chargesData || []);
     } catch (error) {
       console.error('Error fetching transactions:', error);
+      toast.error("حدث خطأ في جلب المعاملات");
     } finally {
       setLoading(false);
     }
   };
 
-  const filteredTransactions = transactions.filter(transaction => {
-    const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         transaction.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (transaction.relatedUser && transaction.relatedUser.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesStatus = statusFilter === "all" || transaction.status === statusFilter;
-    const matchesType = typeFilter === "all" || transaction.type === typeFilter;
-    
-    return matchesSearch && matchesStatus && matchesType;
-  });
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "bg-green-500/10 text-green-600 border-green-200";
-      case "pending":
-        return "bg-yellow-500/10 text-yellow-600 border-yellow-200";
-      case "failed":
-        return "bg-red-500/10 text-red-600 border-red-200";
+  const getPaymentMethodIcon = (method: string) => {
+    switch (method) {
+      case 'wallet':
+        return Wallet;
+      case 'mastercard':
+        return CreditCard;
       default:
-        return "bg-gray-500/10 text-gray-600 border-gray-200";
+        return ArrowDownRight;
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "مكتمل";
-      case "pending":
-        return "قيد الانتظار";
-      case "failed":
-        return "فشل";
+  const getPaymentMethodText = (method: string) => {
+    switch (method) {
+      case 'wallet':
+        return 'المحفظة';
+      case 'mastercard':
+        return 'ماستر كارد';
+      case 'admin_credit':
+        return 'شحن من الإدارة';
       default:
-        return "غير معروف";
+        return method;
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "completed":
-        return <TrendingUp className="h-4 w-4" />;
-      case "pending":
-        return <Clock className="h-4 w-4" />;
-      case "failed":
-        return <TrendingDown className="h-4 w-4" />;
-      default:
-        return <Clock className="h-4 w-4" />;
-    }
+  const formatAmount = (amount: number, currency: string = 'IQD') => {
+    return `${amount.toLocaleString()} ${currency === 'IQD' ? 'د.ع' : currency}`;
   };
-
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case "earned":
-        return <TrendingUp className="h-4 w-4 text-green-600" />;
-      case "spent":
-        return <TrendingDown className="h-4 w-4 text-red-600" />;
-      case "deposit":
-        return <Wallet className="h-4 w-4 text-blue-600" />;
-      default:
-        return <Clock className="h-4 w-4" />;
-    }
-  };
-
-  const totalEarned = transactions
-    .filter(t => t.type === "earned" && t.status === "completed")
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const totalSpent = transactions
-    .filter(t => (t.type === "spent" || t.type === "deposit") && t.status === "completed")
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const pendingAmount = transactions
-    .filter(t => t.status === "pending")
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const TransactionCard = ({ transaction }: { transaction: Transaction }) => (
-    <Card className="mb-3">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${
-              transaction.type === "earned" ? "bg-green-500/10" : 
-              transaction.type === "deposit" ? "bg-blue-500/10" : "bg-red-500/10"
-            }`}>
-              {getTypeIcon(transaction.type)}
-            </div>
-            
-            <div>
-              <h4 className="font-medium">{transaction.description}</h4>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>{transaction.category}</span>
-                {transaction.relatedUser && (
-                  <>
-                    <span>•</span>
-                    <span>{transaction.relatedUser}</span>
-                  </>
-                )}
-                {transaction.transaction_id && (
-                  <>
-                    <span>•</span>
-                    <span>#{transaction.transaction_id}</span>
-                  </>
-                )}
-                <span>•</span>
-                <span>{formatDistanceToNow(new Date(transaction.createdAt), { addSuffix: true, locale: ar })}</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="text-left">
-            <div className={`text-lg font-bold ${
-              transaction.type === "earned" ? "text-green-600" : 
-              transaction.type === "deposit" ? "text-blue-600" : "text-red-600"
-            }`}>
-              {transaction.type === "earned" ? "+" : transaction.type === "deposit" ? "+" : "-"}
-              {transaction.amount.toLocaleString()} {transaction.category === 'بنك الوقت' ? 'ساعة' : 'د.ع'}
-            </div>
-            <Badge variant="outline" className={getStatusColor(transaction.status)}>
-              {getStatusIcon(transaction.status)}
-              <span className="mr-1">{getStatusText(transaction.status)}</span>
-            </Badge>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
 
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[...Array(3)].map((_, i) => (
-            <Card key={i}>
-              <CardContent className="p-6">
-                <div className="animate-pulse">
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-8 bg-gray-200 rounded w-1/2"></div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="h-64 bg-gray-200 rounded"></div>
         </div>
       </div>
     );
@@ -294,119 +130,188 @@ export function DashboardTransactions() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">المعاملات المالية</h2>
-          <p className="text-muted-foreground">تتبع تاريخ معاملاتك</p>
+          <p className="text-muted-foreground">تاريخ جميع معاملاتك المالية</p>
         </div>
-        <Button variant="outline">
-          <Download className="h-4 w-4 mr-2" />
-          تصدير التقرير
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm">
+            <Filter className="h-4 w-4 mr-2" />
+            تصفية
+          </Button>
+          <Button variant="outline" size="sm">
+            <Download className="h-4 w-4 mr-2" />
+            تصدير
+          </Button>
+        </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-500/10">
-                <TrendingUp className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-green-600">{totalEarned.toLocaleString()}</div>
-                <p className="text-sm text-muted-foreground">إجمالي المكتسب</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="all">جميع المعاملات</TabsTrigger>
+          <TabsTrigger value="payments">المدفوعات</TabsTrigger>
+          <TabsTrigger value="charges">الشحن</TabsTrigger>
+        </TabsList>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-red-500/10">
-                <TrendingDown className="h-5 w-5 text-red-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-red-600">{totalSpent.toLocaleString()}</div>
-                <p className="text-sm text-muted-foreground">إجمالي المصروف</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <TabsContent value="all" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <History className="h-5 w-5" />
+                جميع المعاملات
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-96">
+                <div className="space-y-3">
+                  {/* عرض معاملات الشحن */}
+                  {charges.map((charge) => {
+                    const PaymentIcon = getPaymentMethodIcon(charge.payment_method);
+                    return (
+                      <div key={`charge-${charge.id}`} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-full bg-green-100 text-green-600">
+                            <PaymentIcon className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <div className="font-medium">شحن رصيد</div>
+                            <div className="text-sm text-muted-foreground">
+                              {getPaymentMethodText(charge.payment_method)}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {new Date(charge.created_at).toLocaleDateString('ar-SA')}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-bold text-green-600">
+                            +{formatAmount(charge.amount)}
+                          </div>
+                          <PaymentStatusIndicator status={charge.status} size="sm" />
+                        </div>
+                      </div>
+                    );
+                  })}
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-yellow-500/10">
-                <Clock className="h-5 w-5 text-yellow-600" />
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-yellow-600">{pendingAmount.toLocaleString()}</div>
-                <p className="text-sm text-muted-foreground">قيد الانتظار</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                  {/* عرض المدفوعات */}
+                  {payments.map((payment) => {
+                    const isIncoming = payment.receiver_id === user?.id;
+                    const PaymentIcon = getPaymentMethodIcon(payment.payment_method);
+                    
+                    return (
+                      <div key={`payment-${payment.id}`} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-full ${isIncoming ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                            {isIncoming ? <ArrowDownRight className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
+                          </div>
+                          <div>
+                            <div className="font-medium">
+                              {isIncoming ? 'استلام دفعة' : 'إرسال دفعة'}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {getPaymentMethodText(payment.payment_method)}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {new Date(payment.created_at).toLocaleDateString('ar-SA')}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className={`font-bold ${isIncoming ? 'text-green-600' : 'text-red-600'}`}>
+                            {isIncoming ? '+' : '-'}{formatAmount(payment.amount, payment.currency)}
+                          </div>
+                          <PaymentStatusIndicator status={payment.status} size="sm" />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="البحث في المعاملات..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="نوع المعاملة" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">جميع الأنواع</SelectItem>
-                <SelectItem value="earned">مكتسب</SelectItem>
-                <SelectItem value="spent">مصروف</SelectItem>
-                <SelectItem value="deposit">إيداع</SelectItem>
-              </SelectContent>
-            </Select>
+        <TabsContent value="payments" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>المدفوعات</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-96">
+                <div className="space-y-3">
+                  {payments.map((payment) => {
+                    const isIncoming = payment.receiver_id === user?.id;
+                    
+                    return (
+                      <div key={payment.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-full ${isIncoming ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                            {isIncoming ? <ArrowDownRight className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
+                          </div>
+                          <div>
+                            <div className="font-medium">
+                              {isIncoming ? 'استلام دفعة' : 'إرسال دفعة'}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {new Date(payment.created_at).toLocaleDateString('ar-SA')}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className={`font-bold ${isIncoming ? 'text-green-600' : 'text-red-600'}`}>
+                            {isIncoming ? '+' : '-'}{formatAmount(payment.amount, payment.currency)}
+                          </div>
+                          <PaymentStatusIndicator status={payment.status} size="sm" />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-48">
-                <SelectValue placeholder="الحالة" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">جميع الحالات</SelectItem>
-                <SelectItem value="completed">مكتمل</SelectItem>
-                <SelectItem value="pending">قيد الانتظار</SelectItem>
-                <SelectItem value="failed">فشل</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Transactions List */}
-      <div>
-        {filteredTransactions.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">
-              {searchTerm || statusFilter !== "all" || typeFilter !== "all" 
-                ? "لم يتم العثور على معاملات مطابقة للبحث"
-                : "لا توجد معاملات بعد"
-              }
-            </p>
-          </div>
-        ) : (
-          <div>
-            {filteredTransactions.map((transaction) => (
-              <TransactionCard key={transaction.id} transaction={transaction} />
-            ))}
-          </div>
-        )}
-      </div>
+        <TabsContent value="charges" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>معاملات الشحن</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-96">
+                <div className="space-y-3">
+                  {charges.map((charge) => {
+                    const PaymentIcon = getPaymentMethodIcon(charge.payment_method);
+                    
+                    return (
+                      <div key={charge.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-full bg-green-100 text-green-600">
+                            <PaymentIcon className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <div className="font-medium">شحن رصيد</div>
+                            <div className="text-sm text-muted-foreground">
+                              {charge.notes || getPaymentMethodText(charge.payment_method)}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {new Date(charge.created_at).toLocaleDateString('ar-SA')}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-bold text-green-600">
+                            +{formatAmount(charge.amount)}
+                          </div>
+                          <PaymentStatusIndicator status={charge.status} size="sm" />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

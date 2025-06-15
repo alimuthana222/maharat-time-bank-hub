@@ -1,107 +1,67 @@
 
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
-import { useAuth } from "@/components/auth/AuthProvider";
-import { cn } from "@/lib/utils";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import { 
   Home, 
-  BarChart3, 
-  Clock, 
-  ShoppingBag, 
-  MessageCircle, 
-  User, 
+  Users, 
+  MessageSquare, 
+  Calendar, 
   Search,
-  Calendar,
-  Users,
-  PartyPopper,
-  Shield,
-  Crown,
-  UserCheck
+  Wallet
 } from "lucide-react";
 
 export function NavLinks() {
-  const location = useLocation();
-  const { user, isAdmin, isOwner, isModerator } = useAuth();
-
-  const isActive = (path: string) => location.pathname === path;
-
-  const linkClass = (path: string) => cn(
-    "flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary",
-    isActive(path) ? "text-primary" : "text-muted-foreground"
-  );
-
   return (
-    <nav className="hidden md:flex items-center space-x-6 space-x-reverse">
-      <Link to="/" className={linkClass("/")}>
-        <Home className="h-4 w-4" />
-        الرئيسية
-      </Link>
+    <div className="hidden md:flex items-center space-x-8 space-x-reverse">
+      <Button variant="ghost" asChild>
+        <Link to="/" className="flex items-center gap-2">
+          <Home className="h-4 w-4" />
+          الرئيسية
+        </Link>
+      </Button>
       
-      {user && (
-        <>
-          <Link to="/dashboard" className={linkClass("/dashboard")}>
-            <BarChart3 className="h-4 w-4" />
-            لوحة التحكم
-          </Link>
-          
-          <Link to="/marketplace" className={linkClass("/marketplace")}>
-            <ShoppingBag className="h-4 w-4" />
-            سوق المهارات
-          </Link>
-          
-          <Link to="/timebank" className={linkClass("/timebank")}>
-            <Clock className="h-4 w-4" />
-            بنك الوقت
-          </Link>
+      <Button variant="ghost" asChild>
+        <Link to="/marketplace" className="flex items-center gap-2">
+          <Users className="h-4 w-4" />
+          السوق
+        </Link>
+      </Button>
+      
+      <Button variant="ghost" asChild>
+        <Link to="/timebank" className="flex items-center gap-2">
+          <MessageSquare className="h-4 w-4" />
+          بنك الوقت
+        </Link>
+      </Button>
+      
+      <Button variant="ghost" asChild>
+        <Link to="/community" className="flex items-center gap-2">
+          <MessageSquare className="h-4 w-4" />
+          المجتمع
+        </Link>
+      </Button>
+      
+      <Button variant="ghost" asChild>
+        <Link to="/events" className="flex items-center gap-2">
+          <Calendar className="h-4 w-4" />
+          الفعاليات
+        </Link>
+      </Button>
 
-          <Link to="/bookings" className={linkClass("/bookings")}>
-            <Calendar className="h-4 w-4" />
-            الحجوزات
-          </Link>
-          
-          <Link to="/messages" className={linkClass("/messages")}>
-            <MessageCircle className="h-4 w-4" />
-            الرسائل
-          </Link>
-          
-          <Link to="/search" className={linkClass("/search")}>
-            <Search className="h-4 w-4" />
-            البحث
-          </Link>
-        </>
-      )}
-      
-      <Link to="/community" className={linkClass("/community")}>
-        <Users className="h-4 w-4" />
-        المجتمع
-      </Link>
-      
-      <Link to="/events" className={linkClass("/events")}>
-        <PartyPopper className="h-4 w-4" />
-        الفعاليات
-      </Link>
-
-      {/* Admin Links */}
-      {isOwner() && (
-        <Link to="/owner" className={linkClass("/owner")}>
-          <Crown className="h-4 w-4" />
-          لوحة المالك
+      <Button variant="ghost" asChild>
+        <Link to="/wallet" className="flex items-center gap-2">
+          <Wallet className="h-4 w-4" />
+          المحفظة
         </Link>
-      )}
+      </Button>
       
-      {isAdmin() && !isOwner() && (
-        <Link to="/admin" className={linkClass("/admin")}>
-          <Shield className="h-4 w-4" />
-          لوحة الإدارة
+      <Button variant="ghost" asChild>
+        <Link to="/search" className="flex items-center gap-2">
+          <Search className="h-4 w-4" />
+          البحث
         </Link>
-      )}
-      
-      {isModerator() && !isAdmin() && (
-        <Link to="/moderator" className={linkClass("/moderator")}>
-          <UserCheck className="h-4 w-4" />
-          لوحة المشرف
-        </Link>
-      )}
-    </nav>
+      </Button>
+    </div>
   );
 }
