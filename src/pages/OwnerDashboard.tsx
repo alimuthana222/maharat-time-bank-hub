@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Navbar } from "@/components/layout/Navbar";
-import { ImprovedOwnerDashboard } from "@/components/admin/ImprovedOwnerDashboard";
+import { FastOwnerDashboard } from "@/components/admin/FastOwnerDashboard";
 import { ResponsiveContainer } from "@/components/ui/mobile-responsive";
 
 export default function OwnerDashboard() {
@@ -11,7 +11,7 @@ export default function OwnerDashboard() {
       
       <main className="flex-1">
         <ResponsiveContainer className="pt-20 pb-8">
-          <ImprovedOwnerDashboard />
+          <FastOwnerDashboard />
         </ResponsiveContainer>
       </main>
     </div>
