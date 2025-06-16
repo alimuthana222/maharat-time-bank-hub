@@ -16,6 +16,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Mail, Lock, User, Building, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,10 +31,23 @@ const registerSchema = z.object({
   password: z.string().min(8, "كلمة المرور يجب أن تكون على الأقل 8 أحرف"),
   username: z.string().min(3, "اسم المستخدم يجب أن يكون على الأقل 3 أحرف"),
   fullName: z.string().min(2, "الاسم الكامل مطلوب"),
-  university: z.string().min(2, "يرجى إدخال اسم الجامعة"),
+  university: z.string().min(2, "يرجى اختيار الجامعة"),
 });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
+
+const universities = [
+  "جامعة الملك سعود",
+  "جامعة الملك فهد للبترول والمعادن",
+  "جامعة الملك عبد العزيز",
+  "جامعة الأميرة نورة بنت عبد الرحمن",
+  "جامعة الإمام محمد بن سعود الإسلامية",
+  "الجامعة الإسلامية",
+  "جامعة أم القرى",
+  "جامعة الملك فيصل",
+  "جامعة الملك خالد",
+  "جامعة القصيم",
+];
 
 export function RegisterForm() {
   const navigate = useNavigate();
@@ -146,17 +166,24 @@ export function RegisterForm() {
               name="university"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>اسم الجامعة</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Building className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                      <Input
-                        placeholder="أدخل اسم جامعتك"
-                        className="pl-10"
-                        {...field}
-                      />
-                    </div>
-                  </FormControl>
+                  <FormLabel>الجامعة</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <div className="relative">
+                        <Building className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground pointer-events-none z-10" />
+                        <SelectTrigger className="pl-10">
+                          <SelectValue placeholder="اختر جامعتك" />
+                        </SelectTrigger>
+                      </div>
+                    </FormControl>
+                    <SelectContent>
+                      {universities.map((university) => (
+                        <SelectItem key={university} value={university}>
+                          {university}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
