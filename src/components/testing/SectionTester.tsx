@@ -59,7 +59,7 @@ export function SectionTester() {
     { name: "لوحة المالك", path: "/owner", icon: Shield },
   ];
 
-  const updateTestResult = (section: string, status: 'success' | 'error', message?: string) => {
+  const updateTestResult = (section: string, status: 'pending' | 'success' | 'error', message?: string) => {
     setTestResults(prev => 
       prev.map(result => 
         result.section === section 
