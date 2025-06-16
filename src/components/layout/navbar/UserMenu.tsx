@@ -9,7 +9,6 @@ import {
   LogOut,
   Settings,
   Shield,
-  TestTube,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -89,14 +88,6 @@ export function UserMenu() {
             <Link to="/messages">
               <Bell className="mr-2 h-4 w-4" />
               <span>الرسائل</span>
-            </Link>
-          </DropdownMenuItem>
-          
-          {/* Testing link for development */}
-          <DropdownMenuItem asChild>
-            <Link to="/system-testing">
-              <TestTube className="mr-2 h-4 w-4" />
-              <span>فحص النظام</span>
             </Link>
           </DropdownMenuItem>
           
