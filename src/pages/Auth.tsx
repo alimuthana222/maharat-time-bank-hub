@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -22,13 +21,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -64,37 +56,9 @@ const registerSchema = z.object({
     message: "الاسم الكامل يجب أن يكون على الأقل 3 أحرف",
   }),
   university: z.string().min(2, {
-    message: "يرجى اختيار الجامعة",
+    message: "يرجى إدخال اسم الجامعة",
   }),
 });
-
-const universities = [
-  "جامعة الملك سعود",
-  "جامعة الملك فهد للبترول والمعادن",
-  "جامعة الملك عبد العزيز",
-  "جامعة الأميرة نورة بنت عبد الرحمن",
-  "جامعة الإمام محمد بن سعود الإسلامية",
-  "الجامعة الإسلامية",
-  "جامعة أم القرى",
-  "جامعة الملك فيصل",
-  "جامعة الملك خالد",
-  "جامعة القصيم",
-  "جامعة طيبة",
-  "جامعة الطائف",
-  "جامعة حائل",
-  "جامعة جازان",
-  "جامعة الباحة",
-  "جامعة الحدود الشمالية",
-  "جامعة نجران",
-  "جامعة الجوف",
-  "جامعة الأمير سطام بن عبد العزيز",
-  "جامعة شقراء",
-  "جامعة الأمير محمد بن فهد",
-  "جامعة الفيصل",
-  "جامعة دار العلوم",
-  "جامعة عفت",
-  "جامعة الأمير سلطان",
-];
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -352,23 +316,12 @@ export default function Auth() {
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>الجامعة</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <div className="relative">
-                                    <Building className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground pointer-events-none" />
-                                    <SelectTrigger className="pl-10">
-                                      <SelectValue placeholder="اختر جامعتك" />
-                                    </SelectTrigger>
-                                  </div>
-                                </FormControl>
-                                <SelectContent className="max-h-80">
-                                  {universities.map((university) => (
-                                    <SelectItem key={university} value={university}>
-                                      {university}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <FormControl>
+                                <div className="relative">
+                                  <Building className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+                                  <Input placeholder="أدخل اسم جامعتك" className="pl-10" {...field} />
+                                </div>
+                              </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
