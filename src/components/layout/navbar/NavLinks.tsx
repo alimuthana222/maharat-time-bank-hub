@@ -23,11 +23,6 @@ import {
 export function NavLinks() {
   const { user } = useAuth();
 
-  // إخفاء القوائم للمستخدمين غير المسجلين فقط
-  if (!user) {
-    return null;
-  }
-
   const mainLinks = [
     {
       title: "المتجر",
