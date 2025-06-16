@@ -1,4 +1,5 @@
-mport React from "react";
+
+import React from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { EnhancedProfileManager } from "@/components/profile/EnhancedProfileManager";
 import { User } from "lucide-react";
