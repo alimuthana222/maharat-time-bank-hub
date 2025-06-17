@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Coins, Timer } from "lucide-react";
 
 interface CreateListingDialogProps {
   open: boolean;
@@ -42,6 +43,7 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
     description: "",
     category: "",
     type: "service",
+    paymentType: "service",
     hourly_rate: "",
     delivery_time: "1",
     requirements: "",
@@ -71,13 +73,14 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
           title: formData.title,
           description: formData.description,
           category: formData.category,
-          type: formData.type,
+          type: formData.paymentType,
           hourly_rate: parseInt(formData.hourly_rate),
           delivery_time: parseInt(formData.delivery_time),
           requirements: formData.requirements || null,
           tags: tags.length > 0 ? tags : null,
           user_id: user.id,
-          status: "active"
+          status: "active",
+          listing_type: "offer"
         }]);
 
       if (error) throw error;
@@ -88,6 +91,7 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
         description: "",
         category: "",
         type: "service",
+        paymentType: "service",
         hourly_rate: "",
         delivery_time: "1",
         requirements: "",
@@ -140,31 +144,57 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <Label htmlFor="serviceType">نوع الخدمة</Label>
+            <Select value={formData.type} onValueChange={(value) => setFormData(prev => ({ ...prev, type: value }))}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {types.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-3">
+            <Label>نوع الدفع</Label>
+            <RadioGroup
+              value={formData.paymentType}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, paymentType: value }))}
+              className="space-y-3"
+            >
+              <div className="flex items-center space-x-2 space-x-reverse">
+                <RadioGroupItem value="service" id="service" />
+                <Label htmlFor="service" className="flex items-center gap-2 cursor-pointer">
+                  <Coins className="h-4 w-4 text-green-600" />
+                  دفع بالدينار العراقي
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2 space-x-reverse">
+                <RadioGroupItem value="skill_exchange" id="skill_exchange" />
+                <Label htmlFor="skill_exchange" className="flex items-center gap-2 cursor-pointer">
+                  <Timer className="h-4 w-4 text-blue-600" />
+                  دفع بساعات بنك الوقت
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="type">نوع الخدمة</Label>
-              <Select value={formData.type} onValueChange={(value) => setFormData(prev => ({ ...prev, type: value }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {types.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <Label htmlFor="hourly_rate">السعر بالدولار/ساعة *</Label>
+              <Label htmlFor="hourly_rate">
+                {formData.paymentType === "service" ? "السعر (د.ع)/ساعة *" : "الساعات المطلوبة"}
+              </Label>
               <Input
                 id="hourly_rate"
                 type="number"
                 value={formData.hourly_rate}
                 onChange={(e) => setFormData(prev => ({ ...prev, hourly_rate: e.target.value }))}
-                placeholder="25"
+                placeholder={formData.paymentType === "service" ? "25000" : "5"}
                 min="1"
                 required
               />

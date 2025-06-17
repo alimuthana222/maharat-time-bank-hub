@@ -3,12 +3,11 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
-  Plus, 
-  Minus, 
   Send, 
   Receipt, 
   CreditCard,
-  FileText
+  FileText,
+  Minus
 } from "lucide-react";
 import { DepositDialog } from "@/components/payment/DepositDialog";
 import { SendMoneyDialog } from "./SendMoneyDialog";
@@ -27,18 +26,15 @@ export function QuickActions({ onActionComplete }: QuickActionsProps) {
   const { user } = useAuth();
 
   const handleBillsClick = () => {
-    toast.info("صفحة الفواتير قيد التطوير وستكون متاحة قريباً");
+    // توجيه إلى صفحة الفواتير أو عرض قائمة الفواتير
+    toast.info("تم توجيهك إلى صفحة الفواتير", {
+      description: "يمكنك هنا عرض جميع فواتيرك ومعاملاتك"
+    });
+    // يمكن إضافة توجيه إلى صفحة الفواتير هنا
+    // window.location.href = "/bills";
   };
 
   const quickActions = [
-    {
-      title: "شحن الرصيد",
-      description: "إضافة أموال للمحفظة",
-      icon: Plus,
-      action: () => setShowDepositDialog(true),
-      color: "bg-blue-500 hover:bg-blue-600",
-      iconColor: "text-white"
-    },
     {
       title: "إرسال أموال",
       description: "تحويل للمستخدمين",
@@ -57,7 +53,7 @@ export function QuickActions({ onActionComplete }: QuickActionsProps) {
     },
     {
       title: "الفواتير",
-      description: "عرض الفواتير",
+      description: "عرض المعاملات",
       icon: FileText,
       action: handleBillsClick,
       color: "bg-purple-500 hover:bg-purple-600",
@@ -83,8 +79,12 @@ export function QuickActions({ onActionComplete }: QuickActionsProps) {
             العمليات السريعة
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <CardContent className="space-y-4">
+          {/* زر شحن الرصيد المدمج */}
+          <DepositDialog onSuccess={handleDepositSuccess} />
+          
+          {/* باقي العمليات */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {quickActions.map((action, index) => {
               const IconComponent = action.icon;
               return (
@@ -109,8 +109,6 @@ export function QuickActions({ onActionComplete }: QuickActionsProps) {
           </div>
         </CardContent>
       </Card>
-
-      <DepositDialog onSuccess={handleDepositSuccess} />
       
       <SendMoneyDialog
         open={showSendMoneyDialog}
