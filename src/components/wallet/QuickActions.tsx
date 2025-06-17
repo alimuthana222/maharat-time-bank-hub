@@ -7,7 +7,8 @@ import {
   Receipt, 
   CreditCard,
   FileText,
-  Minus
+  Minus,
+  Plus
 } from "lucide-react";
 import { DepositDialog } from "@/components/payment/DepositDialog";
 import { SendMoneyDialog } from "./SendMoneyDialog";
@@ -26,15 +27,19 @@ export function QuickActions({ onActionComplete }: QuickActionsProps) {
   const { user } = useAuth();
 
   const handleBillsClick = () => {
-    // توجيه إلى صفحة الفواتير أو عرض قائمة الفواتير
-    toast.info("تم توجيهك إلى صفحة الفواتير", {
-      description: "يمكنك هنا عرض جميع فواتيرك ومعاملاتك"
-    });
-    // يمكن إضافة توجيه إلى صفحة الفواتير هنا
-    // window.location.href = "/bills";
+    // توجيه إلى صفحة معاملات المحفظة
+    window.location.href = "/wallet";
   };
 
   const quickActions = [
+    {
+      title: "شحن الرصيد",
+      description: "إضافة رصيد جديد",
+      icon: Plus,
+      action: () => setShowDepositDialog(true),
+      color: "bg-blue-500 hover:bg-blue-600",
+      iconColor: "text-white"
+    },
     {
       title: "إرسال أموال",
       description: "تحويل للمستخدمين",
@@ -80,11 +85,7 @@ export function QuickActions({ onActionComplete }: QuickActionsProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* زر شحن الرصيد المدمج */}
-          <DepositDialog onSuccess={handleDepositSuccess} />
-          
-          {/* باقي العمليات */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {quickActions.map((action, index) => {
               const IconComponent = action.icon;
               return (
@@ -109,6 +110,12 @@ export function QuickActions({ onActionComplete }: QuickActionsProps) {
           </div>
         </CardContent>
       </Card>
+      
+      <DepositDialog 
+        open={showDepositDialog}
+        onOpenChange={setShowDepositDialog}
+        onSuccess={handleDepositSuccess}
+      />
       
       <SendMoneyDialog
         open={showSendMoneyDialog}
