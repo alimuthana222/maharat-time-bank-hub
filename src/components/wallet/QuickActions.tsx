@@ -7,12 +7,14 @@ import {
   Minus, 
   Send, 
   Receipt, 
-  CreditCard
+  CreditCard,
+  FileText
 } from "lucide-react";
 import { DepositDialog } from "@/components/payment/DepositDialog";
 import { SendMoneyDialog } from "./SendMoneyDialog";
 import { WithdrawDialog } from "./WithdrawDialog";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { toast } from "sonner";
 
 interface QuickActionsProps {
   onActionComplete?: () => void;
@@ -24,13 +26,17 @@ export function QuickActions({ onActionComplete }: QuickActionsProps) {
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
   const { user } = useAuth();
 
+  const handleBillsClick = () => {
+    toast.info("صفحة الفواتير قيد التطوير وستكون متاحة قريباً");
+  };
+
   const quickActions = [
     {
       title: "شحن الرصيد",
       description: "إضافة أموال للمحفظة",
       icon: Plus,
       action: () => setShowDepositDialog(true),
-      color: "bg-green-500 hover:bg-green-600",
+      color: "bg-blue-500 hover:bg-blue-600",
       iconColor: "text-white"
     },
     {
@@ -38,7 +44,7 @@ export function QuickActions({ onActionComplete }: QuickActionsProps) {
       description: "تحويل للمستخدمين",
       icon: Send,
       action: () => setShowSendMoneyDialog(true),
-      color: "bg-blue-500 hover:bg-blue-600",
+      color: "bg-green-500 hover:bg-green-600",
       iconColor: "text-white"
     },
     {
@@ -52,8 +58,8 @@ export function QuickActions({ onActionComplete }: QuickActionsProps) {
     {
       title: "الفواتير",
       description: "عرض الفواتير",
-      icon: Receipt,
-      action: () => console.log("Bills"),
+      icon: FileText,
+      action: handleBillsClick,
       color: "bg-purple-500 hover:bg-purple-600",
       iconColor: "text-white"
     }

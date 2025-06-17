@@ -22,6 +22,7 @@ export function SendMoneyDialog({ open, onOpenChange, onSuccess }: SendMoneyDial
   const [amount, setAmount] = useState(0);
   const [description, setDescription] = useState("");
   const [recipientId, setRecipientId] = useState<string | null>(null);
+  const [recipientInfo, setRecipientInfo] = useState<{id: string, username: string, full_name: string} | null>(null);
   const [searching, setSearching] = useState(false);
   const [sending, setSending] = useState(false);
 
@@ -42,16 +43,19 @@ export function SendMoneyDialog({ open, onOpenChange, onSuccess }: SendMoneyDial
       if (error || !data) {
         toast.error("المستخدم غير موجود");
         setRecipientId(null);
+        setRecipientInfo(null);
         return;
       }
 
       if (data.id === user?.id) {
         toast.error("لا يمكنك إرسال أموال لنفسك");
         setRecipientId(null);
+        setRecipientInfo(null);
         return;
       }
 
       setRecipientId(data.id);
+      setRecipientInfo(data);
       toast.success(`تم العثور على: ${data.full_name || data.username}`);
     } catch (error) {
       console.error('Error searching user:', error);
@@ -62,7 +66,7 @@ export function SendMoneyDialog({ open, onOpenChange, onSuccess }: SendMoneyDial
   };
 
   const sendMoney = async () => {
-    if (!user || !recipientId || amount <= 0) {
+    if (!user || !recipientId || amount <= 0 || !recipientInfo) {
       toast.error("يرجى ملء جميع الحقول بشكل صحيح");
       return;
     }
@@ -81,6 +85,18 @@ export function SendMoneyDialog({ open, onOpenChange, onSuccess }: SendMoneyDial
         return;
       }
 
+      // الحصول على معلومات المرسل
+      const { data: senderInfo, error: senderError } = await supabase
+        .from('profiles')
+        .select('username, full_name')
+        .eq('id', user.id)
+        .single();
+
+      if (senderError) {
+        console.error('Error fetching sender info:', senderError);
+        throw senderError;
+      }
+
       // إنشاء معاملة الدفع
       const { error: paymentError } = await supabase
         .from('payments')
@@ -96,14 +112,14 @@ export function SendMoneyDialog({ open, onOpenChange, onSuccess }: SendMoneyDial
       if (paymentError) throw paymentError;
 
       // تحديث رصيد المرسل
-      const { error: senderError } = await supabase.rpc('update_user_balance_with_source', {
+      const { error: senderError2 } = await supabase.rpc('update_user_balance_with_source', {
         _user_id: user.id,
         _amount: -amount,
         _transaction_type: 'payment',
         _source: 'wallet'
       });
 
-      if (senderError) throw senderError;
+      if (senderError2) throw senderError2;
 
       // تحديث رصيد المستلم
       const { error: receiverError } = await supabase.rpc('update_user_balance_with_source', {
@@ -115,13 +131,29 @@ export function SendMoneyDialog({ open, onOpenChange, onSuccess }: SendMoneyDial
 
       if (receiverError) throw receiverError;
 
-      toast.success(`تم إرسال ${amount.toLocaleString()} د.ع بنجاح!`);
+      // إرسال إشعار للمستلم
+      const senderName = senderInfo?.full_name || senderInfo?.username || 'مستخدم';
+      const { error: notificationError } = await supabase.rpc('send_notification', {
+        _user_id: recipientId,
+        _title: 'تحويل مالي جديد',
+        _body: `استلمت ${amount.toLocaleString()} د.ع من ${senderName}`,
+        _type: 'payment',
+        _related_id: null,
+        _related_type: 'payment'
+      });
+
+      if (notificationError) {
+        console.error('Error sending notification:', notificationError);
+      }
+
+      toast.success(`تم إرسال ${amount.toLocaleString()} د.ع إلى ${recipientInfo.full_name || recipientInfo.username} بنجاح!`);
       
       // إعادة تعيين النموذج
       setRecipientUsername("");
       setAmount(0);
       setDescription("");
       setRecipientId(null);
+      setRecipientInfo(null);
       
       onSuccess?.();
       onOpenChange(false);
@@ -162,6 +194,11 @@ export function SendMoneyDialog({ open, onOpenChange, onSuccess }: SendMoneyDial
                 <Search className="h-4 w-4" />
               </Button>
             </div>
+            {recipientInfo && (
+              <div className="text-sm text-green-600 bg-green-50 p-2 rounded">
+                ✓ تم العثور على: {recipientInfo.full_name || recipientInfo.username}
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
