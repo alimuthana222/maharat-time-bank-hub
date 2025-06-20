@@ -28,13 +28,6 @@ const categories = [
   "أخرى"
 ];
 
-const types = [
-  { value: "service", label: "خدمة" },
-  { value: "consultation", label: "استشارة" },
-  { value: "course", label: "دورة تدريبية" },
-  { value: "project", label: "مشروع" }
-];
-
 export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateListingDialogProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -42,7 +35,6 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
     title: "",
     description: "",
     category: "",
-    type: "service",
     paymentType: "service",
     hourly_rate: "",
     delivery_time: "1",
@@ -90,7 +82,6 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
         title: "",
         description: "",
         category: "",
-        type: "service",
         paymentType: "service",
         hourly_rate: "",
         delivery_time: "1",
@@ -142,22 +133,6 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          <div>
-            <Label htmlFor="serviceType">نوع الخدمة</Label>
-            <Select value={formData.type} onValueChange={(value) => setFormData(prev => ({ ...prev, type: value }))}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {types.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {type.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           <div className="space-y-3">
