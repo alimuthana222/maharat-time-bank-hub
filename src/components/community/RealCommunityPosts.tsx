@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PostActions } from "./PostActions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
@@ -15,14 +17,11 @@ import {
   MessageSquare, 
   ThumbsUp, 
   Share, 
-  MoreHorizontal,
   Search,
   Plus,
   Send,
   Loader2,
-  Pin,
-  Edit,
-  Trash2
+  Pin
 } from "lucide-react";
 
 interface Post {
@@ -363,26 +362,6 @@ export function RealCommunityPosts() {
     setExpandedComments(newExpanded);
   };
 
-  const handleDeletePost = async (postId: string) => {
-    if (!user) return;
-
-    try {
-      const { error } = await supabase
-        .from("community_posts")
-        .update({ is_hidden: true })
-        .eq("id", postId)
-        .eq("author_id", user.id);
-
-      if (error) throw error;
-
-      toast.success("تم حذف المنشور بنجاح");
-      fetchPosts();
-    } catch (error) {
-      console.error("Error deleting post:", error);
-      toast.error("حدث خطأ أثناء حذف المنشور");
-    }
-  };
-
   const getCategoryLabel = (category?: string) => {
     return categories.find(c => c.value === category)?.label || category || "عام";
   };
@@ -546,20 +525,7 @@ export function RealCommunityPosts() {
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2">
-                    {user && user.id === post.author_id && (
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => handleDeletePost(post.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <PostActions post={post} onUpdate={fetchPosts} />
                 </div>
               </CardHeader>
               
@@ -591,11 +557,6 @@ export function RealCommunityPosts() {
                     >
                       <MessageSquare className="h-4 w-4" />
                       {post.comments_count || 0}
-                    </Button>
-                    
-                    <Button variant="ghost" size="sm" className="flex items-center gap-1">
-                      <Share className="h-4 w-4" />
-                      مشاركة
                     </Button>
                   </div>
                 </div>

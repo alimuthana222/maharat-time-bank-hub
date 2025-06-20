@@ -1,109 +1,65 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { EventActions } from "./EventActions";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { 
   Calendar, 
   MapPin, 
   Users, 
-  Clock, 
-  Search,
-  Filter,
-  Plus,
-  CheckCircle,
-  XCircle
+  Clock,
+  DollarSign,
+  Loader2
 } from "lucide-react";
-import { Loader2 } from "lucide-react";
 
 interface Event {
   id: string;
   title: string;
   description: string;
   content?: string;
+  organizer_id: string;
   category: string;
+  location: string;
   start_date: string;
   end_date: string;
-  location: string;
-  organizer_id: string;
   max_attendees?: number;
   current_attendees: number;
-  price: number;
-  image_url?: string;
+  price?: number;
   is_online: boolean;
-  status: "upcoming" | "ongoing" | "completed" | "cancelled";
+  status: string;
+  image_url?: string;
   tags?: string[];
   created_at: string;
+  updated_at: string;
   organizer_name?: string;
   organizer_avatar?: string;
   user_registered?: boolean;
 }
 
-const categories = [
-  { value: "all", label: "جميع الفئات" },
-  { value: "tech", label: "تقنية" },
-  { value: "education", label: "تعليمية" },
-  { value: "workshop", label: "ورشة عمل" },
-  { value: "networking", label: "شبكات مهنية" },
-  { value: "career", label: "تطوير مهني" },
-  { value: "cultural", label: "ثقافية" },
-  { value: "volunteer", label: "تطوعية" }
-];
-
-const iraqCities = [
-  "جميع المدن", "بغداد", "البصرة", "الموصل", "أربيل", "النجف", 
-  "كربلاء", "السليمانية", "الأنبار", "ديالى", "كركوك", 
-  "بابل", "واسط", "صلاح الدين", "المثنى", "القادسية", "ذي قار", "ميسان", "دهوك"
-];
-
 export function RealEventsList() {
   const { user } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [selectedCity, setSelectedCity] = useState("جميع المدن");
-  const [eventType, setEventType] = useState("all");
 
   useEffect(() => {
     fetchEvents();
-    setupRealTimeUpdates();
   }, []);
 
   const fetchEvents = async () => {
     try {
       setLoading(true);
       
-      let query = supabase
+      const { data: eventsData, error } = await supabase
         .from("events")
         .select("*")
-        .eq("status", "upcoming")
         .order("start_date", { ascending: true });
-
-      if (selectedCategory !== "all") {
-        query = query.eq("category", selectedCategory);
-      }
-
-      if (selectedCity !== "جميع المدن") {
-        query = query.ilike("location", `%${selectedCity}%`);
-      }
-
-      if (eventType !== "all") {
-        query = query.eq("is_online", eventType === "online");
-      }
-
-      if (searchQuery) {
-        query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
-      }
-
-      const { data: eventsData, error } = await query;
 
       if (error) throw error;
 
@@ -112,11 +68,11 @@ export function RealEventsList() {
         return;
       }
 
-      // Get organizer profiles separately
+      // جلب معلومات المنظمين
       const organizerIds = eventsData.map(event => event.organizer_id);
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, username, avatar_url")
+        .select("id, username, full_name, avatar_url")
         .in("id", organizerIds);
 
       const profilesMap = profiles?.reduce((acc, profile) => {
@@ -124,7 +80,7 @@ export function RealEventsList() {
         return acc;
       }, {} as Record<string, any>) || {};
 
-      // Check user registrations
+      // فحص التسجيلات
       let registeredEventIds = new Set<string>();
       if (user && eventsData.length > 0) {
         const eventIds = eventsData.map(event => event.id);
@@ -139,10 +95,9 @@ export function RealEventsList() {
 
       const eventsWithDetails = eventsData.map(event => ({
         ...event,
-        organizer_name: profilesMap[event.organizer_id]?.username || "منظم الفعالية",
+        organizer_name: profilesMap[event.organizer_id]?.full_name || profilesMap[event.organizer_id]?.username || "منظم",
         organizer_avatar: profilesMap[event.organizer_id]?.avatar_url,
-        user_registered: registeredEventIds.has(event.id),
-        status: event.status as "upcoming" | "ongoing" | "completed" | "cancelled"
+        user_registered: registeredEventIds.has(event.id)
       }));
 
       setEvents(eventsWithDetails);
@@ -154,124 +109,64 @@ export function RealEventsList() {
     }
   };
 
-  const setupRealTimeUpdates = () => {
-    const channel = supabase
-      .channel("events-updates")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "events"
-        },
-        () => {
-          fetchEvents();
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "event_registrations"
-        },
-        () => {
-          fetchEvents();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  };
-
-  const handleRegister = async (eventId: string) => {
+  const handleRegister = async (eventId: string, isRegistered: boolean) => {
     if (!user) {
       toast.error("يجب تسجيل الدخول أولاً");
       return;
     }
 
     try {
-      const { error } = await supabase
-        .from("event_registrations")
-        .insert([{
-          event_id: eventId,
-          user_id: user.id
-        }]);
+      if (isRegistered) {
+        const { error } = await supabase
+          .from("event_registrations")
+          .delete()
+          .eq("event_id", eventId)
+          .eq("user_id", user.id);
 
-      if (error) throw error;
-
-      toast.success("تم التسجيل في الفعالية بنجاح");
-      fetchEvents();
-    } catch (error: any) {
-      if (error.code === "23505") {
-        toast.error("لقد سجلت في هذه الفعالية مسبقاً");
+        if (error) throw error;
+        toast.success("تم إلغاء التسجيل بنجاح");
       } else {
-        toast.error("حدث خطأ أثناء التسجيل");
+        const { error } = await supabase
+          .from("event_registrations")
+          .insert([{
+            event_id: eventId,
+            user_id: user.id
+          }]);
+
+        if (error) throw error;
+        toast.success("تم التسجيل بنجاح");
       }
-    }
-  };
 
-  const handleUnregister = async (eventId: string) => {
-    if (!user) return;
-
-    try {
-      const { error } = await supabase
-        .from("event_registrations")
-        .delete()
-        .eq("event_id", eventId)
-        .eq("user_id", user.id);
-
-      if (error) throw error;
-
-      toast.success("تم إلغاء التسجيل بنجاح");
       fetchEvents();
     } catch (error) {
-      toast.error("حدث خطأ أثناء إلغاء التسجيل");
+      console.error("Error handling registration:", error);
+      toast.error("حدث خطأ أثناء التسجيل");
     }
   };
 
-  const formatEventDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return new Intl.DateTimeFormat('ar-IQ', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
+  const getCategoryColor = (category: string) => {
+    const colorMap: Record<string, string> = {
+      workshop: "bg-blue-500",
+      lecture: "bg-green-500",
+      conference: "bg-purple-500",
+      networking: "bg-orange-500",
+      training: "bg-red-500",
+      other: "bg-gray-500"
+    };
+    return colorMap[category] || "bg-gray-500";
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "upcoming":
-        return "bg-blue-500/10 text-blue-600 border-blue-200";
-      case "ongoing":
-        return "bg-green-500/10 text-green-600 border-green-200";
-      case "completed":
-        return "bg-gray-500/10 text-gray-600 border-gray-200";
-      case "cancelled":
-        return "bg-red-500/10 text-red-600 border-red-200";
-      default:
-        return "bg-gray-500/10 text-gray-600 border-gray-200";
-    }
+  const getCategoryLabel = (category: string) => {
+    const labelMap: Record<string, string> = {
+      workshop: "ورشة عمل",
+      lecture: "محاضرة",
+      conference: "مؤتمر",
+      networking: "تواصل",
+      training: "تدريب",
+      other: "أخرى"
+    };
+    return labelMap[category] || category;
   };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "upcoming": return "قادمة";
-      case "ongoing": return "جارية";
-      case "completed": return "مكتملة";
-      case "cancelled": return "ملغية";
-      default: return status;
-    }
-  };
-
-  useEffect(() => {
-    fetchEvents();
-  }, [selectedCategory, selectedCity, eventType, searchQuery]);
 
   if (loading) {
     return (
@@ -281,184 +176,116 @@ export function RealEventsList() {
     );
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Filters */}
+  if (events.length === 0) {
+    return (
       <Card>
-        <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="البحث في الفعاليات..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger>
-                <SelectValue placeholder="الفئة" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category.value} value={category.value}>
-                    {category.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={selectedCity} onValueChange={setSelectedCity}>
-              <SelectTrigger>
-                <SelectValue placeholder="المدينة" />
-              </SelectTrigger>
-              <SelectContent>
-                {iraqCities.map((city) => (
-                  <SelectItem key={city} value={city}>
-                    {city}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={eventType} onValueChange={setEventType}>
-              <SelectTrigger>
-                <SelectValue placeholder="نوع الفعالية" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">جميع الأنواع</SelectItem>
-                <SelectItem value="offline">حضوري</SelectItem>
-                <SelectItem value="online">عبر الإنترنت</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <CardContent className="p-8 text-center">
+          <p className="text-muted-foreground">لا توجد فعاليات متاحة حالياً</p>
         </CardContent>
       </Card>
+    );
+  }
 
-      {/* Events List */}
-      {events.length === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">لا توجد فعاليات متاحة حالياً</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {events.map((event) => (
-            <Card key={event.id} className="hover:shadow-lg transition-shadow">
-              {event.image_url && (
-                <div className="aspect-video relative overflow-hidden rounded-t-lg">
-                  <img 
-                    src={event.image_url} 
-                    alt={event.title}
-                    className="w-full h-full object-cover"
-                  />
+  return (
+    <div className="grid gap-6">
+      {events.map((event) => (
+        <Card key={event.id} className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-12 w-12">
+                  <AvatarImage src={event.organizer_avatar} />
+                  <AvatarFallback>
+                    {event.organizer_name?.charAt(0) || "م"}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-xl">{event.title}</CardTitle>
+                    <Badge className={`${getCategoryColor(event.category)} text-white`}>
+                      {getCategoryLabel(event.category)}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    نظمت بواسطة {event.organizer_name}
+                  </p>
+                </div>
+              </div>
+              
+              <EventActions event={event} onUpdate={fetchEvents} />
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground">{event.description}</p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center gap-2 text-sm">
+                <Calendar className="h-4 w-4 text-blue-600" />
+                <span>
+                  {format(new Date(event.start_date), "dd/MM/yyyy", { locale: ar })}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 text-sm">
+                <Clock className="h-4 w-4 text-green-600" />
+                <span>
+                  {format(new Date(event.start_date), "HH:mm", { locale: ar })} - 
+                  {format(new Date(event.end_date), "HH:mm", { locale: ar })}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 text-sm">
+                <MapPin className="h-4 w-4 text-red-600" />
+                <span>{event.is_online ? "عبر الإنترنت" : event.location}</span>
+              </div>
+
+              <div className="flex items-center gap-2 text-sm">
+                <Users className="h-4 w-4 text-purple-600" />
+                <span>
+                  {event.current_attendees} / {event.max_attendees || "∞"} مشارك
+                </span>
+              </div>
+
+              {event.price && event.price > 0 && (
+                <div className="flex items-center gap-2 text-sm">
+                  <DollarSign className="h-4 w-4 text-yellow-600" />
+                  <span>{event.price} د.ع</span>
                 </div>
               )}
-              
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg leading-tight">{event.title}</h3>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Avatar className="h-6 w-6">
-                        <AvatarImage src={event.organizer_avatar} />
-                        <AvatarFallback className="text-xs">
-                          {event.organizer_name?.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm text-muted-foreground">
-                        {event.organizer_name}
-                      </span>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className={getStatusColor(event.status)}>
-                    {getStatusText(event.status)}
+            </div>
+
+            {event.tags && event.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {event.tags.map((tag, index) => (
+                  <Badge key={index} variant="secondary" className="text-xs">
+                    {tag}
                   </Badge>
-                </div>
-              </CardHeader>
+                ))}
+              </div>
+            )}
 
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {event.description}
-                </p>
+            <div className="flex items-center justify-between pt-4">
+              <p className="text-xs text-muted-foreground">
+                {formatDistanceToNow(new Date(event.created_at), {
+                  addSuffix: true,
+                  locale: ar,
+                })}
+              </p>
 
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span>{formatEventDate(event.start_date)}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{event.is_online ? "عبر الإنترنت" : event.location}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <span>
-                      {event.current_attendees}
-                      {event.max_attendees && ` من ${event.max_attendees}`}
-                      {" مشارك"}
-                    </span>
-                  </div>
-
-                  {event.price > 0 && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-green-600 font-medium">
-                        {event.price} دينار عراقي
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {event.tags && event.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {event.tags.slice(0, 3).map((tag, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs">
-                        {tag}
-                      </Badge>
-                    ))}
-                    {event.tags.length > 3 && (
-                      <Badge variant="secondary" className="text-xs">
-                        +{event.tags.length - 3}
-                      </Badge>
-                    )}
-                  </div>
-                )}
-
-                <div className="pt-2">
-                  {event.user_registered ? (
-                    <Button 
-                      variant="outline" 
-                      className="w-full"
-                      onClick={() => handleUnregister(event.id)}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      مسجل - إلغاء التسجيل
-                    </Button>
-                  ) : (
-                    <Button 
-                      className="w-full"
-                      onClick={() => handleRegister(event.id)}
-                      disabled={event.max_attendees ? event.current_attendees >= event.max_attendees : false}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      {event.max_attendees && event.current_attendees >= event.max_attendees 
-                        ? "الفعالية ممتلئة" 
-                        : "التسجيل في الفعالية"
-                      }
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+              {user && (
+                <Button
+                  onClick={() => handleRegister(event.id, event.user_registered || false)}
+                  variant={event.user_registered ? "outline" : "default"}
+                  size="sm"
+                >
+                  {event.user_registered ? "إلغاء التسجيل" : "التسجيل"}
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }
