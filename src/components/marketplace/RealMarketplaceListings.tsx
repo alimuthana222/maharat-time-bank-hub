@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -74,6 +75,7 @@ export function RealMarketplaceListings() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [listingTypeFilter, setListingTypeFilter] = useState("all");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [showBookingDialog, setShowBookingDialog] = useState(false);
   const [selectedListing, setSelectedListing] = useState<MarketplaceListing | null>(null);
 
@@ -216,7 +218,7 @@ export function RealMarketplaceListings() {
                       <Plus className="h-4 w-4 mr-2" />
                       إضافة خدمة
                     </Button>
-                    <Button onClick={() => setShowRequestDialog(true)}>
+                    <Button onClick={() => setShowRequestDialog(true)} variant="outline">
                       <Search className="h-4 w-4 mr-2" />
                       طلب خدمة
                     </Button>
@@ -357,7 +359,11 @@ export function RealMarketplaceListings() {
         onSuccess={fetchListings}
       />
 
-      <CreateServiceRequestDialog open={showRequestDialog} onOpenChange={setShowRequestDialog} />
+      <CreateServiceRequestDialog 
+        open={showRequestDialog} 
+        onOpenChange={setShowRequestDialog}
+        onSuccess={fetchListings}
+      />
 
       {selectedListing && (
         <CreateBookingDialog

@@ -29,6 +29,7 @@ export function UserBalance() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [transactionsLoading, setTransactionsLoading] = useState(true);
+  const [showDepositDialog, setShowDepositDialog] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -111,7 +112,11 @@ export function UserBalance() {
           lastUpdated={balance?.updated_at}
         />
         <div className="ml-4">
-          <DepositDialog onSuccess={handleDepositSuccess} />
+          <DepositDialog 
+            open={showDepositDialog}
+            onOpenChange={setShowDepositDialog}
+            onSuccess={handleDepositSuccess} 
+          />
         </div>
       </div>
 

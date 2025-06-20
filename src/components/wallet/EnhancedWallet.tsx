@@ -31,27 +31,6 @@ interface UserBalance {
   reserved_balance: number;
 }
 
-interface ChargeTransaction {
-  id: string;
-  user_id: string;
-  amount: number;
-  transaction_id: string;
-  payment_method: string;
-  status: string;
-  created_at: string;
-  notes?: string;
-  admin_id?: string;
-  verified_by?: string;
-  verified_at?: string;
-  stripe_session_id?: string;
-  zaincash_phone?: string;
-  zaincash_transaction_id?: string;
-  payment_proof_url?: string;
-  manual_verification_status?: string;
-  verification_notes?: string;
-  updated_at: string;
-}
-
 interface Transaction {
   id: string;
   type: string;
@@ -103,27 +82,56 @@ export function EnhancedWallet() {
   const fetchTransactions = async () => {
     setTransactionsLoading(true);
     try {
-      const { data, error } = await supabase
+      // جلب معاملات الشحن
+      const { data: chargeData, error: chargeError } = await supabase
         .from("charge_transactions")
         .select("*")
-        .eq("user_id", user?.id)
-        .order("created_at", { ascending: false })
-        .limit(50);
+        .eq("user_id", user?.id);
 
-      if (error) throw error;
+      if (chargeError) throw chargeError;
 
-      // تحويل البيانات من قاعدة البيانات إلى نوع Transaction
-      const formattedTransactions: Transaction[] = (data || []).map((tx: ChargeTransaction) => ({
-        id: tx.id,
-        type: 'deposit', // جميع المعاملات في charge_transactions هي إيداعات
-        amount: tx.amount,
-        status: tx.manual_verification_status === 'verified' ? 'verified' : tx.status,
-        created_at: tx.created_at,
-        payment_method: tx.payment_method,
-        description: tx.notes || 'شحن رصيد'
-      }));
+      // جلب معاملات الدفع
+      const { data: paymentsData, error: paymentsError } = await supabase
+        .from("payments")
+        .select("*")
+        .or(`payer_id.eq.${user?.id},receiver_id.eq.${user?.id}`);
 
-      setTransactions(formattedTransactions);
+      if (paymentsError) throw paymentsError;
+
+      // تحويل البيانات إلى نوع Transaction موحد
+      const allTransactions: Transaction[] = [];
+
+      // إضافة معاملات الشحن
+      (chargeData || []).forEach((tx: any) => {
+        allTransactions.push({
+          id: tx.id,
+          type: 'deposit',
+          amount: tx.amount,
+          status: tx.manual_verification_status === 'verified' ? 'verified' : tx.status,
+          created_at: tx.created_at,
+          payment_method: tx.payment_method,
+          description: tx.notes || 'شحن رصيد'
+        });
+      });
+
+      // إضافة معاملات الدفع
+      (paymentsData || []).forEach((tx: any) => {
+        const isPayer = tx.payer_id === user?.id;
+        allTransactions.push({
+          id: tx.id,
+          type: isPayer ? 'payment' : 'deposit',
+          amount: tx.amount,
+          status: tx.status,
+          created_at: tx.created_at,
+          payment_method: tx.payment_method,
+          description: isPayer ? 'دفع للمستخدمين' : 'استلام من مستخدم'
+        });
+      });
+
+      // ترتيب المعاملات حسب التاريخ
+      allTransactions.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      setTransactions(allTransactions);
     } catch (error: any) {
       console.error("Error fetching transactions:", error);
       toast.error("خطأ في تحميل المعاملات");
@@ -240,7 +248,6 @@ export function EnhancedWallet() {
               <SelectContent>
                 <SelectItem value="all">جميع الأنواع</SelectItem>
                 <SelectItem value="deposit">إيداع</SelectItem>
-                <SelectItem value="withdrawal">سحب</SelectItem>
                 <SelectItem value="payment">دفع</SelectItem>
               </SelectContent>
             </Select>
