@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -8,15 +7,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
-import { Loader2, Upload, Plus } from "lucide-react";
+import { Loader2, Upload } from "lucide-react";
 
 interface DepositDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onSuccess?: (transactionId: string) => void;
 }
 
-export function DepositDialog({ onSuccess }: DepositDialogProps) {
+export function DepositDialog({ open, onOpenChange, onSuccess }: DepositDialogProps) {
   const { user } = useAuth();
-  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     amount: "",
@@ -137,7 +137,7 @@ export function DepositDialog({ onSuccess }: DepositDialogProps) {
         notes: ""
       });
       setProofFile(null);
-      setOpen(false);
+      onOpenChange(false);
       
       onSuccess?.(data.id);
     } catch (error) {
@@ -149,15 +149,7 @@ export function DepositDialog({ onSuccess }: DepositDialogProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button 
-          size="lg" 
-          className="w-16 h-16 rounded-full bg-blue-500 hover:bg-blue-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-        >
-          <Plus className="h-6 w-6" />
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>شحن الرصيد - ZainCash</DialogTitle>
@@ -250,7 +242,7 @@ export function DepositDialog({ onSuccess }: DepositDialogProps) {
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               إرسال طلب الشحن
             </Button>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               إلغاء
             </Button>
           </div>

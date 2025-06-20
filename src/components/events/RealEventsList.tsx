@@ -188,8 +188,12 @@ export function RealEventsList() {
 
   return (
     <div className="grid gap-6">
-      {events.map((event) => (
-        <Card key={event.id} className="hover:shadow-lg transition-shadow">
+      {events.map((event, index) => (
+        <Card 
+          key={event.id} 
+          className="hover:shadow-lg transition-all duration-300 animate-fade-in" 
+          style={{ animationDelay: `${index * 0.1}s` }}
+        >
           <CardHeader>
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
