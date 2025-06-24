@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -135,6 +136,11 @@ export default function Auth() {
     }
   };
 
+  const handleBackToLogin = () => {
+    setRegisterSuccess(false);
+    setActiveTab("login");
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
@@ -157,7 +163,7 @@ export default function Auth() {
                 </p>
               </CardContent>
               <CardFooter>
-                <Button className="w-full" onClick={() => setActiveTab("login")}>
+                <Button className="w-full" onClick={handleBackToLogin}>
                   العودة إلى تسجيل الدخول
                 </Button>
               </CardFooter>

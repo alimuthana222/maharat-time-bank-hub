@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -160,6 +159,22 @@ export function RealMarketplaceListings() {
     setShowBookingDialog(true);
   };
 
+  const handleCreateService = () => {
+    if (!user) {
+      toast.error("يجب تسجيل الدخول أولاً");
+      return;
+    }
+    setShowCreateDialog(true);
+  };
+
+  const handleRequestService = () => {
+    if (!user) {
+      toast.error("يجب تسجيل الدخول أولاً");
+      return;
+    }
+    setShowRequestDialog(true);
+  };
+
   return (
     <div className="space-y-6">
       {/* Tabs للتبديل بين العروض والطلبات */}
@@ -212,18 +227,16 @@ export function RealMarketplaceListings() {
                   </SelectContent>
                 </Select>
 
-                {user && (
-                  <div className="flex gap-2">
-                    <Button onClick={() => setShowCreateDialog(true)}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      إضافة خدمة
-                    </Button>
-                    <Button onClick={() => setShowRequestDialog(true)} variant="outline">
-                      <Search className="h-4 w-4 mr-2" />
-                      طلب خدمة
-                    </Button>
-                  </div>
-                )}
+                <div className="flex gap-2">
+                  <Button onClick={handleCreateService}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    إضافة خدمة
+                  </Button>
+                  <Button onClick={handleRequestService} variant="outline">
+                    <Search className="h-4 w-4 mr-2" />
+                    طلب خدمة
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -353,19 +366,23 @@ export function RealMarketplaceListings() {
       </Tabs>
 
       {/* Dialogs */}
-      <CreateListingDialog
-        open={showCreateDialog}
-        onOpenChange={setShowCreateDialog}
-        onSuccess={fetchListings}
-      />
+      {showCreateDialog && (
+        <CreateListingDialog
+          open={showCreateDialog}
+          onOpenChange={setShowCreateDialog}
+          onSuccess={fetchListings}
+        />
+      )}
 
-      <CreateServiceRequestDialog 
-        open={showRequestDialog} 
-        onOpenChange={setShowRequestDialog}
-        onSuccess={fetchListings}
-      />
+      {showRequestDialog && (
+        <CreateServiceRequestDialog 
+          open={showRequestDialog} 
+          onOpenChange={setShowRequestDialog}
+          onSuccess={fetchListings}
+        />
+      )}
 
-      {selectedListing && (
+      {selectedListing && showBookingDialog && (
         <CreateBookingDialog
           open={showBookingDialog}
           onOpenChange={setShowBookingDialog}
