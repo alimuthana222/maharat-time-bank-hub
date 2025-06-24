@@ -59,12 +59,11 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
     try {
       const tags = formData.tags ? formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
       
-      // التأكد من أن القيم صحيحة ومتوافقة مع قاعدة البيانات
       const listingData = {
         title: formData.title,
         description: formData.description,
         category: formData.category,
-        type: formData.paymentType === "service" ? "service" : "skill_exchange", // القيم المسموحة فقط
+        type: formData.paymentType, // استخدام القيمة مباشرة
         hourly_rate: parseInt(formData.hourly_rate),
         delivery_time: parseInt(formData.delivery_time),
         requirements: formData.requirements || null,

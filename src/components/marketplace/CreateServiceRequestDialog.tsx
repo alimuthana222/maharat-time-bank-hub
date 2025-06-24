@@ -25,7 +25,7 @@ export function CreateServiceRequestDialog({ open, onOpenChange, onSuccess }: Cr
     title: "",
     description: "",
     category: "",
-    type: "service", // service or skill_exchange
+    type: "service",
     budget: "",
     deadline: ""
   });
@@ -46,12 +46,11 @@ export function CreateServiceRequestDialog({ open, onOpenChange, onSuccess }: Cr
 
     setLoading(true);
     try {
-      // التأكد من أن القيم صحيحة ومتوافقة مع قاعدة البيانات
       const requestData = {
         title: formData.title,
         description: formData.description,
         category: formData.category,
-        type: formData.type === "service" ? "service" : "skill_exchange", // القيم المسموحة فقط
+        type: formData.type, // استخدام القيمة مباشرة
         hourly_rate: parseInt(formData.budget),
         delivery_time: parseInt(formData.deadline),
         user_id: user.id,
