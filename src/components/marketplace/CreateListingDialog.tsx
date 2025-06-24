@@ -59,23 +59,31 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
     try {
       const tags = formData.tags ? formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
       
+      // التأكد من أن القيم صحيحة ومتوافقة مع قاعدة البيانات
+      const listingData = {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        type: formData.paymentType === "service" ? "service" : "skill_exchange", // القيم المسموحة فقط
+        hourly_rate: parseInt(formData.hourly_rate),
+        delivery_time: parseInt(formData.delivery_time),
+        requirements: formData.requirements || null,
+        tags: tags.length > 0 ? tags : null,
+        user_id: user.id,
+        status: "active",
+        listing_type: "offer"
+      };
+
+      console.log("إرسال بيانات الخدمة:", listingData);
+
       const { error } = await supabase
         .from("marketplace_listings")
-        .insert([{
-          title: formData.title,
-          description: formData.description,
-          category: formData.category,
-          type: formData.paymentType,
-          hourly_rate: parseInt(formData.hourly_rate),
-          delivery_time: parseInt(formData.delivery_time),
-          requirements: formData.requirements || null,
-          tags: tags.length > 0 ? tags : null,
-          user_id: user.id,
-          status: "active",
-          listing_type: "offer"
-        }]);
+        .insert([listingData]);
 
-      if (error) throw error;
+      if (error) {
+        console.error("خطأ في قاعدة البيانات:", error);
+        throw error;
+      }
 
       toast.success("تم إنشاء الخدمة بنجاح");
       setFormData({

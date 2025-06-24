@@ -46,21 +46,29 @@ export function CreateServiceRequestDialog({ open, onOpenChange, onSuccess }: Cr
 
     setLoading(true);
     try {
+      // التأكد من أن القيم صحيحة ومتوافقة مع قاعدة البيانات
+      const requestData = {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        type: formData.type === "service" ? "service" : "skill_exchange", // القيم المسموحة فقط
+        hourly_rate: parseInt(formData.budget),
+        delivery_time: parseInt(formData.deadline),
+        user_id: user.id,
+        status: "active",
+        listing_type: "request"
+      };
+
+      console.log("إرسال بيانات طلب الخدمة:", requestData);
+
       const { error } = await supabase
         .from("marketplace_listings")
-        .insert({
-          title: formData.title,
-          description: formData.description,
-          category: formData.category,
-          type: formData.type,
-          hourly_rate: parseInt(formData.budget),
-          delivery_time: parseInt(formData.deadline),
-          user_id: user.id,
-          status: "active",
-          listing_type: "request"
-        });
+        .insert(requestData);
 
-      if (error) throw error;
+      if (error) {
+        console.error("خطأ في قاعدة البيانات:", error);
+        throw error;
+      }
 
       toast.success("تم إنشاء طلب الخدمة بنجاح!");
       onOpenChange(false);

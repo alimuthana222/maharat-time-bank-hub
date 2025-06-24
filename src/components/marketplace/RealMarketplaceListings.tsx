@@ -15,13 +15,11 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
 import { 
   Search, 
-  Filter, 
   Plus, 
   Star, 
   Clock, 
   DollarSign, 
   Calendar,
-  User,
   Loader2,
   MessageSquare,
   Heart,
@@ -87,6 +85,8 @@ export function RealMarketplaceListings() {
   const fetchListings = async () => {
     setLoading(true);
     try {
+      console.log("جاري تحميل قوائم السوق...");
+      
       let query = supabase
         .from("marketplace_listings")
         .select(`
@@ -98,8 +98,12 @@ export function RealMarketplaceListings() {
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error("خطأ في استعلام قاعدة البيانات:", error);
+        throw error;
+      }
 
+      console.log("تم تحميل البيانات بنجاح:", data);
       setListings(data || []);
     } catch (error: any) {
       console.error("Error fetching listings:", error);
@@ -120,6 +124,7 @@ export function RealMarketplaceListings() {
           table: "marketplace_listings"
         },
         () => {
+          console.log("تحديث في الوقت الفعلي - إعادة تحميل البيانات");
           fetchListings();
         }
       )
@@ -165,6 +170,7 @@ export function RealMarketplaceListings() {
       toast.error("يجب تسجيل الدخول أولاً");
       return;
     }
+    console.log("فتح نافذة إنشاء خدمة جديدة");
     setShowCreateDialog(true);
   };
 
@@ -173,10 +179,12 @@ export function RealMarketplaceListings() {
       toast.error("يجب تسجيل الدخول أولاً");
       return;
     }
+    console.log("فتح نافذة طلب خدمة جديدة");
     setShowRequestDialog(true);
   };
 
   const handleDialogSuccess = () => {
+    console.log("تم إنشاء الخدمة/الطلب بنجاح - إعادة تحميل البيانات");
     fetchListings();
     setShowCreateDialog(false);
     setShowRequestDialog(false);
@@ -252,6 +260,7 @@ export function RealMarketplaceListings() {
           {loading ? (
             <div className="flex justify-center items-center py-12">
               <Loader2 className="h-8 w-8 animate-spin" />
+              <span className="mr-2">جاري تحميل الخدمات...</span>
             </div>
           ) : filteredListings.length === 0 ? (
             <Card>
@@ -261,6 +270,9 @@ export function RealMarketplaceListings() {
                   {searchQuery || categoryFilter !== "all" || typeFilter !== "all" 
                     ? "لا توجد خدمات مطابقة للمعايير المحددة" 
                     : "لا توجد خدمات متاحة حالياً"}
+                </p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  كن أول من يضيف خدمة في هذا التصنيف!
                 </p>
               </CardContent>
             </Card>
