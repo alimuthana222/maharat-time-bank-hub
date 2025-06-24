@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,11 +10,16 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { toast } from "sonner";
-import { Plus, Coins, Timer, Search } from "lucide-react";
+import { Coins, Timer } from "lucide-react";
 
-export function CreateServiceRequestDialog() {
+interface CreateServiceRequestDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+}
+
+export function CreateServiceRequestDialog({ open, onOpenChange, onSuccess }: CreateServiceRequestDialogProps) {
   const { user } = useAuth();
-  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
@@ -26,12 +31,11 @@ export function CreateServiceRequestDialog() {
   });
 
   const categories = [
-    "برمجة",
-    "تصميم", 
-    "كتابة",
-    "تدريس",
-    "ترجمة",
-    "تسويق",
+    "برمجة وتطوير",
+    "تصميم جرافيك",
+    "كتابة وترجمة",
+    "تسويق رقمي",
+    "تدريس وتعليم",
     "استشارات",
     "أخرى"
   ];
@@ -59,7 +63,8 @@ export function CreateServiceRequestDialog() {
       if (error) throw error;
 
       toast.success("تم إنشاء طلب الخدمة بنجاح!");
-      setOpen(false);
+      onOpenChange(false);
+      onSuccess();
       setFormData({
         title: "",
         description: "",
@@ -68,8 +73,6 @@ export function CreateServiceRequestDialog() {
         budget: "",
         deadline: ""
       });
-      
-      window.location.reload();
     } catch (error) {
       console.error("Error creating service request:", error);
       toast.error("خطأ في إنشاء طلب الخدمة");
@@ -83,13 +86,7 @@ export function CreateServiceRequestDialog() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline">
-          <Search className="mr-2 h-4 w-4" />
-          طلب خدمة
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>طلب خدمة جديدة</DialogTitle>
@@ -188,7 +185,7 @@ export function CreateServiceRequestDialog() {
             <Button type="submit" disabled={loading} className="flex-1">
               {loading ? "جاري الإنشاء..." : "نشر طلب الخدمة"}
             </Button>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               إلغاء
             </Button>
           </div>

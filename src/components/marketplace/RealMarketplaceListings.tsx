@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -173,6 +174,12 @@ export function RealMarketplaceListings() {
       return;
     }
     setShowRequestDialog(true);
+  };
+
+  const handleDialogSuccess = () => {
+    fetchListings();
+    setShowCreateDialog(false);
+    setShowRequestDialog(false);
   };
 
   return (
@@ -370,7 +377,7 @@ export function RealMarketplaceListings() {
         <CreateListingDialog
           open={showCreateDialog}
           onOpenChange={setShowCreateDialog}
-          onSuccess={fetchListings}
+          onSuccess={handleDialogSuccess}
         />
       )}
 
@@ -378,7 +385,7 @@ export function RealMarketplaceListings() {
         <CreateServiceRequestDialog 
           open={showRequestDialog} 
           onOpenChange={setShowRequestDialog}
-          onSuccess={fetchListings}
+          onSuccess={handleDialogSuccess}
         />
       )}
 
