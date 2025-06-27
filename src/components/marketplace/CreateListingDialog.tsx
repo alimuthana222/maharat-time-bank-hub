@@ -50,8 +50,24 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
       return;
     }
 
-    if (!formData.title || !formData.description || !formData.category || !formData.hourly_rate) {
-      toast.error("يرجى ملء جميع الحقول المطلوبة");
+    // التحقق من صحة البيانات المطلوبة
+    if (!formData.title.trim()) {
+      toast.error("يرجى إدخال عنوان الخدمة");
+      return;
+    }
+
+    if (!formData.description.trim()) {
+      toast.error("يرجى إدخال وصف الخدمة");
+      return;
+    }
+
+    if (!formData.category) {
+      toast.error("يرجى اختيار التصنيف");
+      return;
+    }
+
+    if (!formData.hourly_rate || parseInt(formData.hourly_rate) <= 0) {
+      toast.error("يرجى إدخال سعر صحيح");
       return;
     }
 
@@ -60,13 +76,13 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
       const tags = formData.tags ? formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
       
       const listingData = {
-        title: formData.title,
-        description: formData.description,
+        title: formData.title.trim(),
+        description: formData.description.trim(),
         category: formData.category,
-        type: formData.paymentType, // استخدام القيمة مباشرة
+        type: formData.paymentType,
         hourly_rate: parseInt(formData.hourly_rate),
         delivery_time: parseInt(formData.delivery_time),
-        requirements: formData.requirements || null,
+        requirements: formData.requirements?.trim() || null,
         tags: tags.length > 0 ? tags : null,
         user_id: user.id,
         status: "active",
@@ -75,16 +91,20 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
 
       console.log("إرسال بيانات الخدمة:", listingData);
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("marketplace_listings")
-        .insert([listingData]);
+        .insert([listingData])
+        .select();
 
       if (error) {
         console.error("خطأ في قاعدة البيانات:", error);
         throw error;
       }
 
+      console.log("تم إنشاء الخدمة بنجاح:", data);
       toast.success("تم إنشاء الخدمة بنجاح");
+      
+      // إعادة تعيين النموذج
       setFormData({
         title: "",
         description: "",
@@ -95,11 +115,12 @@ export function CreateListingDialog({ open, onOpenChange, onSuccess }: CreateLis
         requirements: "",
         tags: ""
       });
+      
       onOpenChange(false);
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating listing:", error);
-      toast.error("حدث خطأ أثناء إنشاء الخدمة");
+      toast.error(`حدث خطأ أثناء إنشاء الخدمة: ${error.message || "خطأ غير معروف"}`);
     } finally {
       setLoading(false);
     }

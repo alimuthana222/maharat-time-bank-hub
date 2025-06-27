@@ -42,15 +42,44 @@ export function CreateServiceRequestDialog({ open, onOpenChange, onSuccess }: Cr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user) {
+      toast.error("يجب تسجيل الدخول أولاً");
+      return;
+    }
+
+    // التحقق من صحة البيانات المطلوبة
+    if (!formData.title.trim()) {
+      toast.error("يرجى إدخال عنوان طلب الخدمة");
+      return;
+    }
+
+    if (!formData.description.trim()) {
+      toast.error("يرجى إدخال وصف طلب الخدمة");
+      return;
+    }
+
+    if (!formData.category) {
+      toast.error("يرجى اختيار التصنيف");
+      return;
+    }
+
+    if (!formData.budget || parseInt(formData.budget) <= 0) {
+      toast.error("يرجى إدخال ميزانية صحيحة");
+      return;
+    }
+
+    if (!formData.deadline || parseInt(formData.deadline) <= 0) {
+      toast.error("يرجى إدخال مدة زمنية صحيحة");
+      return;
+    }
 
     setLoading(true);
     try {
       const requestData = {
-        title: formData.title,
-        description: formData.description,
+        title: formData.title.trim(),
+        description: formData.description.trim(),
         category: formData.category,
-        type: formData.type, // استخدام القيمة مباشرة
+        type: formData.type,
         hourly_rate: parseInt(formData.budget),
         delivery_time: parseInt(formData.deadline),
         user_id: user.id,
@@ -60,18 +89,20 @@ export function CreateServiceRequestDialog({ open, onOpenChange, onSuccess }: Cr
 
       console.log("إرسال بيانات طلب الخدمة:", requestData);
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("marketplace_listings")
-        .insert(requestData);
+        .insert([requestData])
+        .select();
 
       if (error) {
         console.error("خطأ في قاعدة البيانات:", error);
         throw error;
       }
 
+      console.log("تم إنشاء طلب الخدمة بنجاح:", data);
       toast.success("تم إنشاء طلب الخدمة بنجاح!");
-      onOpenChange(false);
-      onSuccess();
+      
+      // إعادة تعيين النموذج
       setFormData({
         title: "",
         description: "",
@@ -80,9 +111,12 @@ export function CreateServiceRequestDialog({ open, onOpenChange, onSuccess }: Cr
         budget: "",
         deadline: ""
       });
-    } catch (error) {
+      
+      onOpenChange(false);
+      onSuccess();
+    } catch (error: any) {
       console.error("Error creating service request:", error);
-      toast.error("خطأ في إنشاء طلب الخدمة");
+      toast.error(`خطأ في إنشاء طلب الخدمة: ${error.message || "خطأ غير معروف"}`);
     } finally {
       setLoading(false);
     }
@@ -101,7 +135,7 @@ export function CreateServiceRequestDialog({ open, onOpenChange, onSuccess }: Cr
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="title">عنوان الخدمة المطلوبة</Label>
+            <Label htmlFor="title">عنوان الخدمة المطلوبة *</Label>
             <Input
               id="title"
               value={formData.title}
@@ -112,7 +146,7 @@ export function CreateServiceRequestDialog({ open, onOpenChange, onSuccess }: Cr
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">وصف تفصيلي للخدمة</Label>
+            <Label htmlFor="description">وصف تفصيلي للخدمة *</Label>
             <Textarea
               id="description"
               value={formData.description}
@@ -123,7 +157,7 @@ export function CreateServiceRequestDialog({ open, onOpenChange, onSuccess }: Cr
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="category">التصنيف</Label>
+            <Label htmlFor="category">التصنيف *</Label>
             <Select value={formData.category} onValueChange={(value) => handleInputChange("category", value)}>
               <SelectTrigger>
                 <SelectValue placeholder="اختر التصنيف" />
@@ -164,7 +198,7 @@ export function CreateServiceRequestDialog({ open, onOpenChange, onSuccess }: Cr
 
           <div className="space-y-2">
             <Label htmlFor="budget">
-              {formData.type === "service" ? "الميزانية المتاحة (د.ع)" : "الساعات المتاحة للدفع"}
+              {formData.type === "service" ? "الميزانية المتاحة (د.ع) *" : "الساعات المتاحة للدفع *"}
             </Label>
             <Input
               id="budget"
@@ -172,18 +206,20 @@ export function CreateServiceRequestDialog({ open, onOpenChange, onSuccess }: Cr
               value={formData.budget}
               onChange={(e) => handleInputChange("budget", e.target.value)}
               placeholder={formData.type === "service" ? "مثال: 50000" : "مثال: 5"}
+              min="1"
               required
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="deadline">المطلوب إنجازه خلال (أيام)</Label>
+            <Label htmlFor="deadline">المطلوب إنجازه خلال (أيام) *</Label>
             <Input
               id="deadline"
               type="number"
               value={formData.deadline}
               onChange={(e) => handleInputChange("deadline", e.target.value)}
               placeholder="مثال: 7"
+              min="1"
               required
             />
           </div>
