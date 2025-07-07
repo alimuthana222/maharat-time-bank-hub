@@ -24,6 +24,7 @@ interface CreateBookingDialogProps {
     hourly_rate: number;
     user_id: string;
     delivery_time: number;
+    type: string;
   };
   onSuccess: () => void;
 }
@@ -98,7 +99,12 @@ export function CreateBookingDialog({ open, onOpenChange, listing, onSuccess }: 
           <div className="p-4 bg-muted rounded-lg">
             <h3 className="font-semibold mb-2">{listing.title}</h3>
             <div className="text-sm text-muted-foreground space-y-1">
-              <p>السعر: {listing.hourly_rate} USD/ساعة</p>
+              <p>
+                {listing.type === 'skill_exchange' 
+                  ? `المطلوب: ${listing.hourly_rate} ساعة من بنك الوقت`
+                  : `السعر: ${listing.hourly_rate.toLocaleString()} د.ع/ساعة`
+                }
+              </p>
               <p>مدة التسليم: {listing.delivery_time} أيام</p>
             </div>
           </div>
@@ -164,13 +170,21 @@ export function CreateBookingDialog({ open, onOpenChange, listing, onSuccess }: 
             {/* التكلفة الإجمالية */}
             <div className="p-4 bg-primary/10 rounded-lg">
               <div className="flex justify-between items-center">
-                <span className="font-medium">التكلفة الإجمالية:</span>
+                <span className="font-medium">
+                  {listing.type === 'skill_exchange' ? 'إجمالي الساعات المطلوبة:' : 'التكلفة الإجمالية:'}
+                </span>
                 <span className="text-xl font-bold text-primary">
-                  {totalCost} USD
+                  {listing.type === 'skill_exchange' 
+                    ? `${totalCost} ساعة`
+                    : `${totalCost.toLocaleString()} د.ع`
+                  }
                 </span>
               </div>
               <p className="text-sm text-muted-foreground mt-1">
-                {totalHours} ساعة × {listing.hourly_rate} USD
+                {totalHours} ساعة × {listing.type === 'skill_exchange' 
+                  ? `${listing.hourly_rate} ساعة`
+                  : `${listing.hourly_rate.toLocaleString()} د.ع`
+                }
               </p>
             </div>
 

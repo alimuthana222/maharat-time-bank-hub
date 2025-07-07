@@ -25,6 +25,8 @@ import {
   Heart,
   Share2
 } from "lucide-react";
+import { useMessages } from "@/hooks/useMessages";
+import { useNavigate } from "react-router-dom";
 
 interface MarketplaceListing {
   id: string;
@@ -66,6 +68,7 @@ const types = [
 
 export function RealMarketplaceListings() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -76,6 +79,9 @@ export function RealMarketplaceListings() {
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [showBookingDialog, setShowBookingDialog] = useState(false);
   const [selectedListing, setSelectedListing] = useState<MarketplaceListing | null>(null);
+  
+  // استيراد نظام الرسائل
+  const { createConversation } = useMessages();
 
   useEffect(() => {
     fetchListings();
@@ -181,6 +187,28 @@ export function RealMarketplaceListings() {
     }
     console.log("فتح نافذة طلب خدمة جديدة");
     setShowRequestDialog(true);
+  };
+
+  const handleMessageClick = async (listing: MarketplaceListing) => {
+    if (!user) {
+      toast.error("يجب تسجيل الدخول أولاً");
+      return;
+    }
+    
+    if (user.id === listing.user_id) {
+      toast.error("لا يمكنك مراسلة نفسك");
+      return;
+    }
+
+    try {
+      const conversationId = await createConversation(listing.user_id);
+      if (conversationId) {
+        navigate('/messages');
+        toast.success("تم فتح المحادثة");
+      }
+    } catch (error) {
+      toast.error("حدث خطأ أثناء فتح المحادثة");
+    }
   };
 
   const handleDialogSuccess = () => {
@@ -333,8 +361,17 @@ export function RealMarketplaceListings() {
 
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-1">
-                        <DollarSign className="h-4 w-4" />
-                        <span className="font-medium">{listing.hourly_rate.toLocaleString()} د.ع/ساعة</span>
+                        {listing.type === 'skill_exchange' ? (
+                          <Clock className="h-4 w-4 text-blue-600" />
+                        ) : (
+                          <DollarSign className="h-4 w-4 text-green-600" />
+                        )}
+                        <span className="font-medium">
+                          {listing.type === 'skill_exchange' 
+                            ? `${listing.hourly_rate} ساعة`
+                            : `${listing.hourly_rate.toLocaleString()} د.ع/ساعة`
+                          }
+                        </span>
                       </div>
                       <div className="flex items-center gap-1 text-muted-foreground">
                         <Clock className="h-4 w-4" />
@@ -347,6 +384,8 @@ export function RealMarketplaceListings() {
                         variant="outline"
                         size="sm"
                         className="flex-1"
+                        onClick={() => handleMessageClick(listing)}
+                        disabled={!user || user.id === listing.user_id}
                       >
                         <MessageSquare className="h-4 w-4 mr-1" />
                         رسالة
