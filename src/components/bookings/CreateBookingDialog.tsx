@@ -44,6 +44,11 @@ export function CreateBookingDialog({ open, onOpenChange, listing, onSuccess }: 
       return;
     }
 
+    if (user.id === listing.user_id) {
+      toast.error("لا يمكنك حجز خدمتك الخاصة");
+      return;
+    }
+
     if (!selectedDate) {
       toast.error("يرجى اختيار تاريخ الحجز");
       return;
@@ -53,6 +58,17 @@ export function CreateBookingDialog({ open, onOpenChange, listing, onSuccess }: 
       toast.error("يرجى إدخال عدد ساعات صحيح");
       return;
     }
+
+    console.log("محاولة إنشاء حجز:", {
+      client_id: user.id,
+      provider_id: listing.user_id,
+      service_id: listing.id,
+      booking_date: selectedDate.toISOString(),
+      total_hours: parseInt(totalHours),
+      duration: parseInt(totalHours) * 60,
+      message: message.trim() || null,
+      status: "pending"
+    });
 
     setLoading(true);
     try {
