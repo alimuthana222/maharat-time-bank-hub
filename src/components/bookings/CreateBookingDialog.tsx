@@ -72,30 +72,40 @@ export function CreateBookingDialog({ open, onOpenChange, listing, onSuccess }: 
 
     setLoading(true);
     try {
-      const { error } = await supabase
+      const bookingData = {
+        client_id: user.id,
+        provider_id: listing.user_id,
+        service_id: listing.id,
+        booking_date: selectedDate.toISOString(),
+        total_hours: parseInt(totalHours),
+        duration: parseInt(totalHours) * 60, // تحويل إلى دقائق
+        message: message.trim() || null,
+        status: "pending"
+      };
+
+      console.log("إرسال بيانات الحجز:", bookingData);
+
+      const { data, error } = await supabase
         .from("bookings")
-        .insert([{
-          client_id: user.id,
-          provider_id: listing.user_id,
-          service_id: listing.id,
-          booking_date: selectedDate.toISOString(),
-          total_hours: parseInt(totalHours),
-          duration: parseInt(totalHours) * 60, // تحويل إلى دقائق
-          message: message.trim() || null,
-          status: "pending"
-        }]);
+        .insert([bookingData])
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("خطأ في قاعدة البيانات:", error);
+        throw error;
+      }
 
+      console.log("تم إنشاء الحجز بنجاح:", data);
       toast.success("تم إرسال طلب الحجز بنجاح");
       setSelectedDate(undefined);
       setTotalHours("1");
       setMessage("");
       onOpenChange(false);
       onSuccess();
-    } catch (error) {
-      console.error("Error creating booking:", error);
-      toast.error("حدث خطأ أثناء إنشاء الحجز");
+    } catch (error: any) {
+      console.error("خطأ كامل:", error);
+      const errorMessage = error?.message || "حدث خطأ أثناء إنشاء الحجز";
+      toast.error(`حدث خطأ: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
