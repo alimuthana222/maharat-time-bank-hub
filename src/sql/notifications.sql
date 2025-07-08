@@ -27,7 +27,7 @@ CREATE POLICY "Users can update their own notifications"
   FOR UPDATE 
   USING (auth.uid() = user_id);
 
--- Create a function to send notifications
+-- Create a function to send notifications with SECURITY DEFINER
 CREATE OR REPLACE FUNCTION public.send_notification(
   _user_id UUID,
   _title TEXT,
@@ -37,6 +37,7 @@ CREATE OR REPLACE FUNCTION public.send_notification(
   _related_type TEXT DEFAULT NULL
 ) RETURNS UUID 
 LANGUAGE plpgsql
+SECURITY DEFINER
 AS $$
 DECLARE
   _notification_id UUID;
@@ -53,6 +54,7 @@ $$;
 CREATE OR REPLACE FUNCTION public.handle_report_status_change()
 RETURNS TRIGGER
 LANGUAGE plpgsql
+SECURITY DEFINER
 AS $$
 BEGIN
   -- Send notification to reporter about status change
@@ -82,8 +84,33 @@ BEGIN
 END;
 $$;
 
+-- Create trigger to send notification when a new booking is created
+CREATE OR REPLACE FUNCTION public.notify_new_booking()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  PERFORM public.send_notification(
+    NEW.provider_id,
+    'حجز جديد',
+    'لديك حجز جديد يتطلب الموافقة',
+    'booking',
+    NEW.id::text,
+    'booking'
+  );
+  RETURN NEW;
+END;
+$$;
+
 -- Create trigger on content_reports table
 CREATE TRIGGER on_report_status_change
   AFTER UPDATE OF status ON public.content_reports
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_report_status_change();
+
+-- Create trigger on bookings table
+CREATE TRIGGER on_booking_created
+  AFTER INSERT ON public.bookings
+  FOR EACH ROW
+  EXECUTE FUNCTION public.notify_new_booking();

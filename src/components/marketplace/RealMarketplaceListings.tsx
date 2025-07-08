@@ -23,7 +23,8 @@ import {
   Loader2,
   MessageSquare,
   Heart,
-  Share2
+  Share2,
+  HandHelping
 } from "lucide-react";
 import { useMessages } from "@/hooks/useMessages";
 import { useNavigate } from "react-router-dom";
@@ -169,6 +170,22 @@ export function RealMarketplaceListings() {
 
     setSelectedListing(listing);
     setShowBookingDialog(true);
+  };
+
+  const handleOfferServiceClick = (listing: MarketplaceListing) => {
+    if (!user) {
+      toast.error("يجب تسجيل الدخول أولاً");
+      return;
+    }
+    
+    if (user.id === listing.user_id) {
+      toast.error("لا يمكنك تقديم خدمة لطلبك الخاص");
+      return;
+    }
+
+    // إنشاء محادثة مع صاحب الطلب
+    handleMessageClick(listing);
+    toast.success("تم فتح محادثة مع صاحب الطلب لتقديم عرضك");
   };
 
   const handleCreateService = () => {
@@ -390,14 +407,27 @@ export function RealMarketplaceListings() {
                         <MessageSquare className="h-4 w-4 mr-1" />
                         رسالة
                       </Button>
-                      {listing.listing_type === 'offer' && (
+                      
+                      {/* زر مختلف حسب نوع القائمة */}
+                      {listing.listing_type === 'offer' ? (
                         <Button
                           size="sm"
                           className="flex-1"
                           onClick={() => handleBookingClick(listing)}
+                          disabled={!user || user.id === listing.user_id}
                         >
                           <Calendar className="h-4 w-4 mr-1" />
                           احجز الآن
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => handleOfferServiceClick(listing)}
+                          disabled={!user || user.id === listing.user_id}
+                        >
+                          <HandHelping className="h-4 w-4 mr-1" />
+                          تقديم الخدمة
                         </Button>
                       )}
                     </div>
