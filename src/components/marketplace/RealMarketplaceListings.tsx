@@ -172,7 +172,7 @@ export function RealMarketplaceListings() {
     setShowBookingDialog(true);
   };
 
-  const handleOfferServiceClick = (listing: MarketplaceListing) => {
+  const handleOfferServiceClick = async (listing: MarketplaceListing) => {
     if (!user) {
       toast.error("يجب تسجيل الدخول أولاً");
       return;
@@ -183,9 +183,22 @@ export function RealMarketplaceListings() {
       return;
     }
 
-    // إنشاء محادثة مع صاحب الطلب
-    handleMessageClick(listing);
-    toast.success("تم فتح محادثة مع صاحب الطلب لتقديم عرضك");
+    try {
+      // إرسال إشعار لصاحب الطلب
+      await supabase.rpc('send_notification', {
+        _user_id: listing.user_id,
+        _title: 'عرض خدمة جديد',
+        _body: `أحد المستخدمين مهتم بتقديم الخدمة: ${listing.title}`,
+        _type: 'service_offer',
+        _related_id: listing.id,
+        _related_type: 'marketplace_listing'
+      });
+
+      toast.success("تم إرسال طلب تقديم الخدمة بنجاح");
+    } catch (error) {
+      console.error("خطأ في إرسال طلب الخدمة:", error);
+      toast.error("حدث خطأ أثناء إرسال الطلب");
+    }
   };
 
   const handleCreateService = () => {
@@ -397,37 +410,38 @@ export function RealMarketplaceListings() {
                     </div>
 
                     <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => handleMessageClick(listing)}
-                        disabled={!user || user.id === listing.user_id}
-                      >
-                        <MessageSquare className="h-4 w-4 mr-1" />
-                        رسالة
-                      </Button>
-                      
                       {/* زر مختلف حسب نوع القائمة */}
                       {listing.listing_type === 'offer' ? (
-                        <Button
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => handleBookingClick(listing)}
-                          disabled={!user || user.id === listing.user_id}
-                        >
-                          <Calendar className="h-4 w-4 mr-1" />
-                          احجز الآن
-                        </Button>
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => handleMessageClick(listing)}
+                            disabled={!user || user.id === listing.user_id}
+                          >
+                            <MessageSquare className="h-4 w-4 mr-1" />
+                            رسالة
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => handleBookingClick(listing)}
+                            disabled={!user || user.id === listing.user_id}
+                          >
+                            <Calendar className="h-4 w-4 mr-1" />
+                            احجز الآن
+                          </Button>
+                        </>
                       ) : (
                         <Button
                           size="sm"
-                          className="flex-1"
+                          className="w-full"
                           onClick={() => handleOfferServiceClick(listing)}
                           disabled={!user || user.id === listing.user_id}
                         >
                           <HandHelping className="h-4 w-4 mr-1" />
-                          تقديم الخدمة
+                          تقديم عرض للخدمة
                         </Button>
                       )}
                     </div>
